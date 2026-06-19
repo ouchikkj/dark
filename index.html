@@ -1046,6 +1046,14 @@
 
     let isMuted = false;
     let isCombatMode = false;
+    let timeoutAutoSave;
+
+    function autoSalvarOtimizado() {
+        clearTimeout(timeoutAutoSave);
+        timeoutAutoSave = setTimeout(() => {
+            salvarLocalData();
+        }, 1000); 
+    }
 
     function toggleMute() {
         isMuted = !isMuted;
@@ -2526,7 +2534,7 @@
         setTimeout(runNext, 400);
     }
 
-window.onload = function() {
+    window.onload = function() {
         carregarLocalData(); 
         
         document.querySelectorAll('.skill-val').forEach(el => {
@@ -2539,18 +2547,12 @@ window.onload = function() {
         
         document.getElementById('afi_val').addEventListener('change', () => playSfx('box'));
         
-        // --- CÓDIGO NOVO: SALVAMENTO AUTOMÁTICO ---
-        // Faz com que qualquer alteração em inputs, textareas ou selects dispare o save
         document.querySelectorAll('input, textarea, select').forEach(elemento => {
-            // 'input' salva enquanto o jogador digita (ótimo para textareas grandes)
-            elemento.addEventListener('input', salvarLocalData);
-            // 'change' salva quando o jogador sai do campo ou altera um select
-            elemento.addEventListener('change', salvarLocalData);
+            elemento.addEventListener('input', autoSalvarOtimizado);
+            elemento.addEventListener('change', autoSalvarOtimizado);
         });
-        // ------------------------------------------
 
         atualizarCalculos();
-    };
     };
 </script>
 
