@@ -2526,7 +2526,7 @@
         setTimeout(runNext, 400);
     }
 
-    window.onload = function() {
+window.onload = function() {
         carregarLocalData(); 
         
         document.querySelectorAll('.skill-val').forEach(el => {
@@ -2539,7 +2539,18 @@
         
         document.getElementById('afi_val').addEventListener('change', () => playSfx('box'));
         
+        // --- CÓDIGO NOVO: SALVAMENTO AUTOMÁTICO ---
+        // Faz com que qualquer alteração em inputs, textareas ou selects dispare o save
+        document.querySelectorAll('input, textarea, select').forEach(elemento => {
+            // 'input' salva enquanto o jogador digita (ótimo para textareas grandes)
+            elemento.addEventListener('input', salvarLocalData);
+            // 'change' salva quando o jogador sai do campo ou altera um select
+            elemento.addEventListener('change', salvarLocalData);
+        });
+        // ------------------------------------------
+
         atualizarCalculos();
+    };
     };
 </script>
 
