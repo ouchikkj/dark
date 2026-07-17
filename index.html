@@ -570,6 +570,36 @@
         .glitch-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px); z-index: 10001; pointer-events: none; opacity: 0; mix-blend-mode: overlay; }
         @keyframes combat-glitch { 0% { opacity: 0; filter: invert(0) hue-rotate(0deg); } 10% { opacity: 0.5; filter: invert(1) hue-rotate(90deg); } 20% { opacity: 0.2; filter: invert(0) hue-rotate(0deg); } 30% { opacity: 0.8; filter: invert(1) hue-rotate(180deg); } 40% { opacity: 0; filter: invert(0) hue-rotate(0deg); } 100% { opacity: 0; } }
         .trigger-glitch { animation: combat-glitch 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+
+        /* --- PERFIS, HISTÓRICO E INDICADOR DE SALVAMENTO --- */
+        .save-status-indicator {
+            position: fixed; left: 20px; bottom: 20px; z-index: 10000;
+            min-width: 150px; padding: 8px 12px; border: 1px solid var(--border-color);
+            background: color-mix(in srgb, var(--panel-bg) 92%, transparent);
+            color: var(--dim-text); font-size: 0.68rem; letter-spacing: 2px;
+            text-transform: uppercase; pointer-events: none; backdrop-filter: blur(6px);
+            transition: color .2s, border-color .2s, opacity .2s;
+        }
+        .save-status-indicator[data-state="dirty"], .save-status-indicator[data-state="saving"] { color: var(--gold-color); border-color: var(--gold-color); }
+        .save-status-indicator[data-state="saved"] { color: var(--accent-green); border-color: var(--accent-green); }
+        .save-status-indicator[data-state="error"] { color: var(--alert-color); border-color: var(--alert-color); }
+        .profile-controls { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto auto; gap: 8px; align-items: center; }
+        .profile-controls select { min-width: 0; font-size: .8rem; padding: 7px 5px; }
+        .history-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+        .history-list { max-height: 155px; overflow-y: auto; border: 1px solid var(--border-color); background: rgba(0,0,0,.18); }
+        .history-entry { padding: 7px 9px; border-bottom: 1px dashed var(--border-color); display: grid; grid-template-columns: 70px 1fr; gap: 10px; font-size: .68rem; }
+        .history-entry:last-child { border-bottom: none; }
+        .history-time { color: var(--dim-text); }
+        .history-label { color: var(--text-main); overflow-wrap: anywhere; }
+        .history-empty { padding: 12px; color: var(--dim-text); font-size: .68rem; letter-spacing: 1px; text-align: center; }
+        #profileStatusText, #historyStatusText { margin-top: 7px; color: var(--dim-text); font-size: .66rem; letter-spacing: 1px; }
+        @media (max-width: 760px) {
+            .profile-controls { grid-template-columns: 1fr 1fr; }
+            .profile-controls select { grid-column: 1 / -1; }
+            .save-status-indicator { left: 10px; bottom: 10px; min-width: 0; max-width: calc(100vw - 80px); }
+        }
+
     </style>
 </head>
 <body>
@@ -619,6 +649,26 @@
         <div class="menu-list" id="optionsMenuList" style="display: none;">
             <div class="menu-item highlight" onclick="toggleMenuOptions()" style="font-size: 1.8rem;"><div class="menu-icon" style="width: 35px; height: 35px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></div><span>RETORNAR AO MENU</span></div>
             <div class="menu-divider"></div>
+
+            <div class="options-group">
+                <span class="options-label">PERFIS DE PERSONAGEM</span>
+                <div class="profile-controls">
+                    <select id="profileSelect" onchange="switchCharacterProfile(this.value)" aria-label="Perfil ativo"></select>
+                    <button class="sys-btn" onclick="createCharacterProfile()">NOVO</button>
+                    <button class="sys-btn" onclick="renameCharacterProfile()">RENOMEAR</button>
+                    <button class="sys-btn" onclick="deleteCharacterProfile()" style="color:var(--alert-color); border-color:var(--alert-color);">EXCLUIR</button>
+                </div>
+                <div id="profileStatusText">[ PERFIL ATIVO: -- ]</div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">HISTÓRICO E DESFAZER</span>
+                <div class="history-toolbar">
+                    <button id="btnUndoHistory" class="sys-btn" onclick="undoLastAction()">DESFAZER ÚLTIMA AÇÃO</button>
+                    <button class="sys-btn" onclick="clearActionHistory()">LIMPAR HISTÓRICO</button>
+                    <span id="historyStatusText">[ 0 AÇÕES ]</span>
+                </div>
+                <div id="historyList" class="history-list"><div class="history-empty">NENHUMA ALTERAÇÃO REGISTRADA</div></div>
+            </div>
             <div class="options-group">
                 <span class="options-label">TEMA DO SISTEMA</span>
                 <div class="options-row">
@@ -691,10 +741,12 @@
                 </div>
                 <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-top:10px; color:var(--dim-text); font-size:0.72rem; letter-spacing:1px;">
                     <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsShowName" checked onchange="updateObsPreferences()" style="width:auto;"> MOSTRAR NOME</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudEnabled" checked onchange="updateObsPreferences()" style="width:auto;"> HUD PERMANENTE</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudConditions" checked onchange="updateObsPreferences()" style="width:auto;"> CONDIÇÕES NO HUD</label>
                     <label style="display:flex; align-items:center; gap:7px; margin:0;"><span>DURAÇÃO</span><input type="number" id="obsDuration" min="2" max="15" step="1" value="6" onchange="updateObsPreferences()" style="width:60px; padding:4px; text-align:center;"><span>SEG.</span></label>
                     <span id="obsStatusText">[ AGUARDANDO CONFIGURAÇÃO ]</span>
                 </div>
-                <div style="margin-top:8px; color:var(--dim-text); font-size:0.66rem; line-height:1.4; max-width:850px;">O canal funciona como uma chave. Somente resultados de rolagens são transmitidos; não compartilhe a URL publicamente.</div>
+                <div style="margin-top:8px; color:var(--dim-text); font-size:0.66rem; line-height:1.4; max-width:850px;">O canal funciona como uma chave. Rolagens e o HUD de status são transmitidos; não compartilhe a URL publicamente.</div>
             </div>
             <div class="options-group">
                 <span class="options-label">DADOS E ARQUIVOS</span>
@@ -713,6 +765,7 @@
 <button id="muteBtn" class="mute-btn" onclick="toggleMute()" title="Ativar/Desativar Som">
     <svg id="iconVol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
 </button>
+<div id="saveStatusIndicator" class="save-status-indicator" data-state="saved" role="status" aria-live="polite">SALVO</div>
 
 <div class="container" id="mainContainer">
     <h1 class="page-header">DARK DASHBOARD</h1>
@@ -1002,10 +1055,22 @@
     let activeTurnIndex = -1;
     let combatMacros = [];
     let editingMacroId = null;
-    let obsSettings = { enabled: false, channel: '', duration: 6000, showName: true };
+    let obsSettings = { enabled: false, channel: '', duration: 6000, showName: true, hudEnabled: true, hudConditions: true };
     let obsBroadcastChannel = null;
+    let hudUpdateTimer = null;
+    let hudHeartbeatTimer = null;
+    let lastHudSignature = '';
+    let saveStatusTimer = null;
+    let isApplyingHistory = false;
+    let activeProfileId = '';
+    let profilesIndex = null;
 
     const STORAGE_KEY = 'FichaDarkSave';
+    const PROFILE_INDEX_KEY = 'DARK_CharacterProfiles';
+    const PROFILE_DATA_PREFIX = 'DARK_CharacterProfile_';
+    const PROFILE_HISTORY_PREFIX = 'DARK_CharacterHistory_';
+    const GLOBAL_SETTINGS_KEY = 'DARK_GlobalSettings';
+    const MAX_HISTORY_ENTRIES = 30;
     const OBS_RELAY_BASE = 'https://ntfy.sh';
     const OBS_LOCAL_EVENT_KEY = 'DarkObsLastEvent';
     const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon']);
@@ -1121,6 +1186,10 @@
         if (urlInput) urlInput.value = getObsOverlayUrl();
         const nameInput = document.getElementById('obsShowName');
         if (nameInput) nameInput.checked = obsSettings.showName;
+        const hudInput = document.getElementById('obsHudEnabled');
+        if (hudInput) hudInput.checked = obsSettings.hudEnabled;
+        const conditionsInput = document.getElementById('obsHudConditions');
+        if (conditionsInput) conditionsInput.checked = obsSettings.hudConditions;
         const durationInput = document.getElementById('obsDuration');
         if (durationInput) durationInput.value = String(Math.round(obsSettings.duration / 1000));
         setObsStatus(obsSettings.enabled ? 'TRANSMISSÃO ATIVA' : 'TRANSMISSÃO DESATIVADA', obsSettings.enabled ? 'ok' : 'idle');
@@ -1137,15 +1206,24 @@
                 obsBroadcastChannel = null;
             }
         }
+        clearInterval(hudHeartbeatTimer);
+        hudHeartbeatTimer = window.setInterval(() => {
+            if (obsSettings.enabled) sendObsHudUpdate(true);
+        }, 10000);
         syncObsControls();
+        if (obsSettings.enabled) window.setTimeout(() => sendObsHudUpdate(true), 900);
     }
 
     function toggleObsIntegration(button) {
         obsSettings.enabled = !obsSettings.enabled;
         syncObsControls();
+        writeGlobalObsSettings();
         playSfx('click');
-        salvarLocalData();
-        if (obsSettings.enabled) testObsOverlay();
+        salvarLocalData({ label: obsSettings.enabled ? 'INTEGRAÇÃO OBS ATIVADA' : 'INTEGRAÇÃO OBS DESATIVADA' });
+        if (obsSettings.enabled) {
+            testObsOverlay();
+            window.setTimeout(() => sendObsHudUpdate(true), 350);
+        }
     }
 
     function updateObsChannel(value) {
@@ -1153,16 +1231,21 @@
         if (sanitized === obsSettings.channel) return;
         obsSettings.channel = sanitized;
         ensureObsChannel();
+        writeGlobalObsSettings();
         initObsIntegration();
-        salvarLocalData();
+        salvarLocalData({ label: 'CANAL OBS ATUALIZADO' });
     }
 
     function updateObsPreferences() {
         const durationSeconds = Number.parseInt(document.getElementById('obsDuration')?.value, 10);
         obsSettings.duration = Math.min(15000, Math.max(2000, Number.isFinite(durationSeconds) ? durationSeconds * 1000 : 6000));
         obsSettings.showName = document.getElementById('obsShowName')?.checked !== false;
+        obsSettings.hudEnabled = document.getElementById('obsHudEnabled')?.checked !== false;
+        obsSettings.hudConditions = document.getElementById('obsHudConditions')?.checked !== false;
         syncObsControls();
-        salvarLocalData();
+        writeGlobalObsSettings();
+        salvarLocalData({ label: 'PREFERÊNCIAS DO OBS ATUALIZADAS' });
+        sendObsHudUpdate(true);
     }
 
     async function copyObsOverlayUrl() {
@@ -1189,7 +1272,7 @@
     function buildObsPayload(data) {
         const characterName = document.getElementById('charNameInput')?.value?.trim() || 'DESCONHECIDO';
         return {
-            version: 1,
+            version: 2,
             source: 'dark-dashboard',
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
             timestamp: Date.now(),
@@ -1197,6 +1280,7 @@
             character: obsSettings.showName ? characterName : '',
             theme: getCurrentThemeName(),
             channel: ensureObsChannel(),
+            profileId: activeProfileId || '',
             ...data
         };
     }
@@ -1280,10 +1364,381 @@
         tecnico: [ { afi: 1, nome: "Analista (Subclasse)", desc: "+5 em Tecnologia.\nHackear vira ação completa.", sub: "analista" }, { afi: 1, nome: "Diplomata (Subclasse)", desc: "+5 em Persuasão.", sub: "diplomata" }, { afi: 5, nome: "Inventário Otimizado", desc: "Carga Normal + (FOR + INT)." }, { afi: 10, nome: "Artista Marcial", desc: "Ataques desarmados: 1d6 dano." }, { afi: 10, nome: "Contatos", desc: "1 vez por missão. Solicita favores narrativos." }, { afi: 15, nome: "Discurso Motivador", desc: "Custo: 4 PE.\nAliados recebem +1d20 em perícias por 3 rodadas." }, { afi: 15, nome: "Letalidade de Disparo", desc: "+1d6 dano com armas de fogo." }, { afi: 15, nome: "Treinamento I", desc: "Aprimoramento de perícias." }, { afi: 20, nome: "Aumento de Atributo", desc: "Melhora atributos base." }, { afi: 20, nome: "Artista Marcial II", desc: "Dano desarmado: 1d8." }, { afi: 25, nome: "Diplomata II (Subclasse)", desc: "+7 Persuasão.", sub: "diplomata" }, { afi: 25, nome: "Hacker II (Subclasse)", desc: "+7 Tecnologia.", sub: "analista" }, { afi: 30, nome: "Treinamento II", desc: "Aprimoramento de perícias." }, { afi: 30, nome: "Atirador de Elite", desc: "Após acertar: pode furtivamente reposicionar e disparar novamente." }, { afi: 35, nome: "Discurso Motivador II", desc: "Custo: 2 PE.\nDura a cena inteira." }, { afi: 40, nome: "Improvisar", desc: "Cria equipamentos temporários." }, { afi: 40, nome: "Aumento de Atributo II", desc: "Melhora atributos base." }, { afi: 45, nome: "Resgate", desc: "Movimento livre para ajudar aliados." }, { afi: 45, nome: "Conhecimento Aplicado", desc: "Custo: 2 PE.\nTroca atributo da perícia para INT." }, { afi: 50, nome: "Preparado para Tudo", desc: "Custo: 3 PE por categoria.\nProduz item que estava 'guardado'." }, { afi: 50, nome: "Tiro Certeiro", desc: "+5 em ataques com arma de fogo." }, { afi: 55, nome: "Reanimação", desc: "Custo: 12 PE.\nRessuscita personagem morto na mesma cena." }, { afi: 60, nome: "Aumento de Atributo III", desc: "Melhora atributos base." }, { afi: 65, nome: "Disparo Impactante", desc: "Permite usar manobras com armas de fogo." }, { afi: 70, nome: "Equipe de Trauma", desc: "Remove condição negativa de aliado." }, { afi: 75, nome: "Na Trilha Certa", desc: "Acumula bônus em testes investigativos." }, { afi: 80, nome: "Jackpot!", desc: "Crítico com arma de fogo pode causar dano máximo.\nCusto: 10 PE." }, { afi: 85, nome: "Truque de Mestre", desc: "Custo: 5 PE.\nCopia uma habilidade utilizada por um aliado durante a cena." } ]
     };
 
+
+    function safeReadJson(key, fallback = null) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+            console.error(`Falha ao ler ${key}.`, error);
+            return fallback;
+        }
+    }
+
+    function safeWriteJson(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (error) {
+            console.error(`Falha ao gravar ${key}.`, error);
+            return false;
+        }
+    }
+
+    function safeRemoveKey(key) {
+        try { localStorage.removeItem(key); return true; }
+        catch (error) { console.error(`Falha ao remover ${key}.`, error); return false; }
+    }
+
+    function setSaveStatus(state, message = '') {
+        const indicator = document.getElementById('saveStatusIndicator');
+        if (!indicator) return;
+        const labels = { dirty: 'ALTERAÇÕES PENDENTES', saving: 'SALVANDO...', saved: 'SALVO', error: 'ERRO AO SALVAR' };
+        indicator.dataset.state = state;
+        indicator.textContent = message || labels[state] || String(state).toUpperCase();
+        clearTimeout(saveStatusTimer);
+        if (state === 'saved') {
+            saveStatusTimer = window.setTimeout(() => {
+                const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                indicator.textContent = `SALVO ÀS ${time}`;
+            }, 700);
+        }
+    }
+
+    function generateProfileId() {
+        if (window.crypto?.getRandomValues) {
+            const values = new Uint32Array(3); window.crypto.getRandomValues(values);
+            return `profile_${Array.from(values, value => value.toString(36)).join('')}`;
+        }
+        return `profile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function normalizeProfileIndex(index) {
+        if (!index || typeof index !== 'object' || !Array.isArray(index.profiles)) return null;
+        const profiles = index.profiles
+            .filter(profile => profile && typeof profile.id === 'string')
+            .map(profile => ({
+                id: profile.id,
+                name: String(profile.name || 'PERSONAGEM').slice(0, 60),
+                createdAt: Number(profile.createdAt) || Date.now(),
+                updatedAt: Number(profile.updatedAt) || Date.now()
+            }));
+        if (!profiles.length) return null;
+        const activeId = profiles.some(profile => profile.id === index.activeId) ? index.activeId : profiles[0].id;
+        return { version: 1, activeId, profiles };
+    }
+
+    function profileDataKey(id) { return `${PROFILE_DATA_PREFIX}${id}`; }
+    function profileHistoryKey(id = activeProfileId) { return `${PROFILE_HISTORY_PREFIX}${id}`; }
+
+    function getProfileNameFromSave(data, fallback = 'PERSONAGEM 1') {
+        const name = data?.dataMap?.charNameInput;
+        return String(name || fallback).trim().slice(0, 60) || fallback;
+    }
+
+    function loadGlobalObsSettings(fallback = null) {
+        const stored = safeReadJson(GLOBAL_SETTINGS_KEY, null);
+        const source = stored?.obs && typeof stored.obs === 'object' ? stored.obs : fallback;
+        if (source && typeof source === 'object') {
+            obsSettings.enabled = Boolean(source.enabled);
+            obsSettings.channel = sanitizeObsChannel(source.channel);
+            const duration = Number.parseInt(source.duration, 10);
+            obsSettings.duration = Number.isFinite(duration) ? Math.min(15000, Math.max(2000, duration)) : 6000;
+            obsSettings.showName = source.showName !== false;
+            obsSettings.hudEnabled = source.hudEnabled !== false;
+            obsSettings.hudConditions = source.hudConditions !== false;
+        }
+        ensureObsChannel();
+        writeGlobalObsSettings();
+    }
+
+    function writeGlobalObsSettings() {
+        return safeWriteJson(GLOBAL_SETTINGS_KEY, { version: 1, obs: { ...obsSettings, channel: ensureObsChannel() } });
+    }
+
+    function initializeCharacterProfiles() {
+        let index = normalizeProfileIndex(safeReadJson(PROFILE_INDEX_KEY, null));
+        if (!index) {
+            const legacy = readStoredSave();
+            const id = generateProfileId();
+            const now = Date.now();
+            index = {
+                version: 1,
+                activeId: id,
+                profiles: [{ id, name: getProfileNameFromSave(legacy), createdAt: now, updatedAt: now }]
+            };
+            if (legacy) safeWriteJson(profileDataKey(id), legacy);
+            safeWriteJson(PROFILE_INDEX_KEY, index);
+            loadGlobalObsSettings(legacy?.obs || null);
+        } else {
+            const currentData = safeReadJson(profileDataKey(index.activeId), null) || readStoredSave();
+            if (currentData && !safeReadJson(profileDataKey(index.activeId), null)) safeWriteJson(profileDataKey(index.activeId), currentData);
+            loadGlobalObsSettings(currentData?.obs || null);
+        }
+        profilesIndex = index;
+        activeProfileId = index.activeId;
+        renderProfileControls();
+        loadActionHistory();
+        return index;
+    }
+
+    function readActiveProfileData() {
+        if (!activeProfileId) return null;
+        return safeReadJson(profileDataKey(activeProfileId), null);
+    }
+
+    function writeActiveProfileData(data) {
+        if (!activeProfileId || !profilesIndex) return false;
+        const ok = safeWriteJson(profileDataKey(activeProfileId), data);
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        if (profile) profile.updatedAt = Date.now();
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        return ok;
+    }
+
+    function renderProfileControls() {
+        const select = document.getElementById('profileSelect');
+        if (!select || !profilesIndex) return;
+        select.replaceChildren();
+        profilesIndex.profiles.forEach(profile => {
+            const option = document.createElement('option');
+            option.value = profile.id;
+            option.textContent = profile.name;
+            option.selected = profile.id === activeProfileId;
+            select.appendChild(option);
+        });
+        const active = profilesIndex.profiles.find(profile => profile.id === activeProfileId);
+        const status = document.getElementById('profileStatusText');
+        if (status) status.textContent = `[ PERFIL ATIVO: ${active?.name || '--'} // ${profilesIndex.profiles.length} PERFIL(IS) ]`;
+    }
+
+    function createBlankProfileData(name) {
+        const current = typeof collectCurrentData === 'function' ? collectCurrentData() : {};
+        return {
+            version: 5,
+            dataMap: { charNameInput: String(name || 'NOVO PERSONAGEM').slice(0, 60) },
+            safeBoxes: { FOR: 1, DES: 1, VIG: 1, INT: 1, SAB: 1, APA: 1, AFI: 0, INSP: 0 },
+            theme: current.theme || 'theme-default', fontType: current.fontType || 'mono', shape: current.shape || 'default',
+            customBg: '', layout: current.layout || 'colunas', muted: Boolean(current.muted), vignette: current.vignette !== false,
+            obs: { ...obsSettings, channel: ensureObsChannel() }, items: [], combatMode: false, portrait: '',
+            panelState: current.panelState || null,
+            board: { notes: [], links: [], logs: [] }, initiative: { list: [], turn: -1 }, macros: []
+        };
+    }
+
+    function createCharacterProfile() {
+        abrirModalCustom('NOVO PERFIL // Digite o nome do personagem.', true, true, function(value) {
+            if (value === false) return;
+            const name = String(value || '').trim().slice(0, 60);
+            if (!name) { abrirModalCustom('ERRO // O perfil precisa de um nome.', false, false, function(){}); return; }
+            salvarLocalData({ skipHistory: true });
+            const id = generateProfileId();
+            const now = Date.now();
+            profilesIndex.profiles.push({ id, name, createdAt: now, updatedAt: now });
+            profilesIndex.activeId = id;
+            activeProfileId = id;
+            const data = createBlankProfileData(name);
+            safeWriteJson(profileDataKey(id), data);
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            writeStoredSave(data);
+            location.reload();
+        });
+    }
+
+    function switchCharacterProfile(id) {
+        if (!profilesIndex || id === activeProfileId || !profilesIndex.profiles.some(profile => profile.id === id)) return;
+        salvarLocalData({ skipHistory: true });
+        profilesIndex.activeId = id;
+        activeProfileId = id;
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        const data = readActiveProfileData() || createBlankProfileData(profilesIndex.profiles.find(profile => profile.id === id)?.name);
+        safeWriteJson(profileDataKey(id), data);
+        writeStoredSave(data);
+        location.reload();
+    }
+
+    function renameCharacterProfile() {
+        const profile = profilesIndex?.profiles.find(item => item.id === activeProfileId);
+        if (!profile) return;
+        abrirModalCustom(`RENOMEAR PERFIL // Nome atual: ${profile.name}`, true, true, function(value) {
+            if (value === false) return;
+            const name = String(value || '').trim().slice(0, 60);
+            if (!name) return;
+            profile.name = name;
+            profile.updatedAt = Date.now();
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            renderProfileControls();
+            setSaveStatus('saved', 'PERFIL RENOMEADO');
+        });
+    }
+
+    function deleteCharacterProfile() {
+        if (!profilesIndex || profilesIndex.profiles.length <= 1) {
+            abrirModalCustom('SISTEMA // É necessário manter pelo menos um perfil.', false, false, function(){}); return;
+        }
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        abrirModalCustom(`EXCLUIR PERFIL // ${profile?.name || 'PERSONAGEM'}?\nEsta ação remove somente este perfil.`, false, true, function(confirm) {
+            if (!confirm) return;
+            const removedId = activeProfileId;
+            profilesIndex.profiles = profilesIndex.profiles.filter(item => item.id !== removedId);
+            activeProfileId = profilesIndex.profiles[0].id;
+            profilesIndex.activeId = activeProfileId;
+            safeRemoveKey(profileDataKey(removedId));
+            safeRemoveKey(profileHistoryKey(removedId));
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            const data = readActiveProfileData() || createBlankProfileData(profilesIndex.profiles[0].name);
+            writeStoredSave(data);
+            location.reload();
+        });
+    }
+
+    function compactHistorySnapshot(data) {
+        const snapshot = JSON.parse(JSON.stringify(data || {}));
+        delete snapshot.portrait;
+        delete snapshot.customBg;
+        delete snapshot.obs;
+        snapshot.combatMode = false;
+        return snapshot;
+    }
+
+    function comparableSave(data) {
+        const copy = compactHistorySnapshot(data);
+        delete copy.panelState;
+        return JSON.stringify(copy);
+    }
+
+    function describeSaveChange(previous, next) {
+        const p = previous?.dataMap || {}, n = next?.dataMap || {};
+        const fields = [
+            ['vd_atual', 'VD'], ['san_atual', 'SAN'], ['pe_atual', 'PE'],
+            ['vd_max', 'VD MÁX.'], ['san_max', 'SAN MÁX.'], ['pe_max', 'PE MÁX.']
+        ];
+        for (const [id, label] of fields) {
+            if (String(p[id] ?? '') !== String(n[id] ?? '')) return `${label}: ${p[id] ?? '--'} → ${n[id] ?? '--'}`;
+        }
+        if (JSON.stringify(previous?.safeBoxes) !== JSON.stringify(next?.safeBoxes)) return 'ATRIBUTOS ATUALIZADOS';
+        if (JSON.stringify(previous?.macros) !== JSON.stringify(next?.macros)) return 'MACROS ATUALIZADAS';
+        if (JSON.stringify(previous?.items) !== JSON.stringify(next?.items)) return 'INVENTÁRIO ATUALIZADO';
+        if (JSON.stringify(previous?.initiative) !== JSON.stringify(next?.initiative)) return 'INICIATIVA ATUALIZADA';
+        if (JSON.stringify(previous?.board) !== JSON.stringify(next?.board)) return 'INVESTIGAÇÃO ATUALIZADA';
+        const changedInput = Object.keys({ ...p, ...n }).find(key => String(p[key] ?? '') !== String(n[key] ?? ''));
+        if (changedInput) return `CAMPO ATUALIZADO: ${changedInput.replaceAll('_', ' ').toUpperCase()}`;
+        return 'FICHA ATUALIZADA';
+    }
+
+    function loadActionHistory() {
+        const history = safeReadJson(profileHistoryKey(), []);
+        renderActionHistory(Array.isArray(history) ? history : []);
+        return Array.isArray(history) ? history : [];
+    }
+
+    function recordActionHistory(previous, next, explicitLabel = '') {
+        if (isApplyingHistory || !previous || comparableSave(previous) === comparableSave(next)) return;
+        const history = loadActionHistory();
+        history.unshift({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            timestamp: Date.now(),
+            label: explicitLabel || describeSaveChange(previous, next),
+            snapshot: compactHistorySnapshot(previous)
+        });
+        const trimmed = history.slice(0, MAX_HISTORY_ENTRIES);
+        safeWriteJson(profileHistoryKey(), trimmed);
+        renderActionHistory(trimmed);
+    }
+
+    function renderActionHistory(history = null) {
+        if (!Array.isArray(history)) history = safeReadJson(profileHistoryKey(), []);
+        if (!Array.isArray(history)) history = [];
+        const list = document.getElementById('historyList');
+        const status = document.getElementById('historyStatusText');
+        const undo = document.getElementById('btnUndoHistory');
+        if (status) status.textContent = `[ ${history.length} AÇÃO(ÕES) // MÁX. ${MAX_HISTORY_ENTRIES} ]`;
+        if (undo) undo.disabled = history.length === 0;
+        if (!list) return;
+        list.replaceChildren();
+        if (!history.length) {
+            const empty = document.createElement('div'); empty.className = 'history-empty'; empty.textContent = 'NENHUMA ALTERAÇÃO REGISTRADA'; list.appendChild(empty); return;
+        }
+        history.slice(0, 10).forEach(entry => {
+            const row = document.createElement('div'); row.className = 'history-entry';
+            const time = document.createElement('span'); time.className = 'history-time';
+            time.textContent = new Date(entry.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const label = document.createElement('span'); label.className = 'history-label'; label.textContent = String(entry.label || 'FICHA ATUALIZADA');
+            row.append(time, label); list.appendChild(row);
+        });
+    }
+
+    function undoLastAction() {
+        const history = loadActionHistory();
+        const entry = history.shift();
+        if (!entry?.snapshot) return;
+        const current = collectCurrentData();
+        const restored = {
+            ...entry.snapshot,
+            version: Math.max(5, Number(entry.snapshot.version) || 0),
+            portrait: current.portrait || '', customBg: current.customBg || '', obs: { ...obsSettings, channel: ensureObsChannel() }
+        };
+        isApplyingHistory = true;
+        try {
+            processAndLoadDataMap(restored);
+            writeStoredSave(restored);
+            writeActiveProfileData(restored);
+            safeWriteJson(profileHistoryKey(), history);
+            renderActionHistory(history);
+            setSaveStatus('saved', 'AÇÃO DESFEITA');
+            scheduleObsHudUpdate(true);
+        } finally { isApplyingHistory = false; }
+    }
+
+    function clearActionHistory() {
+        abrirModalCustom('SISTEMA // Limpar o histórico deste perfil?', false, true, function(confirm) {
+            if (!confirm) return;
+            safeWriteJson(profileHistoryKey(), []);
+            renderActionHistory([]);
+            setSaveStatus('saved', 'HISTÓRICO LIMPO');
+        });
+    }
+
+    function getObsHudState() {
+        const numberValue = (id, fallback = 0) => Number.parseInt(document.getElementById(id)?.value, 10) || fallback;
+        const conditions = obsSettings.hudConditions
+            ? Array.from(document.querySelectorAll('.cond-item input[type="checkbox"]:checked')).map(input => {
+                const container = input.closest('.cond-item');
+                return container?.querySelector('.cond-label')?.textContent?.trim() || input.id.replace(/^cond_/, '').replaceAll('_', ' ').toUpperCase();
+            }).slice(0, 8)
+            : [];
+        return {
+            enabled: Boolean(obsSettings.hudEnabled),
+            vd: { current: numberValue('vd_atual'), max: Math.max(1, numberValue('vd_max', 1)) },
+            san: { current: numberValue('san_atual'), max: Math.max(1, numberValue('san_max', 1)) },
+            pe: { current: numberValue('pe_atual'), max: Math.max(1, numberValue('pe_max', 1)) },
+            afi: numberValue('afi_val', 1),
+            conditions
+        };
+    }
+
+    function scheduleObsHudUpdate(immediate = false) {
+        clearTimeout(hudUpdateTimer);
+        hudUpdateTimer = window.setTimeout(() => sendObsHudUpdate(false), immediate ? 0 : 650);
+    }
+
+    function sendObsHudUpdate(force = false) {
+        if (!obsSettings.enabled && !force) return false;
+        const hud = getObsHudState();
+        const signature = JSON.stringify({ hud, name: document.getElementById('charNameInput')?.value || '', theme: getCurrentThemeName() });
+        if (!force && signature === lastHudSignature) return false;
+        lastHudSignature = signature;
+        sendObsEvent({ event: 'hud', title: 'HUD', subtitle: 'STATUS', rolls: [], chosen: 0, bonus: 0, total: 0, damage: null, hud }, force);
+        return true;
+    }
+
+
     // 2. FUNÇÕES DE INICIALIZAÇÃO E HOTBAR DE COMBATE
     function autoSalvarOtimizado() {
+        setSaveStatus('dirty');
         clearTimeout(timeoutAutoSave);
-        timeoutAutoSave = setTimeout(() => { salvarLocalData(); }, 800); 
+        timeoutAutoSave = setTimeout(() => { salvarLocalData(); }, 800);
+        scheduleObsHudUpdate();
     }
 
     function fillBoxesSafe(container, count, forceFirst=false) {
@@ -1405,38 +1860,41 @@
     }
 
     function windowInitSetup() {
-        // Gera o DOM dos atributos ANTES de carregar os dados
-        const attrsList = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA']; 
+        const attrsList = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'];
         const attrContainer = document.getElementById('attributes');
         if (attrContainer && attrContainer.children.length === 0) {
             attrsList.forEach(attr => {
                 let row = document.createElement('div'); row.className = 'attr-row';
                 let label = document.createElement('span'); label.innerText = attr; label.className = 'rollable-attr'; label.title = 'Clique para rolar o atributo'; label.onclick = () => abrirRolador(attr);
                 let boxesDiv = document.createElement('div'); boxesDiv.className = 'boxes'; boxesDiv.id = 'attr-' + attr;
-                for(let i=1; i<=7; i++) { 
-                    let box = document.createElement('div'); box.className = i === 1 ? 'box filled' : 'box'; 
-                    box.onclick = () => { fillAttributes(boxesDiv, i); atualizarCalculos(); autoSalvarOtimizado(); }; 
-                    boxesDiv.appendChild(box); 
+                for(let i=1; i<=7; i++) {
+                    let box = document.createElement('div'); box.className = i === 1 ? 'box filled' : 'box';
+                    box.onclick = () => { fillAttributes(boxesDiv, i); atualizarCalculos(); autoSalvarOtimizado(); };
+                    boxesDiv.appendChild(box);
                 }
                 row.appendChild(label); row.appendChild(boxesDiv); attrContainer.appendChild(row);
             });
         }
 
+        initializeCharacterProfiles();
         carregarLocalData();
         initObsIntegration();
         initParticles();
-        
-        // Ativa listeners de mudança e cores
-        document.querySelectorAll('.skill-val').forEach(el => { 
-            el.addEventListener('change', function() { atualizarCoresPericias(); playSfx('box'); autoSalvarOtimizado(); }); 
-            el.addEventListener('mousedown', function() { playSfx('click'); }); 
+        renderProfileControls();
+        loadActionHistory();
+
+        document.querySelectorAll('.skill-val').forEach(el => {
+            el.addEventListener('change', function() { atualizarCoresPericias(); playSfx('box'); autoSalvarOtimizado(); });
+            el.addEventListener('mousedown', function() { playSfx('click'); });
         });
-        
+
         let afiInput = document.getElementById('afi_val');
         if (afiInput) afiInput.addEventListener('change', () => { playSfx('box'); atualizarCalculos(); autoSalvarOtimizado(); });
-        
+
         atualizarCalculos();
         atualizarCoresPericias();
+        setSaveStatus('saved');
+        scheduleObsHudUpdate(true);
     }
     window.addEventListener('load', windowInitSetup, { once: true });
 
@@ -1891,9 +2349,9 @@
         if (isOverlayActive('initiativeBoard')) closeOverlay('initiativeBoard');
     });
 
-    document.addEventListener('input', function(e) { if(e.target.matches('input, textarea, select')) autoSalvarOtimizado(); });
-    document.addEventListener('change', function(e) { if(e.target.matches('input, textarea, select')) autoSalvarOtimizado(); });
-    window.addEventListener('beforeunload', function() { salvarLocalData(); });
+    document.addEventListener('input', function(e) { if(e.target.matches('input, textarea, select')) { autoSalvarOtimizado(); scheduleObsHudUpdate(); } });
+    document.addEventListener('change', function(e) { if(e.target.matches('input, textarea, select')) { autoSalvarOtimizado(); scheduleObsHudUpdate(); } });
+    window.addEventListener('beforeunload', function() { salvarLocalData({ skipHistory: true }); });
 
     // DRAG AND DROP PANELS
     let draggedPanel = null;
@@ -2651,6 +3109,7 @@
         let san_atual_val = parseInt(document.getElementById('san_atual').value) || 0; let san_max_val = parseInt(document.getElementById('san_max').value) || 1; let sanStatusText = ""; let btnInstavel = document.getElementById('btnEfeitoInstavel');
         if (san_atual_val <= 0) { sanStatusText = "INSANO (Permanente)"; if(btnInstavel) btnInstavel.style.display = 'none'; } else if (san_atual_val <= Math.floor(san_max_val / 2)) { sanStatusText = "INSTÁVEL"; if(btnInstavel) btnInstavel.style.display = 'inline-block'; } else { if(btnInstavel) btnInstavel.style.display = 'none'; }
         let sanDisplay = document.getElementById('san_status_display'); if(sanDisplay) { sanDisplay.innerText = sanStatusText; sanDisplay.style.color = (san_atual_val <= Math.floor(san_max_val/2)) ? "var(--alert-color)" : "var(--accent-green)"; }
+        scheduleObsHudUpdate();
     }
     function danoSanidade() { playSfx('roll'); setTimeout(() => { let dano = Math.floor(Math.random() * 6) + 1; let sanInput = document.getElementById('san_atual'); let atual = parseInt(sanInput.value) || 0; sanInput.value = atual - dano; playSfx('alert'); abrirModalCustom("ALERTA DE SANIDADE\n\nVocê rolou [" + dano + "] de dano mental.", false, false, function(){}); atualizarCalculos(); salvarLocalData(); }, 600); }
     function efeitoInstavel() {
@@ -2682,16 +3141,16 @@
     }
 
     // 9. EXPORTAÇÃO E IMPORTAÇÃO DE DADOS MODO SEGURO
-    function salvarLocalData() {
+    function collectCurrentData() {
         let inventoryItems = []; document.querySelectorAll('.inventory-item').forEach(el => { inventoryItems.push({ nome: el.querySelector('.item-name').innerText, peso: el.querySelector('.item-weight').getAttribute('data-peso'), desc: el.querySelector('.item-desc') ? el.querySelector('.item-desc').innerText : '' }); });
         let updatedBoardNotes = []; document.querySelectorAll('.board-note').forEach(el => { let ta = el.querySelector('textarea'); updatedBoardNotes.push({ id: el.id, x: parseFloat(el.style.left), y: parseFloat(el.style.top), text: ta ? ta.value : '' }); });
         let updatedLogs = []; document.querySelectorAll('.log-entry').forEach(el => { updatedLogs.push({ id: el.id, date: el.querySelector('input').value, text: el.querySelector('textarea').value }); });
 
         let imgBase64 = ''; let portraitImg = document.getElementById('portraitImg'); if(portraitImg && portraitImg.style.display === 'block') { imgBase64 = portraitImg.src; }
-        
-        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').replace(/font-\w+/g, '').replace(/shape-\w+/g, '').trim(); 
+
+        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').replace(/font-\w+/g, '').replace(/shape-\w+/g, '').trim();
         if(isCombatMode) { savedTheme = document.body.getAttribute('data-prev-theme') || 'theme-default'; }
-        
+
         let savedFont = 'mono';
         if(document.body.classList.contains('font-clean')) savedFont = 'clean';
         else if(document.body.classList.contains('font-militar')) savedFont = 'militar';
@@ -2713,10 +3172,8 @@
 
         let dataMap = {};
         document.querySelectorAll('.container input[id], .container textarea[id], .container select[id]').forEach(el => {
-            if (el.type === 'checkbox') { dataMap[el.id] = el.checked; } 
-            else if (el.type !== 'file' && !el.id.startsWith('macro') && !el.id.startsWith('newItem') && !el.id.startsWith('init') && el.id !== 'diceSkillSelect') {
-                dataMap[el.id] = el.value;
-            }
+            if (el.type === 'checkbox') { dataMap[el.id] = el.checked; }
+            else if (el.type !== 'file' && !el.id.startsWith('macro') && !el.id.startsWith('newItem') && !el.id.startsWith('init') && el.id !== 'diceSkillSelect') dataMap[el.id] = el.value;
         });
 
         let safeBoxes = {
@@ -2725,18 +3182,32 @@
             SAB: document.querySelectorAll('#attr-SAB .box.filled').length || 1, APA: document.querySelectorAll('#attr-APA .box.filled').length || 1,
             AFI: document.querySelectorAll('#afi-boxes .box.filled').length || 0, INSP: document.querySelectorAll('#insp-boxes .box.filled').length || 0
         };
-        
-        const data = {
-            version: 4, dataMap: dataMap, safeBoxes: safeBoxes,
-            theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
+
+        return {
+            version: 5, dataMap, safeBoxes,
+            theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground,
+            layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
             vignette: isVignetteEnabled,
-            obs: { enabled: obsSettings.enabled, channel: ensureObsChannel(), duration: obsSettings.duration, showName: obsSettings.showName },
+            obs: { ...obsSettings, channel: ensureObsChannel() },
             items: inventoryItems, combatMode: isCombatMode, portrait: imgBase64,
             panelState: { pag1: pag1Order, pag2: pag2Order, collapsed: collapsedPanels },
             board: { notes: updatedBoardNotes, links: boardLinks, logs: updatedLogs },
             initiative: { list: initList, turn: activeTurnIndex }, macros: combatMacros
         };
-        writeStoredSave(data);
+    }
+
+    function salvarLocalData(options = {}) {
+        const config = options && typeof options === 'object' ? options : {};
+        setSaveStatus('saving');
+        const data = collectCurrentData();
+        const previous = readActiveProfileData() || readStoredSave();
+        if (!config.skipHistory && previous) recordActionHistory(previous, data, config.label || '');
+        const localOk = writeStoredSave(data);
+        const profileOk = writeActiveProfileData(data);
+        const globalOk = writeGlobalObsSettings();
+        if (localOk && profileOk && globalOk) setSaveStatus('saved');
+        else setSaveStatus('error');
+        scheduleObsHudUpdate();
         return data;
     }
 
@@ -2869,13 +3340,7 @@
             }
         }
 
-        if (data.obs && typeof data.obs === 'object') {
-            obsSettings.enabled = Boolean(data.obs.enabled);
-            obsSettings.channel = sanitizeObsChannel(data.obs.channel);
-            const savedDuration = Number.parseInt(data.obs.duration, 10);
-            obsSettings.duration = Number.isFinite(savedDuration) ? Math.min(15000, Math.max(2000, savedDuration)) : 6000;
-            obsSettings.showName = data.obs.showName !== false;
-        }
+        loadGlobalObsSettings(data.obs && typeof data.obs === 'object' ? data.obs : null);
         ensureObsChannel();
         syncObsControls();
 
@@ -3060,6 +3525,10 @@
             let btnCombat = document.getElementById('btn-combat-mode'); 
             if(btnCombat && !isCombatMode) toggleCombatMode(btnCombat); 
         }
+        renderProfileControls();
+        loadActionHistory();
+        setSaveStatus('saved');
+        scheduleObsHudUpdate(true);
     }
 
     function resetarFicha() { playSfx('alert'); document.getElementById('resetModal').style.display = 'flex'; }
@@ -3071,6 +3540,7 @@
             if (saved) {
                 delete saved.panelState;
                 writeStoredSave(saved);
+                writeActiveProfileData(saved);
             }
             location.reload(); 
         } else if (tipo === 'ficha') { 
@@ -3091,17 +3561,24 @@
             combatMacros = []; limparFormularioMacro(); renderMacros();
             resetBoardView();
             
-            atualizarCalculos(); playSfx('lock'); removeStoredSave(); abrirModalCustom("SISTEMA // Memória apagada. Banco de dados redefinido.", false, false, function(){}); 
+            atualizarCalculos(); playSfx('lock');
+            safeWriteJson(profileHistoryKey(), []);
+            salvarLocalData({ skipHistory: true, label: 'FICHA REDEFINIDA' });
+            renderActionHistory([]);
+            abrirModalCustom("SISTEMA // Perfil ativo redefinido. Os outros perfis foram preservados.", false, false, function(){}); 
         }
     }
 
     function carregarLocalData() {
-        const saved = readStoredSave();
-        if (!saved) return;
+        if (!profilesIndex || !activeProfileId) initializeCharacterProfiles();
+        const saved = readActiveProfileData() || readStoredSave();
+        if (!saved) { renderProfileControls(); loadActionHistory(); return; }
         try {
+            writeStoredSave(saved);
             processAndLoadDataMap(saved);
         } catch (error) {
             console.error('Falha ao carregar save local.', error);
+            setSaveStatus('error', 'ERRO AO CARREGAR');
         }
     }
 </script>
