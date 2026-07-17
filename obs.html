@@ -248,7 +248,7 @@
                     layout: String(payload.layout || 'standard'),
                     hud: payload.hud && typeof payload.hud === 'object' ? {
                         ...payload.hud,
-                        portrait: typeof payload.hud.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(payload.hud.portrait) && payload.hud.portrait.length <= 2200 ? payload.hud.portrait : ''
+                        portrait: typeof payload.hud.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(payload.hud.portrait) && payload.hud.portrait.length <= 4000 ? payload.hud.portrait : ''
                     } : null
                 };
             }
@@ -287,7 +287,6 @@
                     const tag = document.createElement('span'); tag.className = 'hud-condition'; tag.textContent = String(condition).slice(0, 40); hudConditions.appendChild(tag);
                 });
                 persistentHud.classList.add('visible');
-                setConnection('HUD SINCRONIZADO', true);
             }
 
             function enqueue(payload, transport = 'local') {
@@ -366,7 +365,7 @@
                 if (relayPollTimer) return;
                 relayFallbackStarted = true;
                 setConnection('MODO COMPATÍVEL: POLLING', true);
-                pollRelay('10m');
+                pollRelay('latest');
                 relayPollTimer = window.setInterval(() => pollRelay('30s'), 4000);
             }
 
@@ -417,7 +416,7 @@
                     sseOpened = true;
                     window.clearTimeout(sseFallbackTimer);
                     setConnection('OVERLAY CONECTADO // SSE', true);
-                    pollRelay('10m');
+                    pollRelay('latest');
                 });
                 eventSource.onmessage = event => parseRelayEnvelope(event.data);
                 eventSource.onerror = () => {
