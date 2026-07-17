@@ -470,6 +470,10 @@
         .box.filled { background: var(--text-main); border-color: var(--text-main); box-shadow: 0 0 8px rgba(255,255,255,0.2); }
         #attributes .boxes .box:nth-child(5) { border-color: var(--gold-color); }
         #attributes .boxes .box:nth-child(5).filled { background: var(--gold-color); box-shadow: 0 0 10px var(--gold-color); border-color: var(--gold-color);}
+        #attributes .boxes .box:nth-child(6) { border-color: var(--accent-green); }
+        #attributes .boxes .box:nth-child(6).filled { background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); border-color: var(--accent-green);}
+        #attributes .boxes .box:nth-child(7) { border-color: #a855f7; }
+        #attributes .boxes .box:nth-child(7).filled { background: #a855f7; box-shadow: 0 0 10px #a855f7; border-color: #a855f7;}
         .circle { border-radius: 50%; width: 18px; height: 18px; }
         .rollable-attr { cursor: pointer; transition: 0.2s; border-bottom: 1px dashed transparent; font-weight: bold; letter-spacing: 1px;}
         .rollable-attr:hover { color: var(--gold-color); border-bottom: 1px dashed var(--gold-color); }
@@ -846,7 +850,8 @@
                         <input type="number" id="macroSkill" placeholder="PERÍCIA (+X)" style="flex:1; min-width: 80px; font-size: 0.85rem;">
                         <input type="text" id="macroCrit" placeholder="CRÍTICO (Ex: x2, +1d8)" style="flex:1; min-width: 100px; font-size: 0.85rem;">
                         <input type="text" id="macroDmg" placeholder="DANO (Ex: 1d8+2)" style="flex:1; min-width: 100px; font-size: 0.85rem;">
-                        <button class="sys-btn" style="color: var(--alert-color); border-color: var(--alert-color);" onclick="adicionarMacro()">+ ADD</button>
+                        <button id="macroSubmitBtn" class="sys-btn" style="color: var(--alert-color); border-color: var(--alert-color);" onclick="adicionarMacro()">+ ADD</button>
+                        <button id="macroCancelBtn" class="sys-btn" style="display:none; color: var(--dim-text); border-color: var(--dim-text);" onclick="cancelarEdicaoMacro()">CANCELAR</button>
                     </div>
                     <div id="macroList" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Macros renderizadas aqui -->
@@ -995,6 +1000,7 @@
     let initList = [];
     let activeTurnIndex = -1;
     let combatMacros = [];
+    let editingMacroId = null;
     let obsSettings = { enabled: false, channel: '', duration: 6000, showName: true };
     let obsBroadcastChannel = null;
 
@@ -1406,7 +1412,7 @@
                 let row = document.createElement('div'); row.className = 'attr-row';
                 let label = document.createElement('span'); label.innerText = attr; label.className = 'rollable-attr'; label.title = 'Clique para rolar o atributo'; label.onclick = () => abrirRolador(attr);
                 let boxesDiv = document.createElement('div'); boxesDiv.className = 'boxes'; boxesDiv.id = 'attr-' + attr;
-                for(let i=1; i<=5; i++) { 
+                for(let i=1; i<=7; i++) { 
                     let box = document.createElement('div'); box.className = i === 1 ? 'box filled' : 'box'; 
                     box.onclick = () => { fillAttributes(boxesDiv, i); atualizarCalculos(); autoSalvarOtimizado(); }; 
                     boxesDiv.appendChild(box); 
@@ -1434,31 +1440,116 @@
     window.addEventListener('load', windowInitSetup, { once: true });
 
     // MACROS E COMBATE RÁPIDO
+    function limparFormularioMacro() {
+        const nameInput = document.getElementById('macroName');
+        const attrInput = document.getElementById('macroAttr');
+        const skillInput = document.getElementById('macroSkill');
+        const critInput = document.getElementById('macroCrit');
+        const damageInput = document.getElementById('macroDmg');
+        const submitButton = document.getElementById('macroSubmitBtn');
+        const cancelButton = document.getElementById('macroCancelBtn');
+
+        if (nameInput) nameInput.value = '';
+        if (attrInput) attrInput.value = 'FOR';
+        if (skillInput) skillInput.value = '';
+        if (critInput) critInput.value = '';
+        if (damageInput) damageInput.value = '';
+        if (submitButton) {
+            submitButton.textContent = '+ ADD';
+            submitButton.style.color = 'var(--alert-color)';
+            submitButton.style.borderColor = 'var(--alert-color)';
+        }
+        if (cancelButton) cancelButton.style.display = 'none';
+        editingMacroId = null;
+    }
+
     function adicionarMacro() {
         playSfx('box');
-        let nome = document.getElementById('macroName').value.trim();
-        let attr = document.getElementById('macroAttr').value;
-        let skill = parseInt(document.getElementById('macroSkill').value) || 0;
-        let crit = document.getElementById('macroCrit').value.trim();
-        let dmg = document.getElementById('macroDmg').value.trim();
-        
-        if(!nome || !dmg) { abrirModalCustom("ERRO // Preencha o Nome e o Dano da arma/ação.", false, false, function(){}); return; }
-        
-        let id = 'macro_' + Date.now();
-        combatMacros.push({ id, nome, attr, skill, crit, dmg });
-        
-        document.getElementById('macroName').value = '';
-        document.getElementById('macroSkill').value = '';
-        document.getElementById('macroCrit').value = '';
-        document.getElementById('macroDmg').value = '';
-        
+        const nameInput = document.getElementById('macroName');
+        const attrInput = document.getElementById('macroAttr');
+        const skillInput = document.getElementById('macroSkill');
+        const critInput = document.getElementById('macroCrit');
+        const damageInput = document.getElementById('macroDmg');
+        if (!nameInput || !attrInput || !skillInput || !critInput || !damageInput) return;
+
+        const nome = nameInput.value.trim();
+        const attr = attrInput.value;
+        const skill = Number.parseInt(skillInput.value, 10) || 0;
+        const crit = critInput.value.trim();
+        const dmg = damageInput.value.trim();
+
+        if (!nome || !dmg) {
+            abrirModalCustom('ERRO // Preencha o Nome e o Dano da arma/ação.', false, false, function(){});
+            return;
+        }
+
+        if (editingMacroId) {
+            const macroIndex = combatMacros.findIndex(macro => macro.id === editingMacroId);
+            if (macroIndex === -1) {
+                limparFormularioMacro();
+                renderMacros();
+                return;
+            }
+            combatMacros[macroIndex] = {
+                ...combatMacros[macroIndex],
+                nome,
+                attr,
+                skill,
+                crit,
+                dmg
+            };
+        } else {
+            const id = 'macro_' + Date.now();
+            combatMacros.push({ id, nome, attr, skill, crit, dmg });
+        }
+
+        limparFormularioMacro();
         renderMacros();
         salvarLocalData();
     }
 
+    function iniciarEdicaoMacro(id) {
+        const macro = combatMacros.find(item => item.id === id);
+        if (!macro) return;
+
+        playSfx('click');
+        editingMacroId = id;
+
+        const nameInput = document.getElementById('macroName');
+        const attrInput = document.getElementById('macroAttr');
+        const skillInput = document.getElementById('macroSkill');
+        const critInput = document.getElementById('macroCrit');
+        const damageInput = document.getElementById('macroDmg');
+        const submitButton = document.getElementById('macroSubmitBtn');
+        const cancelButton = document.getElementById('macroCancelBtn');
+
+        if (nameInput) nameInput.value = String(macro.nome ?? '');
+        if (attrInput) attrInput.value = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'].includes(macro.attr) ? macro.attr : 'FOR';
+        if (skillInput) skillInput.value = Number.parseInt(macro.skill, 10) || 0;
+        if (critInput) critInput.value = String(macro.crit ?? '');
+        if (damageInput) damageInput.value = String(macro.dmg ?? '');
+        if (submitButton) {
+            submitButton.textContent = 'SALVAR';
+            submitButton.style.color = 'var(--accent-green)';
+            submitButton.style.borderColor = 'var(--accent-green)';
+        }
+        if (cancelButton) cancelButton.style.display = '';
+
+        const panel = document.getElementById('panel-combat-macros');
+        if (panel?.classList.contains('collapsed')) panel.classList.remove('collapsed');
+        nameInput?.focus();
+        panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelarEdicaoMacro() {
+        if (editingMacroId) playSfx('click');
+        limparFormularioMacro();
+    }
+
     function removerMacro(id) {
         playSfx('click');
-        combatMacros = combatMacros.filter(m => m.id !== id);
+        combatMacros = combatMacros.filter(macro => macro.id !== id);
+        if (editingMacroId === id) limparFormularioMacro();
         renderMacros();
         salvarLocalData();
     }
@@ -1471,6 +1562,10 @@
         combatMacros.forEach(macro => {
             const item = document.createElement('div');
             item.className = 'macro-item';
+            if (macro.id === editingMacroId) {
+                item.style.borderColor = 'var(--accent-green)';
+                item.style.boxShadow = '0 0 10px rgba(51, 204, 85, 0.18)';
+            }
 
             const info = document.createElement('div');
             const name = document.createElement('span');
@@ -1484,12 +1579,18 @@
             info.append(name, details);
 
             const actions = document.createElement('div');
-            actions.style.cssText = 'display:flex; gap:10px;';
+            actions.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;';
 
             const attackButton = document.createElement('button');
             attackButton.className = 'macro-btn';
             attackButton.textContent = 'ATACAR';
             attackButton.addEventListener('click', () => rolarMacro(macro.id));
+
+            const editButton = document.createElement('button');
+            editButton.className = 'sys-btn';
+            editButton.style.cssText = 'padding:2px 7px; font-size:0.7rem; color:var(--accent-green); border-color:var(--accent-green);';
+            editButton.textContent = 'EDITAR';
+            editButton.addEventListener('click', () => iniciarEdicaoMacro(macro.id));
 
             const removeButton = document.createElement('button');
             removeButton.className = 'sys-btn';
@@ -1497,7 +1598,7 @@
             removeButton.textContent = 'X';
             removeButton.addEventListener('click', () => removerMacro(macro.id));
 
-            actions.append(attackButton, removeButton);
+            actions.append(attackButton, editButton, removeButton);
             item.append(info, actions);
             list.appendChild(item);
         });
@@ -2874,6 +2975,7 @@
         }
 
         if (Array.isArray(data.macros)) {
+            editingMacroId = null;
             combatMacros = data.macros.map((macro, index) => ({
                 id: macro?.id ?? `macro_${Date.now()}_${index}`,
                 nome: String(macro?.nome ?? ''),
@@ -2955,7 +3057,7 @@
             document.getElementById('logList').innerHTML = ''; boardLogs = [];
             document.getElementById('boardNodes').innerHTML = ''; boardNodes = [];
             document.getElementById('boardLines').innerHTML = ''; boardLinks = [];
-            combatMacros = []; renderMacros();
+            combatMacros = []; limparFormularioMacro(); renderMacros();
             resetBoardView();
             
             atualizarCalculos(); playSfx('lock'); removeStoredSave(); abrirModalCustom("SISTEMA // Memória apagada. Banco de dados redefinido.", false, false, function(){}); 
