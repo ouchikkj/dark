@@ -54,6 +54,69 @@
         .hud-condition { border: 1px solid var(--line); color: var(--dim); padding: 4px 7px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
         @media (max-width:700px) { .persistent-hud { width: 90vw; min-width: 0; top: 2vh; left: 3vw; } .hud-portrait-frame { width: 76px; min-width: 76px; height: 76px; } }
 
+        /* PRESETS DE LAYOUT: alteram apenas posição, proporção e organização. */
+        body.layout-compact .persistent-hud { top: 2.5vh; left: 2vw; width: min(365px, 38vw); min-width: 285px; padding: 11px 13px; }
+        body.layout-compact .hud-layout { gap: 10px; }
+        body.layout-compact .hud-portrait-frame { width: 64px; min-width: 64px; height: 64px; }
+        body.layout-compact .hud-header { padding-bottom: 5px; margin-bottom: 6px; }
+        body.layout-compact .hud-character { font-size: 19px; }
+        body.layout-compact .hud-afi, body.layout-compact .hud-stat-label { font-size: 10px; }
+        body.layout-compact .hud-stat { grid-template-columns: 34px 1fr 63px; gap: 7px; margin: 5px 0; }
+        body.layout-compact .hud-track { height: 7px; }
+        body.layout-compact .hud-value { font-size: 11px; }
+        body.layout-compact .hud-conditions { margin-top: 7px; gap: 4px; }
+        body.layout-compact .hud-condition { padding: 2px 5px; font-size: 8px; }
+        body.layout-compact #stage { justify-content: flex-end; padding: 0 3vw 4vh; }
+        body.layout-compact .card { width: min(570px, 62vw); min-height: 150px; padding: 17px 21px; }
+        body.layout-compact .title { font-size: 24px; }
+        body.layout-compact .result { font-size: 52px; }
+
+        body.layout-lowerthird .persistent-hud { top: auto; bottom: 3vh; left: 3vw; width: min(840px, 74vw); min-width: 560px; padding: 13px 17px; }
+        body.layout-lowerthird .hud-layout { align-items: center; }
+        body.layout-lowerthird .hud-portrait-frame { width: 92px; min-width: 92px; height: 92px; }
+        body.layout-lowerthird .hud-info { display: grid; grid-template-columns: repeat(3, minmax(145px, 1fr)); gap: 5px 16px; }
+        body.layout-lowerthird .hud-header { grid-column: 1 / -1; margin-bottom: 3px; padding-bottom: 6px; }
+        body.layout-lowerthird .hud-stat { grid-template-columns: 34px 1fr 66px; gap: 7px; margin: 4px 0; }
+        body.layout-lowerthird .hud-conditions { margin-top: 8px; }
+        body.layout-lowerthird #stage { align-items: flex-start; padding: 5vh 5vw 0; }
+
+        body.layout-sidebar .persistent-hud { top: 50%; left: 2vw; width: min(285px, 25vw); min-width: 235px; padding: 15px; transform: translate(-20px, -50%); }
+        body.layout-sidebar .persistent-hud.visible { transform: translate(0, -50%); }
+        body.layout-sidebar .hud-layout { flex-direction: column; align-items: center; gap: 12px; }
+        body.layout-sidebar .hud-portrait-frame { width: 108px; min-width: 108px; height: 108px; align-self: center; }
+        body.layout-sidebar .hud-info { width: 100%; }
+        body.layout-sidebar .hud-header { flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+        body.layout-sidebar .hud-character { width: 100%; text-align: center; }
+        body.layout-sidebar .hud-stat { grid-template-columns: 34px 1fr 62px; gap: 7px; }
+        body.layout-sidebar .hud-conditions { justify-content: center; }
+
+        body.layout-topbar .persistent-hud { top: 2vh; left: 50%; width: min(920px, 86vw); min-width: 610px; padding: 13px 18px; transform: translate(-50%, -20px); }
+        body.layout-topbar .persistent-hud.visible { transform: translate(-50%, 0); }
+        body.layout-topbar .hud-layout { align-items: center; }
+        body.layout-topbar .hud-portrait-frame { width: 78px; min-width: 78px; height: 78px; }
+        body.layout-topbar .hud-info { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 4px 18px; }
+        body.layout-topbar .hud-header { grid-column: 1 / -1; margin-bottom: 2px; padding-bottom: 6px; }
+        body.layout-topbar .hud-stat { grid-template-columns: 36px 1fr 70px; gap: 8px; margin: 3px 0; }
+        body.layout-topbar .hud-conditions { justify-content: center; margin-top: 7px; }
+
+        body.layout-mirrored .persistent-hud { left: auto; right: 3vw; border-left-width: 1px; border-right: 4px solid var(--accent); transform: translateX(20px); }
+        body.layout-mirrored .persistent-hud.visible { transform: translateX(0); }
+        body.layout-mirrored .hud-layout { flex-direction: row-reverse; }
+        body.layout-mirrored .hud-portrait-frame { border-left-width: 1px; border-right: 3px solid var(--accent); }
+        body.layout-mirrored #stage { justify-content: flex-start; padding-left: 4vw; padding-right: 5vw; }
+
+        @media (max-width: 800px) {
+            body.layout-lowerthird .persistent-hud, body.layout-topbar .persistent-hud { width: 94vw; min-width: 0; left: 3vw; right: auto; transform: translateY(-15px); }
+            body.layout-lowerthird .persistent-hud.visible, body.layout-topbar .persistent-hud.visible { transform: translateY(0); }
+            body.layout-lowerthird .hud-info, body.layout-topbar .hud-info { display: block; }
+            body.layout-sidebar .persistent-hud { width: 90vw; min-width: 0; top: 2vh; left: 3vw; transform: translateY(-15px); }
+            body.layout-sidebar .persistent-hud.visible { transform: translateY(0); }
+            body.layout-sidebar .hud-layout { flex-direction: row; align-items: stretch; }
+            body.layout-compact .persistent-hud { width: 90vw; min-width: 0; }
+            body.layout-mirrored .persistent-hud { left: 3vw; right: auto; border-left: 4px solid var(--accent); border-right: 1px solid var(--line); }
+            body.layout-mirrored .hud-layout { flex-direction: row; }
+        }
+
         #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 5vw 8vh; pointer-events: none; }
         .card {
             width: min(760px, 90vw); min-height: 190px; position: relative; overflow: hidden;
@@ -123,6 +186,7 @@
             let active = false;
             let eventSource = null;
             let broadcastChannel = null;
+            applyLayout('standard');
 
             function safe(value) {
                 return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -135,9 +199,20 @@
             }
 
             function applyTheme(theme) {
-                document.body.className = '';
+                Array.from(document.body.classList).forEach(className => {
+                    if (className.startsWith('theme-')) document.body.classList.remove(className);
+                });
                 const allowed = new Set(['architect','light','ambar','ordem','contencao','neon','combat']);
                 if (allowed.has(theme)) document.body.classList.add(`theme-${theme}`);
+            }
+
+            function applyLayout(layout) {
+                Array.from(document.body.classList).forEach(className => {
+                    if (className.startsWith('layout-')) document.body.classList.remove(className);
+                });
+                const allowed = new Set(['standard','compact','lowerthird','sidebar','topbar','mirrored']);
+                const selected = allowed.has(layout) ? layout : 'standard';
+                if (selected !== 'standard') document.body.classList.add(`layout-${selected}`);
             }
 
             function normalize(payload) {
@@ -166,6 +241,7 @@
                     critical: Boolean(payload.critical),
                     failure: Boolean(payload.failure),
                     theme: String(payload.theme || 'default'),
+                    layout: String(payload.layout || 'standard'),
                     hud: payload.hud && typeof payload.hud === 'object' ? {
                         ...payload.hud,
                         portrait: typeof payload.hud.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(payload.hud.portrait) && payload.hud.portrait.length <= 4000 ? payload.hud.portrait : ''
@@ -186,6 +262,7 @@
                     return;
                 }
                 applyTheme(event.theme);
+                applyLayout(event.layout);
                 hudCharacter.textContent = event.character || 'DESCONHECIDO';
                 hudAfi.textContent = `AFI ${Number(hud.afi) || 1}`;
                 if (hud.portrait) {
@@ -221,6 +298,7 @@
                 active = true;
                 const event = queue.shift();
                 applyTheme(event.theme);
+                applyLayout(event.layout);
                 const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
                 const bonus = event.bonus ? ` ${event.bonus > 0 ? '+' : ''}${event.bonus}` : '';
                 const rolls = event.rolls.length ? `[ ${event.rolls.join(' | ')} ]` : '[ -- ]';
