@@ -8,7 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Oswald:wght@400;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+        
         html { scroll-behavior: smooth; }
         :root {
             --bg-color: #050505; --panel-bg: #0a0a0a; --text-main: #e0e0e0;
@@ -28,6 +29,72 @@
             --alert-color: #d32f2f; --gold-color: #e65100; --accent-green: #2e7d32;
             --shadow-opacity: 0.1; --menu-accent: #111111;
         }
+        
+        /* --- NOVOS TEMAS --- */
+        body.theme-ambar {
+            --bg-color: #0a0500; --panel-bg: #140a00; --text-main: #ffb000;
+            --border-color: #4d2600; --glow: #ffcc00; --dim-text: #b37700;
+            --alert-color: #ff3300; --gold-color: #ffaa00; --accent-green: #ff9900;
+            --shadow-opacity: 0.8; --menu-accent: #ffb000;
+        }
+        body.theme-ordem {
+            --bg-color: #000000; --panel-bg: #050505; --text-main: #f0f0f0;
+            --border-color: #8b0000; --glow: #e60000; --dim-text: #777777;
+            --alert-color: #cc0000; --gold-color: #e60000; --accent-green: #cc0000;
+            --shadow-opacity: 0.9; --menu-accent: #e60000;
+        }
+        body.theme-contencao {
+            --bg-color: #02060f; --panel-bg: #050d1c; --text-main: #b3e6ff;
+            --border-color: #0a1f3d; --glow: #80d4ff; --dim-text: #5c99cc;
+            --alert-color: #d90011; --gold-color: #00ccff; --accent-green: #d90011;
+            --shadow-opacity: 0.7; --menu-accent: #80d4ff;
+        }
+        body.theme-neon {
+            --bg-color: #050510; --panel-bg: #0a0a1a; --text-main: #00ffff;
+            --border-color: #1a0033; --glow: #ff00ff; --dim-text: #008888;
+            --alert-color: #ff0055; --gold-color: #ffff00; --accent-green: #00ffcc;
+            --shadow-opacity: 0.8; --menu-accent: #ff00ff;
+        }
+
+        /* --- FONTES PERSONALIZÁVEIS --- */
+        body.font-clean, body.font-clean input, body.font-clean textarea, body.font-clean select, body.font-clean button, body.font-clean .sys-btn {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+        body.font-militar, body.font-militar input, body.font-militar textarea, body.font-militar select, body.font-militar button, body.font-militar .sys-btn {
+            font-family: 'Oswald', sans-serif !important;
+            letter-spacing: 1px;
+        }
+        body.font-gotica, body.font-gotica input, body.font-gotica textarea, body.font-gotica select, body.font-gotica button, body.font-gotica .sys-btn {
+            font-family: 'Cinzel', serif !important;
+            font-weight: bold;
+        }
+        body.font-pixel, body.font-pixel input, body.font-pixel textarea, body.font-pixel select, body.font-pixel button, body.font-pixel .sys-btn {
+            font-family: 'Press Start 2P', cursive !important; 
+            font-size: 0.65rem !important; 
+            line-height: 1.6;
+        }
+        body.font-typewriter, body.font-typewriter input, body.font-typewriter textarea, body.font-typewriter select, body.font-typewriter button, body.font-typewriter .sys-btn {
+            font-family: 'Courier New', Courier, monospace !important;
+            font-weight: bold;
+        }
+        body.font-book, body.font-book input, body.font-book textarea, body.font-book select, body.font-book button, body.font-book .sys-btn {
+            font-family: Georgia, serif !important;
+        }
+
+        body.font-pixel h1 { font-size: 1.5rem !important; }
+        body.font-pixel .hud-name { font-size: 1.2rem !important; }
+        body.font-pixel .menu-item { font-size: 1.1rem !important; }
+        body.font-pixel .status-inputs input, body.font-pixel .def-box input { font-size: 1.2rem !important; }
+
+        /* --- EFEITOS VISUAIS: PARTICULAS E SANGUE --- */
+        .particles-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; overflow: hidden; }
+        .particle { position: absolute; background: var(--glow); border-radius: 50%; opacity: 0; animation: float-up linear infinite; }
+        @keyframes float-up { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 10% { opacity: 0.4; } 90% { opacity: 0.4; } 100% { transform: translateY(-10vh) scale(1.5); opacity: 0; } }
+
+        .blood-vignette { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9997; opacity: 0; transition: opacity 1.5s ease; box-shadow: inset 0 0 150px rgba(220, 0, 0, 0); }
+        .blood-vignette.active { opacity: 1; animation: pulse-blood 2s infinite alternate ease-in-out; }
+        @keyframes pulse-blood { 0% { box-shadow: inset 0 0 100px rgba(180, 0, 0, 0.4); } 100% { box-shadow: inset 0 0 200px rgba(255, 0, 0, 0.8); } }
+        body.theme-combat .blood-vignette { display: none !important; }
 
         /* --- COMBAT MODE THEME (CINEMÁTICO E ALTA VISIBILIDADE) --- */
         body.theme-combat {
@@ -155,7 +222,7 @@
             body, html { background-color: #ffffff !important; color: #000000 !important; padding: 0 !important; margin: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             * { color: #000000 !important; text-shadow: none !important; border-color: #000000 !important; }
             
-            .top-fixed-controls, .mute-btn, .panel-controls, .hide-in-combat, .add-item-form, #btnConcluirAtributos, .glitch-overlay, #gameMenuOverlay, .overlay-screen, .modal-overlay, #classDetails, .bonus-display, .status-alert, .minimize-btn, .drag-handle, .combat-only-panel { display: none !important; }
+            .blood-vignette, .particles-container, .top-fixed-controls, .mute-btn, .panel-controls, .hide-in-combat, .add-item-form, #btnConcluirAtributos, .glitch-overlay, #gameMenuOverlay, .overlay-screen, .modal-overlay, #classDetails, .bonus-display, .status-alert, .minimize-btn, .drag-handle, .combat-only-panel { display: none !important; }
             .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
             .pages-wrapper { display: block !important; column-count: 1 !important; }
             .page { display: block !important; opacity: 1 !important; page-break-after: always; }
@@ -446,6 +513,8 @@
 <body>
 
 <div id="glitchOverlay" class="glitch-overlay"></div>
+<div id="bloodVignette" class="blood-vignette"></div>
+<div id="particlesContainer" class="particles-container"></div>
 
 <div class="top-fixed-controls">
     <button class="fixed-menu-btn" onclick="toggleMenu()">
@@ -487,9 +556,53 @@
         <div class="menu-list" id="optionsMenuList" style="display: none;">
             <div class="menu-item highlight" onclick="toggleMenuOptions()" style="font-size: 1.8rem;"><div class="menu-icon" style="width: 35px; height: 35px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></div><span>RETORNAR AO MENU</span></div>
             <div class="menu-divider"></div>
-            <div class="options-group"><span class="options-label">TEMA DO SISTEMA</span><div class="options-row"><button id="btn-theme-default" class="sys-btn active" onclick="setTheme('default', this)">DEFAULT</button><button id="btn-theme-architect" class="sys-btn" onclick="setTheme('architect', this)">ARCHITECT</button><button id="btn-theme-light" class="sys-btn" onclick="setTheme('light', this)">LIGHT</button></div></div>
-            <div class="options-group"><span class="options-label">MODO DE EXIBIÇÃO</span><div class="options-row"><button id="btn-layout-colunas" class="sys-btn active" onclick="setLayout('colunas', this)">COLUNAS</button><button id="btn-layout-paginas" class="sys-btn" onclick="setLayout('paginas', this)">PÁGINAS</button></div></div>
-            <div class="options-group"><span class="options-label">DADOS E ARQUIVOS</span><div class="options-row"><input type="file" id="importFile" style="display: none;" accept=".json" onchange="importarFicha(event)"><button class="sys-btn" onclick="document.getElementById('importFile').click()">IMPORTAR</button><button class="sys-btn" onclick="exportarFicha()">EXPORTAR</button><button class="sys-btn" id="btnExportarPdf" onclick="exportarParaPDF()">GERAR PDF</button><button class="sys-btn" onclick="resetarFicha()" style="color: var(--alert-color); border-color: var(--alert-color);">RESETAR FICHA</button></div></div>
+            <div class="options-group">
+                <span class="options-label">TEMA DO SISTEMA</span>
+                <div class="options-row">
+                    <button id="btn-theme-default" class="sys-btn active" onclick="setTheme('default', this)">DEFAULT</button>
+                    <button id="btn-theme-architect" class="sys-btn" onclick="setTheme('architect', this)">ARCHITECT</button>
+                    <button id="btn-theme-light" class="sys-btn" onclick="setTheme('light', this)">LIGHT</button>
+                    <button id="btn-theme-ambar" class="sys-btn" onclick="setTheme('ambar', this)">ÂMBAR</button>
+                    <button id="btn-theme-ordem" class="sys-btn" onclick="setTheme('ordem', this)">ORDEM SECRETA</button>
+                    <button id="btn-theme-contencao" class="sys-btn" onclick="setTheme('contencao', this)">CONTENÇÃO</button>
+                    <button id="btn-theme-neon" class="sys-btn" onclick="setTheme('neon', this)">NEON</button>
+                </div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">FONTE</span>
+                <div class="options-row">
+                    <button id="btn-font-mono" class="sys-btn active" onclick="setFont('mono', this)">TERMINAL</button>
+                    <button id="btn-font-clean" class="sys-btn" onclick="setFont('clean', this)">LIMPA</button>
+                    <button id="btn-font-militar" class="sys-btn" onclick="setFont('militar', this)">MILITAR</button>
+                    <button id="btn-font-gotica" class="sys-btn" onclick="setFont('gotica', this)">GÓTICA</button>
+                    <button id="btn-font-pixel" class="sys-btn" onclick="setFont('pixel', this)">PIXEL</button>
+                    <button id="btn-font-typewriter" class="sys-btn" onclick="setFont('typewriter', this)">MÁQUINA</button>
+                    <button id="btn-font-book" class="sys-btn" onclick="setFont('book', this)">LIVRO</button>
+                </div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">MODO DE EXIBIÇÃO</span>
+                <div class="options-row">
+                    <button id="btn-layout-colunas" class="sys-btn active" onclick="setLayout('colunas', this)">COLUNAS</button>
+                    <button id="btn-layout-paginas" class="sys-btn" onclick="setLayout('paginas', this)">PÁGINAS</button>
+                </div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">EFEITOS VISUAIS</span>
+                <div class="options-row">
+                    <button id="btn-vignette-toggle" class="sys-btn active" onclick="toggleVignette(this)">SANGRAMENTO: LIGADO</button>
+                </div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">DADOS E ARQUIVOS</span>
+                <div class="options-row">
+                    <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importarFicha(event)">
+                    <button class="sys-btn" onclick="document.getElementById('importFile').click()">IMPORTAR</button>
+                    <button class="sys-btn" onclick="exportarFicha()">EXPORTAR</button>
+                    <button class="sys-btn" id="btnExportarPdf" onclick="exportarParaPDF()">GERAR PDF</button>
+                    <button class="sys-btn" onclick="resetarFicha()" style="color: var(--alert-color); border-color: var(--alert-color);">RESETAR FICHA</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -777,11 +890,68 @@
 
     let isMuted = false;
     let isCombatMode = false;
+    let isVignetteEnabled = true;
     let timeoutAutoSave;
     let currentRollData = { attr: '', numDice: 1 };
     let initList = [];
     let activeTurnIndex = -1;
     let combatMacros = [];
+
+    const STORAGE_KEY = 'FichaDarkSave';
+    const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon']);
+    const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
+    const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
+
+    function escapeHTML(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function readStoredSaveRaw() {
+        try {
+            return localStorage.getItem(STORAGE_KEY);
+        } catch (error) {
+            console.error('Falha ao acessar o armazenamento local.', error);
+            return null;
+        }
+    }
+
+    function readStoredSave() {
+        const raw = readStoredSaveRaw();
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            console.error('Falha ao interpretar o save local.', error);
+            return null;
+        }
+    }
+
+    function writeStoredSave(data) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            return true;
+        } catch (error) {
+            console.error('Falha ao salvar os dados localmente.', error);
+            return false;
+        }
+    }
+
+    function removeStoredSave() {
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+        } catch (error) {
+            console.error('Falha ao remover o save local.', error);
+        }
+    }
+
+    function isOverlayActive(id) {
+        return document.getElementById(id)?.classList.contains('active') ?? false;
+    }
     
     // Variáveis do Quadro Canvas (Pan e Zoom)
     let boardNodes = [];
@@ -819,6 +989,35 @@
         for(let i=0; i<boxes.length; i++) { if(i < count) boxes[i].classList.add('filled'); else boxes[i].classList.remove('filled'); }
         if(forceFirst && boxes.length > 0) boxes[0].classList.add('filled');
     }
+    
+    function initParticles() {
+        const container = document.getElementById('particlesContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        for (let i = 0; i < 40; i++) {
+            let p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            let size = Math.random() * 3 + 1;
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            container.appendChild(p);
+        }
+    }
+
+    function toggleVignette(btn) {
+        playSfx('click');
+        isVignetteEnabled = !isVignetteEnabled;
+        if (btn) {
+            btn.innerText = isVignetteEnabled ? 'SANGRAMENTO: LIGADO' : 'SANGRAMENTO: DESLIGADO';
+            btn.classList.toggle('active', isVignetteEnabled);
+        }
+        if (!isVignetteEnabled) document.getElementById('bloodVignette')?.classList.remove('active');
+        atualizarCalculos();
+        salvarLocalData();
+    }
 
     function windowInitSetup() {
         // Gera o DOM dos atributos ANTES de carregar os dados
@@ -839,6 +1038,7 @@
         }
 
         carregarLocalData(); 
+        initParticles();
         
         // Ativa listeners de mudança e cores
         document.querySelectorAll('.skill-val').forEach(el => { 
@@ -852,7 +1052,7 @@
         atualizarCalculos();
         atualizarCoresPericias();
     }
-    window.onload = windowInitSetup;
+    window.addEventListener('load', windowInitSetup, { once: true });
 
     // MACROS E COMBATE RÁPIDO
     function adicionarMacro() {
@@ -886,18 +1086,41 @@
 
     function renderMacros() {
         const list = document.getElementById('macroList');
-        list.innerHTML = '';
-        combatMacros.forEach(m => {
-            let div = document.createElement('div');
-            div.className = 'macro-item';
-            div.innerHTML = `
-                <div><span style="font-weight:bold; color:var(--text-main); letter-spacing:1px;">${m.nome}</span> <span style="font-size:0.8rem; color:var(--dim-text);">[ Atq: ${m.attr} +${m.skill} | Dano: ${m.dmg} | Crítico: ${m.crit || 'Padrão'} ]</span></div>
-                <div style="display:flex; gap:10px;">
-                    <button class="macro-btn" onclick="rolarMacro('${m.id}')">ATACAR</button>
-                    <button class="sys-btn" style="padding:2px 6px; font-size:0.7rem;" onclick="removerMacro('${m.id}')">X</button>
-                </div>
-            `;
-            list.appendChild(div);
+        if (!list) return;
+
+        list.replaceChildren();
+        combatMacros.forEach(macro => {
+            const item = document.createElement('div');
+            item.className = 'macro-item';
+
+            const info = document.createElement('div');
+            const name = document.createElement('span');
+            name.style.cssText = 'font-weight:bold; color:var(--text-main); letter-spacing:1px;';
+            name.textContent = String(macro.nome ?? '');
+
+            const details = document.createElement('span');
+            details.style.cssText = 'font-size:0.8rem; color:var(--dim-text);';
+            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} ]`;
+
+            info.append(name, details);
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display:flex; gap:10px;';
+
+            const attackButton = document.createElement('button');
+            attackButton.className = 'macro-btn';
+            attackButton.textContent = 'ATACAR';
+            attackButton.addEventListener('click', () => rolarMacro(macro.id));
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'sys-btn';
+            removeButton.style.cssText = 'padding:2px 6px; font-size:0.7rem;';
+            removeButton.textContent = 'X';
+            removeButton.addEventListener('click', () => removerMacro(macro.id));
+
+            actions.append(attackButton, removeButton);
+            item.append(info, actions);
+            list.appendChild(item);
         });
     }
 
@@ -952,7 +1175,7 @@
             } else if (c.includes('d')) {
                 if(!c.startsWith('+') && !c.startsWith('-')) c = '+' + c;
                 dmgString += c; 
-                critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO EXTRA: ${c} ]</div>`;
+                critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO EXTRA: ${escapeHTML(c)} ]</div>`;
             } else if (c.startsWith('+') || !isNaN(parseInt(c))) {
                 extraCritB = parseInt(c.replace('+', '')) || 0;
                 critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO FIXO: +${extraCritB} ]</div>`;
@@ -1002,7 +1225,7 @@
         let failHtml = isFail ? `<div style="color:var(--alert-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ FALHA CRÍTICA! ]</div>` : '';
         
         let hitHtml = `<div style="margin-bottom:15px; border-bottom:1px dashed var(--border-color); padding-bottom:10px;">
-            <div style="color:var(--dim-text); font-size:0.9rem; letter-spacing:2px;">ATAQUE (${macro.attr})</div>
+            <div style="color:var(--dim-text); font-size:0.9rem; letter-spacing:2px;">ATAQUE (${escapeHTML(macro.attr)})</div>
             <div style="font-size:1.5rem; font-weight:bold; color:${isCrit?'var(--gold-color)':(isFail?'var(--alert-color)':'var(--text-main)')};">${hitTotal} <span style="font-size:0.8rem; color:var(--dim-text); font-weight:normal;">(d20: ${chosenD20} + ${macro.skill})</span></div>
             ${actualDiceToRoll > 1 ? `<div style="font-size:0.7rem; color:var(--dim-text); margin-top: 5px;">[ ${d20Rolls.join(' | ')} ] ${isDisadvantage ? '(Desvantagem)' : ''}</div>` : ''}
         </div>`;
@@ -1019,7 +1242,7 @@
         </div>`;
 
         resultArea.innerHTML = `<div class="dice-result-box" style="text-align:center; border-color:var(--alert-color); padding-top: 15px;">
-            <div style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-bottom:15px; letter-spacing:2px;">MACRO // ${macro.nome.toUpperCase()}</div>
+            <div style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-bottom:15px; letter-spacing:2px;">MACRO // ${escapeHTML(String(macro.nome)).toUpperCase()}</div>
             ${critTextHtml}${failHtml}${hitHtml}${dmgHtml}
         </div>`;
 
@@ -1032,28 +1255,63 @@
     }
 
     function adicionarItem(nome = null, peso = null, desc = null, isLoading = false) {
-        let n = nome !== null ? nome : document.getElementById('newItemName').value.trim(); 
-        let weightInput = document.getElementById('newItemWeight').value; 
-        let p = peso !== null ? parseFloat(peso) : (weightInput ? parseFloat(weightInput) : 0); 
-        let d = desc !== null ? desc : document.getElementById('newItemDesc').value.trim();
-        
-        if (!n && !isLoading) { abrirModalCustom("ERRO // NOME DO ITEM NÃO PODE ESTAR VAZIO.", false, false, function(){}); return; }
-        
-        let id = 'item_' + Date.now() + Math.floor(Math.random() * 1000); 
-        let itemDiv = document.createElement('div'); 
-        itemDiv.className = 'inventory-item'; 
-        itemDiv.id = id;
-        itemDiv.innerHTML = `<div class="item-header"><span class="item-name">${n}</span><div><span class="item-weight" data-peso="${p}">[ PESO: ${p} ]</span><button class="item-remove hide-in-combat" onclick="removerItem('${id}')">EXCLUIR</button></div></div>${d ? `<div class="item-desc">${d}</div>` : ''}`;
-        
-        document.getElementById('inventoryList').appendChild(itemDiv);
-        
-        if (!isLoading) { 
-            document.getElementById('newItemName').value = ''; 
-            document.getElementById('newItemWeight').value = ''; 
-            document.getElementById('newItemDesc').value = ''; 
-            playSfx('box'); 
-            atualizarCarga(); 
-            salvarLocalData(); 
+        const nameInput = document.getElementById('newItemName');
+        const weightInput = document.getElementById('newItemWeight');
+        const descInput = document.getElementById('newItemDesc');
+
+        const itemName = nome !== null ? String(nome) : nameInput.value.trim();
+        const parsedWeight = peso !== null ? Number.parseFloat(peso) : Number.parseFloat(weightInput.value || '0');
+        const itemWeight = Number.isFinite(parsedWeight) ? parsedWeight : 0;
+        const itemDescription = desc !== null ? String(desc) : descInput.value.trim();
+
+        if (!itemName && !isLoading) {
+            abrirModalCustom('ERRO // NOME DO ITEM NÃO PODE ESTAR VAZIO.', false, false, function(){});
+            return;
+        }
+
+        const id = `item_${Date.now()}${Math.floor(Math.random() * 1000)}`;
+        const item = document.createElement('div');
+        item.className = 'inventory-item';
+        item.id = id;
+
+        const header = document.createElement('div');
+        header.className = 'item-header';
+
+        const nameElement = document.createElement('span');
+        nameElement.className = 'item-name';
+        nameElement.textContent = itemName;
+
+        const actions = document.createElement('div');
+        const weightElement = document.createElement('span');
+        weightElement.className = 'item-weight';
+        weightElement.dataset.peso = String(itemWeight);
+        weightElement.textContent = `[ PESO: ${itemWeight} ]`;
+
+        const removeButton = document.createElement('button');
+        removeButton.className = 'item-remove hide-in-combat';
+        removeButton.textContent = 'EXCLUIR';
+        removeButton.addEventListener('click', () => removerItem(id));
+
+        actions.append(weightElement, removeButton);
+        header.append(nameElement, actions);
+        item.appendChild(header);
+
+        if (itemDescription) {
+            const descriptionElement = document.createElement('div');
+            descriptionElement.className = 'item-desc';
+            descriptionElement.textContent = itemDescription;
+            item.appendChild(descriptionElement);
+        }
+
+        document.getElementById('inventoryList').appendChild(item);
+
+        if (!isLoading) {
+            nameInput.value = '';
+            weightInput.value = '';
+            descInput.value = '';
+            playSfx('box');
+            atualizarCarga();
+            salvarLocalData();
         }
     }
 
@@ -1099,12 +1357,12 @@
 
     // 3. EVENT LISTENERS GERAIS
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const menu = document.getElementById('gameMenuOverlay');
-            if (menu.classList.contains('active')) toggleMenu();
-            if (document.getElementById('investigationBoard').classList.contains('active')) closeOverlay('investigationBoard');
-            if (document.getElementById('initiativeBoard').classList.contains('active')) closeOverlay('initiativeBoard');
-        }
+        if (e.key !== 'Escape') return;
+
+        const menu = document.getElementById('gameMenuOverlay');
+        if (menu?.classList.contains('active')) toggleMenu();
+        if (isOverlayActive('investigationBoard')) closeOverlay('investigationBoard');
+        if (isOverlayActive('initiativeBoard')) closeOverlay('initiativeBoard');
     });
 
     document.addEventListener('input', function(e) { if(e.target.matches('input, textarea, select')) autoSalvarOtimizado(); });
@@ -1124,16 +1382,28 @@
     });
 
     // 4. SISTEMA DE AUDIO E HUD
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx = new AudioContext();
-    function initAudio() { if (audioCtx.state === 'suspended') { audioCtx.resume(); } }
+    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function getAudioContext() {
+        if (!AudioContextConstructor) return null;
+        if (!audioCtx) audioCtx = new AudioContextConstructor();
+        return audioCtx;
+    }
+
+    function initAudio() {
+        const context = getAudioContext();
+        if (context?.state === 'suspended') context.resume().catch(() => {});
+    }
     document.body.addEventListener('click', initAudio, { once: true });
 
     function playSfx(type) {
         if (isMuted) return;
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
-        osc.connect(gainNode); gainNode.connect(audioCtx.destination); const now = audioCtx.currentTime;
+        const context = getAudioContext();
+        if (!context) return;
+        if (context.state === 'suspended') context.resume().catch(() => {});
+        const osc = context.createOscillator(); const gainNode = context.createGain();
+        osc.connect(gainNode); gainNode.connect(context.destination); const now = context.currentTime;
         if (type === 'click') { osc.type = 'sine'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(80, now + 0.03); gainNode.gain.setValueAtTime(0.005, now); gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.03); osc.start(now); osc.stop(now + 0.04); } 
         else if (type === 'box') { osc.type = 'triangle'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.05); gainNode.gain.setValueAtTime(0.008, now); gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.05); osc.start(now); osc.stop(now + 0.06); } 
         else if (type === 'alert') { osc.type = 'square'; osc.frequency.setValueAtTime(120, now); osc.frequency.setValueAtTime(100, now + 0.1); gainNode.gain.setValueAtTime(0.004, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3); osc.start(now); osc.stop(now + 0.3); } 
@@ -1144,6 +1414,19 @@
 
     function toggleMute() { isMuted = !isMuted; document.getElementById('muteBtn').innerHTML = isMuted ? svgMute : svgVol; if (!isMuted) { initAudio(); playSfx('click'); } salvarLocalData(); }
     
+    function setFont(type, btnElement) {
+        if (!ALLOWED_FONTS.has(type)) return;
+        playSfx('click');
+        document.body.classList.remove(...Array.from(ALLOWED_FONTS, font => `font-${font}`).filter(Boolean));
+        if (type !== 'mono') document.body.classList.add(`font-${type}`);
+        const group = btnElement?.parentElement;
+        if (group) {
+            group.querySelectorAll('.sys-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+        salvarLocalData();
+    }
+
     function loadPortrait(event) {
         const file = event.target.files[0]; if(!file) return; const reader = new FileReader();
         reader.onload = function(e) {
@@ -1168,8 +1451,13 @@
     }
 
     function closeOverlay(id) {
-        document.getElementById('mainContainer').style.display = ''; document.querySelector('.top-fixed-controls').style.display = 'flex';
-        document.getElementById(id).classList.remove('active'); playSfx('click'); salvarLocalData();
+        const overlay = document.getElementById(id);
+        if (!overlay) return;
+        document.getElementById('mainContainer').style.display = '';
+        document.querySelector('.top-fixed-controls').style.display = 'flex';
+        overlay.classList.remove('active');
+        playSfx('click');
+        salvarLocalData();
     }
 
     function navTo(target) {
@@ -1186,8 +1474,8 @@
             }, 400); 
             return; 
         }
-        if(document.getElementById('investigationBoard').classList.contains('active')) closeOverlay('investigationBoard');
-        if(document.getElementById('initiativeBoard').classList.contains('active')) closeOverlay('initiativeBoard');
+        if (isOverlayActive('investigationBoard')) closeOverlay('investigationBoard');
+        if (isOverlayActive('initiativeBoard')) closeOverlay('initiativeBoard');
         toggleMenu(); setTimeout(() => { window.scrollTo({top: 0, behavior: 'smooth'}); }, 300);
     }
 
@@ -1220,21 +1508,76 @@
     function clearInitiative() { initList = []; activeTurnIndex = -1; playSfx('alert'); renderInitiative(); salvarLocalData(); }
     function nextTurn() { if(initList.length === 0) return; activeTurnIndex++; if(activeTurnIndex >= initList.length) activeTurnIndex = 0; playSfx('box'); renderInitiative(); salvarLocalData(); }
     function renderInitiative() {
-        const container = document.getElementById('initListContainer'); container.innerHTML = '';
-        initList.forEach((item, index) => {
-            let cl = 'init-row ' + (item.isEnemy ? 'enemy' : 'ally'); let isTurn = index === activeTurnIndex; let bgColor = isTurn ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.4)'; let bLeft = isTurn ? '5px solid var(--glow)' : '1px solid var(--border-color)'; let textColor = item.isEnemy ? 'var(--alert-color)' : 'var(--accent-green)';
-            let row = document.createElement('div'); row.className = cl; row.setAttribute('draggable', 'true'); row.style.cssText = `display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border:1px solid var(--border-color); border-left: ${bLeft}; margin-bottom:8px; background:${bgColor}; cursor: grab; transition: 0.2s;`;
-            row.innerHTML = `<div style="display:flex; align-items:center; gap:15px; color: ${textColor}"><span style="opacity: 0.5; font-size: 1.2rem; cursor: grab;" title="Arraste para reordenar">⠿</span><span style="letter-spacing:1px; font-weight:bold; font-size: 1.2rem; text-transform:uppercase;">${item.name}</span></div><button class="sys-btn" style="border-color:var(--border-color); color:var(--dim-text); transform:none; font-size:0.7rem;" onclick="removeInitiative(${item.id})">REMOVER</button>`;
-            row.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', index); row.style.opacity = '0.4'; row.style.borderColor = 'var(--glow)'; });
-            row.addEventListener('dragend', () => { row.style.opacity = '1'; row.style.borderColor = 'var(--border-color)'; });
-            row.addEventListener('dragover', (e) => { e.preventDefault(); row.style.background = 'rgba(255,255,255,0.1)'; });
-            row.addEventListener('dragleave', () => { row.style.background = bgColor; });
-            row.addEventListener('drop', (e) => {
-                e.preventDefault(); const fromIndex = parseInt(e.dataTransfer.getData('text/plain')); const toIndex = index;
-                if (fromIndex !== toIndex) { const movedItem = initList.splice(fromIndex, 1)[0]; initList.splice(toIndex, 0, movedItem);
-                    if (activeTurnIndex === fromIndex) { activeTurnIndex = toIndex; } else if (activeTurnIndex > fromIndex && activeTurnIndex <= toIndex) { activeTurnIndex--; } else if (activeTurnIndex < fromIndex && activeTurnIndex >= toIndex) { activeTurnIndex++; }
-                    playSfx('box'); renderInitiative(); salvarLocalData();
-                } else { row.style.background = bgColor; }
+        const container = document.getElementById('initListContainer');
+        if (!container) return;
+
+        container.replaceChildren();
+        initList.forEach((initiative, index) => {
+            const isTurn = index === activeTurnIndex;
+            const backgroundColor = isTurn ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.4)';
+            const leftBorder = isTurn ? '5px solid var(--glow)' : '1px solid var(--border-color)';
+            const textColor = initiative.isEnemy ? 'var(--alert-color)' : 'var(--accent-green)';
+
+            const row = document.createElement('div');
+            row.className = `init-row ${initiative.isEnemy ? 'enemy' : 'ally'}`;
+            row.draggable = true;
+            row.style.cssText = `display:flex; justify-content:space-between; align-items:center; padding:12px 15px; border:1px solid var(--border-color); border-left:${leftBorder}; margin-bottom:8px; background:${backgroundColor}; cursor:grab; transition:0.2s;`;
+
+            const identity = document.createElement('div');
+            identity.style.cssText = `display:flex; align-items:center; gap:15px; color:${textColor};`;
+
+            const handle = document.createElement('span');
+            handle.style.cssText = 'opacity:0.5; font-size:1.2rem; cursor:grab;';
+            handle.title = 'Arraste para reordenar';
+            handle.textContent = '⠿';
+
+            const name = document.createElement('span');
+            name.style.cssText = 'letter-spacing:1px; font-weight:bold; font-size:1.2rem; text-transform:uppercase;';
+            name.textContent = String(initiative.name ?? '');
+
+            identity.append(handle, name);
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'sys-btn';
+            removeButton.style.cssText = 'border-color:var(--border-color); color:var(--dim-text); transform:none; font-size:0.7rem;';
+            removeButton.textContent = 'REMOVER';
+            removeButton.addEventListener('click', () => removeInitiative(initiative.id));
+
+            row.append(identity, removeButton);
+            row.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', String(index));
+                row.style.opacity = '0.4';
+                row.style.borderColor = 'var(--glow)';
+            });
+            row.addEventListener('dragend', () => {
+                row.style.opacity = '1';
+                row.style.borderColor = 'var(--border-color)';
+            });
+            row.addEventListener('dragover', e => {
+                e.preventDefault();
+                row.style.background = 'rgba(255,255,255,0.1)';
+            });
+            row.addEventListener('dragleave', () => { row.style.background = backgroundColor; });
+            row.addEventListener('drop', e => {
+                e.preventDefault();
+                const fromIndex = Number.parseInt(e.dataTransfer.getData('text/plain'), 10);
+                const toIndex = index;
+                if (!Number.isInteger(fromIndex) || fromIndex === toIndex) {
+                    row.style.background = backgroundColor;
+                    return;
+                }
+
+                const movedItem = initList.splice(fromIndex, 1)[0];
+                if (!movedItem) return;
+                initList.splice(toIndex, 0, movedItem);
+
+                if (activeTurnIndex === fromIndex) activeTurnIndex = toIndex;
+                else if (activeTurnIndex > fromIndex && activeTurnIndex <= toIndex) activeTurnIndex--;
+                else if (activeTurnIndex < fromIndex && activeTurnIndex >= toIndex) activeTurnIndex++;
+
+                playSfx('box');
+                renderInitiative();
+                salvarLocalData();
             });
             container.appendChild(row);
         });
@@ -1250,23 +1593,41 @@
         drawBoardLines(); 
     }
 
-    function addLogEntry(text = "", date = "", id=null) {
-        playSfx('box');
-        let logId = id || 'log_' + Date.now();
-        let d = date || new Date().toLocaleDateString('pt-BR');
-        let t = text;
-        
-        let logHtml = `
-            <div class="log-entry" id="${logId}" style="margin-bottom: 5px; background: rgba(0,0,0,0.3); border-left: 2px solid var(--accent-green); padding: 10px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 5px; align-items:center;">
-                    <input type="text" value="${d}" style="width: 100px; font-size: 0.75rem; padding: 2px; color: var(--accent-green); background: transparent; border: none; border-bottom: 1px dashed var(--dim-text);" onchange="autoSalvarOtimizado()">
-                    <button class="sys-btn" style="padding: 2px 5px; font-size: 0.6rem; color: var(--alert-color); border-color: var(--alert-color);" onclick="deleteLog('${logId}')">X</button>
-                </div>
-                <textarea style="width: 100%; min-height: 80px; font-size: 0.85rem; padding: 5px; background: transparent; border: none; resize: vertical;" placeholder="Registro da missão..." onchange="autoSalvarOtimizado()">${t}</textarea>
-            </div>
-        `;
-        document.getElementById('logList').insertAdjacentHTML('afterbegin', logHtml);
-        if(!id) salvarLocalData();
+    function addLogEntry(text = '', date = '', id = null) {
+        if (!id) playSfx('box');
+
+        const logId = id || `log_${Date.now()}`;
+        const log = document.createElement('div');
+        log.className = 'log-entry';
+        log.id = logId;
+        log.style.cssText = 'margin-bottom:5px; background:rgba(0,0,0,0.3); border-left:2px solid var(--accent-green); padding:10px;';
+
+        const header = document.createElement('div');
+        header.style.cssText = 'display:flex; justify-content:space-between; margin-bottom:5px; align-items:center;';
+
+        const dateInput = document.createElement('input');
+        dateInput.type = 'text';
+        dateInput.value = date || new Date().toLocaleDateString('pt-BR');
+        dateInput.style.cssText = 'width:100px; font-size:0.75rem; padding:2px; color:var(--accent-green); background:transparent; border:none; border-bottom:1px dashed var(--dim-text);';
+        dateInput.addEventListener('change', autoSalvarOtimizado);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'sys-btn';
+        deleteButton.style.cssText = 'padding:2px 5px; font-size:0.6rem; color:var(--alert-color); border-color:var(--alert-color);';
+        deleteButton.textContent = 'X';
+        deleteButton.addEventListener('click', () => deleteLog(logId));
+
+        const textarea = document.createElement('textarea');
+        textarea.value = String(text ?? '');
+        textarea.placeholder = 'Registro da missão...';
+        textarea.style.cssText = 'width:100%; min-height:80px; font-size:0.85rem; padding:5px; background:transparent; border:none; resize:vertical;';
+        textarea.addEventListener('change', autoSalvarOtimizado);
+
+        header.append(dateInput, deleteButton);
+        log.append(header, textarea);
+        document.getElementById('logList').prepend(log);
+
+        if (!id) salvarLocalData();
     }
 
     function deleteLog(id) {
@@ -1359,7 +1720,7 @@
             salvarLocalData();
         }
         if (isDraggingNode && draggedNodeId) { 
-            document.getElementById(draggedNodeId).style.zIndex = ""; 
+            const draggedNote = document.getElementById(draggedNodeId); if (draggedNote) draggedNote.style.zIndex = ''; 
             isDraggingNode = false; 
             draggedNodeId = null; 
             salvarLocalData(); 
@@ -1381,22 +1742,85 @@
         salvarLocalData();
     }
 
-    function addBoardNote(id=null, x=null, y=null, text="") {
-        playSfx('box'); 
-        let noteId = id || 'note_' + Date.now(); 
-        let nx = x !== null ? x : ((viewport.offsetWidth / 2) - boardPanX - 125) / boardScale;
-        let ny = y !== null ? y : ((viewport.offsetHeight / 2) - boardPanY - 75) / boardScale;
+    function addBoardNote(id = null, x = null, y = null, text = '') {
+        if (!id) playSfx('box');
 
-        let noteHtml = `<div class="board-note" id="${noteId}" style="left: ${nx}px; top: ${ny}px;"><div class="board-note-header" onmousedown="startNoteDrag(event, '${noteId}')"><span class="board-note-title">PISTA // ${noteId.substring(5, 9)}</span><div class="board-note-actions"><button class="board-note-btn link-btn" title="Vincular Anotação" onclick="startBoardLink('${noteId}')">🔗</button><button class="board-note-btn" title="Excluir" onclick="deleteBoardNote('${noteId}')">X</button></div></div><div class="board-note-body"><textarea placeholder=">_ Digite aqui..." oninput="autoSalvarOtimizado()" onmousedown="event.stopPropagation()">${text}</textarea></div></div>`;
-        document.getElementById('boardNodes').insertAdjacentHTML('beforeend', noteHtml);
-        if(!id) { boardNodes.push({id: noteId, x: nx, y: ny, text: text}); salvarLocalData(); }
+        const noteId = id || `note_${Date.now()}`;
+        const nx = x !== null ? Number(x) : ((viewport.offsetWidth / 2) - boardPanX - 125) / boardScale;
+        const ny = y !== null ? Number(y) : ((viewport.offsetHeight / 2) - boardPanY - 75) / boardScale;
+
+        const note = document.createElement('div');
+        note.className = 'board-note';
+        note.id = noteId;
+        note.style.left = `${Number.isFinite(nx) ? nx : 0}px`;
+        note.style.top = `${Number.isFinite(ny) ? ny : 0}px`;
+
+        const header = document.createElement('div');
+        header.className = 'board-note-header';
+        header.addEventListener('mousedown', event => startNoteDrag(event, noteId));
+
+        const title = document.createElement('span');
+        title.className = 'board-note-title';
+        title.textContent = `PISTA // ${String(noteId).substring(5, 9)}`;
+
+        const actions = document.createElement('div');
+        actions.className = 'board-note-actions';
+
+        const linkButton = document.createElement('button');
+        linkButton.className = 'board-note-btn link-btn';
+        linkButton.title = 'Vincular Anotação';
+        linkButton.textContent = '🔗';
+        linkButton.addEventListener('click', () => startBoardLink(noteId));
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'board-note-btn';
+        deleteButton.title = 'Excluir';
+        deleteButton.textContent = 'X';
+        deleteButton.addEventListener('click', () => deleteBoardNote(noteId));
+
+        const body = document.createElement('div');
+        body.className = 'board-note-body';
+
+        const textarea = document.createElement('textarea');
+        textarea.placeholder = '>_ Digite aqui...';
+        textarea.value = String(text ?? '');
+        textarea.addEventListener('input', autoSalvarOtimizado);
+        textarea.addEventListener('mousedown', event => event.stopPropagation());
+
+        actions.append(linkButton, deleteButton);
+        header.append(title, actions);
+        body.appendChild(textarea);
+        note.append(header, body);
+        document.getElementById('boardNodes').appendChild(note);
+
+        if (!id) {
+            boardNodes.push({ id: noteId, x: Number.isFinite(nx) ? nx : 0, y: Number.isFinite(ny) ? ny : 0, text: String(text ?? '') });
+            salvarLocalData();
+        }
+    }
+
+    function deleteBoardNote(id) {
+        playSfx('click');
+        document.getElementById(id)?.remove();
+        boardNodes = boardNodes.filter(node => node.id !== id);
+        boardLinks = boardLinks.filter(link => link.from !== id && link.to !== id);
+
+        if (linkingStartId === id) {
+            isLinkingMode = false;
+            linkingStartId = null;
+            document.getElementById('tempLinkLine')?.remove();
+        }
+
+        drawBoardLines();
+        salvarLocalData();
     }
     
     function startNoteDrag(e, id) { 
-        if(e.target.tagName === 'BUTTON') return; 
+        if (e.target.closest('button')) return;
+        const note = document.getElementById(id);
+        if (!note) return;
         isDraggingNode = true; 
         draggedNodeId = id; 
-        let note = document.getElementById(id); 
         let rect = note.getBoundingClientRect(); 
         dragOffsetX = (e.clientX - rect.left) / boardScale; 
         dragOffsetY = (e.clientY - rect.top) / boardScale; 
@@ -1404,11 +1828,31 @@
     }
     
     function startBoardLink(id) {
-        playSfx('click'); let note = document.getElementById(id);
-        if (!isLinkingMode) { isLinkingMode = true; linkingStartId = id; note.classList.add('linking'); } else {
-            if (id !== linkingStartId) { let linkExists = boardLinks.find(l => (l.from === linkingStartId && l.to === id) || (l.from === id && l.to === linkingStartId)); if (!linkExists) { boardLinks.push({from: linkingStartId, to: id}); salvarLocalData(); } }
-            isLinkingMode = false; document.getElementById(linkingStartId).classList.remove('linking'); linkingStartId = null; let tempLine = document.getElementById('tempLinkLine'); if(tempLine) tempLine.remove(); drawBoardLines();
+        playSfx('click');
+        const note = document.getElementById(id);
+        if (!note) return;
+
+        if (!isLinkingMode) {
+            isLinkingMode = true;
+            linkingStartId = id;
+            note.classList.add('linking');
+            return;
         }
+
+        if (id !== linkingStartId) {
+            const linkExists = boardLinks.some(link =>
+                (link.from === linkingStartId && link.to === id) ||
+                (link.from === id && link.to === linkingStartId)
+            );
+            if (!linkExists) boardLinks.push({ from: linkingStartId, to: id });
+        }
+
+        document.getElementById(linkingStartId)?.classList.remove('linking');
+        isLinkingMode = false;
+        linkingStartId = null;
+        document.getElementById('tempLinkLine')?.remove();
+        drawBoardLines();
+        salvarLocalData();
     }
     
     function drawBoardLines() {
@@ -1434,6 +1878,14 @@
         if(isCombatMode) return; playSfx('click'); document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
         if (themeName !== 'default') document.body.classList.add('theme-' + themeName);
         const group = btnElement.parentElement; group.querySelectorAll('.sys-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active');
+        
+        // Reaplica a fonte se estiver ativa
+        let activeFontBtn = document.querySelector('[id^="btn-font-"].active');
+        if (activeFontBtn) {
+            let fontType = activeFontBtn.id.replace('btn-font-', '');
+            if(fontType !== 'mono') document.body.classList.add('font-' + fontType);
+        }
+
         atualizarCoresPericias(); salvarLocalData();
     }
     function setLayout(layoutName, btnElement) {
@@ -1450,18 +1902,66 @@
             elementosPag2.forEach(id => { let el = document.getElementById(id); if(el) pag2.appendChild(el); }); 
         } 
     }
-    function toggleMinimize(btn) { playSfx('click'); const panel = btn.closest('.panel'); const content = panel.querySelector('.panel-content'); panel.classList.toggle('collapsed'); content.style.display = panel.classList.contains('collapsed') ? 'none' : 'block'; btn.innerText = panel.classList.contains('collapsed') ? '+' : '_'; salvarLocalData(); }
+    function toggleMinimize(btn) {
+        const panel = btn.closest('.panel');
+        const content = panel?.querySelector('.panel-content');
+        if (!panel || !content) return;
+        playSfx('click');
+        panel.classList.toggle('collapsed');
+        content.style.display = panel.classList.contains('collapsed') ? 'none' : 'block';
+        btn.innerText = panel.classList.contains('collapsed') ? '+' : '_';
+        salvarLocalData();
+    }
     
     function toggleCombatMode(btnElement) {
-        playSfx('glitch'); let overlay = document.getElementById('glitchOverlay'); overlay.classList.remove('trigger-glitch'); void overlay.offsetWidth; overlay.classList.add('trigger-glitch');
-        setTimeout(() => { isCombatMode = !isCombatMode;
+        if (!btnElement) return;
+        playSfx('glitch');
+
+        const overlay = document.getElementById('glitchOverlay');
+        if (overlay) {
+            overlay.classList.remove('trigger-glitch');
+            void overlay.offsetWidth;
+            overlay.classList.add('trigger-glitch');
+        }
+
+        setTimeout(() => {
+            isCombatMode = !isCombatMode;
             if (isCombatMode) {
-                document.body.setAttribute('data-prev-theme', document.body.className.replace('layout-pages', '').trim()); document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); document.body.classList.add('theme-combat'); btnElement.classList.add('active'); filtrarPericiasCombate(); if (document.body.classList.contains('layout-pages')) { document.body.classList.remove('layout-pages'); } const menu = document.getElementById('gameMenuOverlay'); if (menu.classList.contains('active')) toggleMenu();
+                const previousTheme = Array.from(document.body.classList)
+                    .filter(className => className.startsWith('theme-') && className !== 'theme-combat')
+                    .join(' ');
+                document.body.setAttribute('data-prev-theme', previousTheme);
+                document.body.className = document.body.className
+                    .replace(/\btheme-\w+\b/g, '')
+                    .replace(/\blayout-pages\b/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                document.body.classList.add('theme-combat');
+                btnElement.classList.add('active');
+                filtrarPericiasCombate();
+
+                const menu = document.getElementById('gameMenuOverlay');
+                if (menu?.classList.contains('active')) toggleMenu();
             } else {
-                document.body.classList.remove('theme-combat'); let prevTheme = document.body.getAttribute('data-prev-theme'); if(prevTheme) document.body.className += ' ' + prevTheme; btnElement.classList.remove('active'); mostrarTodasPericias(); repararDistribuicaoColunas(); let saved = localStorage.getItem('FichaDarkSave'); if (saved) { let d = JSON.parse(saved); if (d.layout === 'paginas') document.body.classList.add('layout-pages'); }
+                document.body.classList.remove('theme-combat');
+                const previousTheme = document.body.getAttribute('data-prev-theme');
+                if (previousTheme) document.body.classList.add(...previousTheme.split(/\s+/).filter(Boolean));
+                btnElement.classList.remove('active');
+                mostrarTodasPericias();
+                repararDistribuicaoColunas();
+
+                const saved = readStoredSave();
+                if (saved?.layout === 'paginas') document.body.classList.add('layout-pages');
             }
+            
+            let activeFontBtn = document.querySelector('[id^="btn-font-"].active');
+            if (activeFontBtn) {
+                let fontType = activeFontBtn.id.replace('btn-font-', '');
+                if(fontType !== 'mono') document.body.classList.add('font-' + fontType);
+            }
+
             salvarLocalData();
-        }, 150); 
+        }, 150);
     }
     
     function filtrarPericiasCombate() { document.querySelectorAll('.skill-row').forEach(row => { let select = row.querySelector('.skill-val'); if (select && select.value === "+0") row.classList.add('hide-in-combat'); else row.classList.remove('hide-in-combat'); }); document.querySelectorAll('.skill-category').forEach(cat => { let hasVisible = Array.from(cat.querySelectorAll('.skill-row')).some(r => !r.classList.contains('hide-in-combat')); if (!hasVisible) cat.classList.add('hide-in-combat'); else cat.classList.remove('hide-in-combat'); }); }
@@ -1512,7 +2012,14 @@
         }, 1200);
     }
     
-    function fillAttributes(container, index) { let boxes = container.children; for(let i=0; i<5; i++) { if(i < index) boxes[i].classList.add('filled'); else boxes[i].classList.remove('filled'); } boxes[0].classList.add('filled'); playSfx('box'); }
+    function fillAttributes(container, index) {
+        if (!container) return;
+        const boxes = Array.from(container.children);
+        if (boxes.length === 0) return;
+        const filledCount = Math.max(1, Math.min(boxes.length, Number.parseInt(index, 10) || 1));
+        boxes.forEach((box, boxIndex) => box.classList.toggle('filled', boxIndex < filledCount));
+        playSfx('box');
+    }
     function toggleBox(element) { element.classList.toggle('filled'); playSfx('box'); salvarLocalData(); }
     
     function atualizarCoresPericias() {
@@ -1582,6 +2089,19 @@
     }
     function atualizarStatusVDSAN() {
         let vd_atual_val = parseInt(document.getElementById('vd_atual').value) || 0; let vd_max_val = parseInt(document.getElementById('vd_max').value) || 1; let vdStatusText = "";
+        
+        // EFEITO SANGUE (VIGNETTE)
+        let blood = document.getElementById('bloodVignette');
+        if (blood && vd_max_val > 10 && isVignetteEnabled) {
+            if (vd_atual_val <= Math.floor(vd_max_val / 2)) {
+                blood.classList.add('active');
+            } else {
+                blood.classList.remove('active');
+            }
+        } else if (blood) {
+            blood.classList.remove('active');
+        }
+
         if (vd_atual_val <= -5) vdStatusText = "MORTO"; else if (vd_atual_val <= -3) vdStatusText = "MORRENDO (Necessita estabilização)"; else if (vd_atual_val <= 0) vdStatusText = "INCONSCIENTE (Até ser estabilizado)"; else if (vd_atual_val <= Math.floor(vd_max_val / 2)) vdStatusText = "LESIONADO (FOR/DES/VIG pela metade)";
         let vdDisplay = document.getElementById('vd_status_display'); if(vdDisplay) { vdDisplay.innerText = vdStatusText; vdDisplay.style.color = (vd_atual_val <= Math.floor(vd_max_val/2)) ? "var(--alert-color)" : "var(--accent-green)"; }
         let san_atual_val = parseInt(document.getElementById('san_atual').value) || 0; let san_max_val = parseInt(document.getElementById('san_max').value) || 1; let sanStatusText = ""; let btnInstavel = document.getElementById('btnEfeitoInstavel');
@@ -1624,7 +2144,18 @@
         let updatedLogs = []; document.querySelectorAll('.log-entry').forEach(el => { updatedLogs.push({ id: el.id, date: el.querySelector('input').value, text: el.querySelector('textarea').value }); });
 
         let imgBase64 = ''; let portraitImg = document.getElementById('portraitImg'); if(portraitImg && portraitImg.style.display === 'block') { imgBase64 = portraitImg.src; }
-        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').trim(); if(isCombatMode) { savedTheme = document.body.getAttribute('data-prev-theme') || 'theme-default'; }
+        
+        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').replace(/font-\w+/g, '').trim(); 
+        if(isCombatMode) { savedTheme = document.body.getAttribute('data-prev-theme') || 'theme-default'; }
+        
+        let savedFont = 'mono';
+        if(document.body.classList.contains('font-clean')) savedFont = 'clean';
+        else if(document.body.classList.contains('font-militar')) savedFont = 'militar';
+        else if(document.body.classList.contains('font-gotica')) savedFont = 'gotica';
+        else if(document.body.classList.contains('font-pixel')) savedFont = 'pixel';
+        else if(document.body.classList.contains('font-typewriter')) savedFont = 'typewriter';
+        else if(document.body.classList.contains('font-book')) savedFont = 'book';
+
         let pag1Order = Array.from(document.getElementById('pag1').children).filter(e => e.classList.contains('panel') || e.id === 'panel-attr-specials').map(e => e.id);
         let pag2Order = Array.from(document.getElementById('pag2').children).filter(e => e.classList.contains('panel')).map(e => e.id);
         let collapsedPanels = Array.from(document.querySelectorAll('.panel.collapsed')).map(e => e.id);
@@ -1646,27 +2177,51 @@
         
         const data = {
             version: 3, dataMap: dataMap, safeBoxes: safeBoxes,
-            theme: savedTheme, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
+            theme: savedTheme, fontType: savedFont, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
+            vignette: isVignetteEnabled,
             items: inventoryItems, combatMode: isCombatMode, portrait: imgBase64,
             panelState: { pag1: pag1Order, pag2: pag2Order, collapsed: collapsedPanels },
             board: { notes: updatedBoardNotes, links: boardLinks, logs: updatedLogs },
             initiative: { list: initList, turn: activeTurnIndex }, macros: combatMacros
         };
-        localStorage.setItem('FichaDarkSave', JSON.stringify(data));
+        writeStoredSave(data);
+        return data;
     }
 
     function exportarFicha() {
-        playSfx('click'); salvarLocalData();
-        let saved = localStorage.getItem('FichaDarkSave');
-        const blob = new Blob([saved], { type: "application/json" }); const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); let nomeChar = document.querySelectorAll('input[type="text"]')[0].value || "Desconhecido"; a.href = url; a.download = `DarkDashboard_${nomeChar.replace(/\s+/g, '_')}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        playSfx('click');
+        const data = salvarLocalData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        const characterName = document.getElementById('charNameInput')?.value || 'Desconhecido';
+        const safeName = characterName.trim().replace(/[^a-zA-Z0-9À-ÿ_-]+/g, '_').replace(/^_+|_+$/g, '') || 'Desconhecido';
+        anchor.href = url;
+        anchor.download = `DarkDashboard_${safeName}.json`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
     }
 
     function importarFicha(event) {
-        playSfx('click'); const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
-        reader.onload = function(e) { try { processAndLoadDataMap(JSON.parse(e.target.result)); abrirModalCustom("SISTEMA // Sincronização concluída. Dados carregados com sucesso.", false, false, function(){}); } catch (err) { abrirModalCustom("ERRO CRÍTICO // Estrutura de arquivo corrompida ou inválida.", false, false, function(){}); console.error(err); } };
-        reader.readAsText(file); event.target.value = ''; 
+        playSfx('click');
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                processAndLoadDataMap(JSON.parse(e.target.result));
+                salvarLocalData();
+                abrirModalCustom('SISTEMA // Sincronização concluída. Dados carregados com sucesso.', false, false, function(){});
+            } catch (error) {
+                abrirModalCustom('ERRO CRÍTICO // Estrutura de arquivo corrompida ou inválida.', false, false, function(){});
+                console.error(error);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     }
 
     function processarLoadLegado(data) {
@@ -1680,7 +2235,7 @@
         byId('bonus_vd', data.inputs[19] || 0); byId('bonus_san', data.inputs[20] || 0); byId('bonus_pe', data.inputs[21] || 0); byId('bonus_def', data.inputs[23] || 0);
         let skillSelects = document.querySelectorAll('.skill-val'); for(let i=0; i<25; i++) { if(skillSelects[i] && data.selects[i]) skillSelects[i].value = data.selects[i]; }
         let cSelect = document.getElementById('classeSelect');
-        if(cSelect && data.selects[25]) { cSelect.value = data.selects[25]; cSelect.disabled = true; const subSelect = document.getElementById('subclasseSelect'); subSelect.innerHTML = '<option value="">-- SELECIONE --</option>'; bancoClasses[data.selects[25]].forEach(sub => { let option = document.createElement("option"); option.value = sub.toLowerCase(); option.textContent = sub; subSelect.appendChild(option); }); subSelect.value = data.selects[26] || ""; if(data.selects[26]) subSelect.disabled = true; }
+        if(cSelect && data.selects[25]) { cSelect.value = data.selects[25]; cSelect.disabled = true; const subSelect = document.getElementById('subclasseSelect'); subSelect.innerHTML = '<option value="">-- SELECIONE --</option>'; (bancoClasses[data.selects[25]] || []).forEach(sub => { let option = document.createElement("option"); option.value = sub.toLowerCase(); option.textContent = sub; subSelect.appendChild(option); }); subSelect.value = data.selects[26] || ""; if(data.selects[26]) subSelect.disabled = true; }
         const textareas = document.querySelectorAll('.container textarea'); if(textareas[0]) textareas[0].value = data.textareas[0] || ""; if(textareas[2]) textareas[2].value = data.textareas[1] || "";
     }
 
@@ -1688,21 +2243,115 @@
         const inputs = document.querySelectorAll('.container input:not([type="file"]):not([type="checkbox"]):not(#initName):not(#initRoll):not(#macroName):not(#macroCrit):not(#macroDmg):not(#macroSkill)'); if (data.inputs) { data.inputs.forEach((val, i) => { if(inputs[i]) inputs[i].value = val; }); }
         const textareas = document.querySelectorAll('.container textarea'); if(data.textareas) { data.textareas.forEach((val, i) => { if(textareas[i]) textareas[i].value = val; }); }
         const selects = document.querySelectorAll('.container select:not(#diceSkillSelect):not(#macroAttr)');
-        if(data.selects) { if (data.selects[0]) { selects[0].value = data.selects[0]; if (data.selects[0] !== "") { selects[0].disabled = true; const subclasseSelect = document.getElementById("subclasseSelect"); subclasseSelect.innerHTML = '<option value="">-- SELECIONE --</option>'; bancoClasses[data.selects[0]].forEach(sub => { let option = document.createElement("option"); option.value = sub.toLowerCase(); option.textContent = sub; subclasseSelect.appendChild(option); }); } } if (data.selects[1] && data.selects[1] !== "") { selects[1].value = data.selects[1]; selects[1].disabled = true; } data.selects.forEach((val, i) => { if(selects[i]) selects[i].value = val; }); }
+        if(data.selects) { if (data.selects[0]) { selects[0].value = data.selects[0]; if (data.selects[0] !== "") { selects[0].disabled = true; const subclasseSelect = document.getElementById("subclasseSelect"); subclasseSelect.innerHTML = '<option value="">-- SELECIONE --</option>'; (bancoClasses[data.selects[0]] || []).forEach(sub => { let option = document.createElement("option"); option.value = sub.toLowerCase(); option.textContent = sub; subclasseSelect.appendChild(option); }); } } if (data.selects[1] && data.selects[1] !== "") { selects[1].value = data.selects[1]; selects[1].disabled = true; } data.selects.forEach((val, i) => { if(selects[i]) selects[i].value = val; }); }
     }
 
     function processAndLoadDataMap(data) {
-        if (data.muted !== undefined) { isMuted = data.muted; document.getElementById('muteBtn').innerHTML = isMuted ? svgMute : svgVol; }
-        if (data.theme) { document.body.className = document.body.className.replace(/theme-\w+/g, '').trim(); if(data.theme !== 'theme-default' && data.theme !== '') { document.body.classList.add(data.theme); } document.querySelectorAll('.options-row .sys-btn').forEach(btn => { if(btn.id.includes('theme')) btn.classList.remove('active'); }); let themeName = data.theme.replace('theme-', '') || 'default'; let tBtn = document.getElementById('btn-theme-' + themeName); if(tBtn) tBtn.classList.add('active'); }
-        if (data.layout) { if (data.layout === 'paginas') document.body.classList.add('layout-pages'); document.querySelectorAll('.options-row .sys-btn').forEach(btn => { if(btn.id.includes('layout')) btn.classList.remove('active'); }); let lBtn = document.getElementById('btn-layout-' + data.layout); if(lBtn) lBtn.classList.add('active'); }
-        if (data.panelState) {
-            const pag1 = document.getElementById('pag1'); const pag2 = document.getElementById('pag2') || document.createElement('div'); if(!document.getElementById('pag2')) { pag2.id = 'pag2'; pag2.className = 'page active'; document.querySelector('.pages-wrapper').appendChild(pag2); }
-            let savedPag1 = data.panelState.pag1 || []; let savedPag2 = data.panelState.pag2 || [];
-            if(savedPag2.length === 0) { savedPag1 = ['panel-id', 'panel-vitals', 'panel-attr-specials', 'panel-abilities', 'panel-skills']; savedPag2 = ['panel-inventory', 'panel-conditions', 'panel-background']; }
-            savedPag1.forEach(id => { const el = document.getElementById(id); if(el) pag1.appendChild(el); }); savedPag2.forEach(id => { const el = document.getElementById(id); if(el) pag2.appendChild(el); });
-            data.panelState.collapsed.forEach(id => { const el = document.getElementById(id); if(el && id !== "") { el.classList.add('collapsed'); const minBtn = el.querySelector('.minimize-btn'); if(minBtn) minBtn.innerText = '+'; const content = el.querySelector('.panel-content'); if(content) content.style.display = 'none'; } });
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new TypeError('Estrutura de save inválida.');
         }
-        if (data.portrait && data.portrait !== "") { document.getElementById('portraitImg').src = data.portrait; document.getElementById('portraitImg').style.display = 'block'; document.getElementById('portraitPlaceholder').style.display = 'none'; }
+
+        if (data.muted !== undefined) {
+            isMuted = Boolean(data.muted);
+            document.getElementById('muteBtn').innerHTML = isMuted ? svgMute : svgVol;
+        }
+
+        if (typeof data.theme === 'string') {
+            const theme = ALLOWED_THEMES.has(data.theme) ? data.theme : '';
+            document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+            if (theme && theme !== 'theme-default') document.body.classList.add(theme);
+            document.querySelectorAll('.options-row .sys-btn').forEach(btn => {
+                if (btn.id.includes('theme')) btn.classList.remove('active');
+            });
+            const themeName = theme.replace('theme-', '') || 'default';
+            document.getElementById(`btn-theme-${themeName}`)?.classList.add('active');
+        }
+
+        if (typeof data.layout === 'string' && ALLOWED_LAYOUTS.has(data.layout)) {
+            document.body.classList.toggle('layout-pages', data.layout === 'paginas');
+            document.querySelectorAll('.options-row .sys-btn').forEach(btn => {
+                if (btn.id.includes('layout')) btn.classList.remove('active');
+            });
+            document.getElementById(`btn-layout-${data.layout}`)?.classList.add('active');
+        }
+
+        if (data.vignette !== undefined) {
+            isVignetteEnabled = Boolean(data.vignette);
+        }
+        const vignetteButton = document.getElementById('btn-vignette-toggle');
+        if (vignetteButton) {
+            vignetteButton.innerText = isVignetteEnabled ? 'SANGRAMENTO: LIGADO' : 'SANGRAMENTO: DESLIGADO';
+            vignetteButton.classList.toggle('active', isVignetteEnabled);
+        }
+        if (!isVignetteEnabled) document.getElementById('bloodVignette')?.classList.remove('active');
+
+        document.body.classList.remove(...Array.from(ALLOWED_FONTS, font => `font-${font}`).filter(Boolean));
+        document.querySelectorAll('[id^="btn-font-"]').forEach(btn => btn.classList.remove('active'));
+        const requestedFont = typeof data.fontType === 'string'
+            ? data.fontType
+            : (data.fontClean ? 'clean' : 'mono');
+        const fontType = ALLOWED_FONTS.has(requestedFont) ? requestedFont : 'mono';
+        if (fontType !== 'mono') document.body.classList.add(`font-${fontType}`);
+        document.getElementById(`btn-font-${fontType}`)?.classList.add('active');
+
+        if (data.panelState && typeof data.panelState === 'object') {
+            const pag1 = document.getElementById('pag1');
+            let pag2 = document.getElementById('pag2');
+            if (!pag2) {
+                pag2 = document.createElement('div');
+                pag2.id = 'pag2';
+                pag2.className = 'page active';
+                document.querySelector('.pages-wrapper').appendChild(pag2);
+            }
+
+            let savedPag1 = Array.isArray(data.panelState.pag1) ? data.panelState.pag1 : [];
+            let savedPag2 = Array.isArray(data.panelState.pag2) ? data.panelState.pag2 : [];
+            if (savedPag2.length === 0) {
+                savedPag1 = ['panel-id', 'panel-vitals', 'panel-attr-specials', 'panel-abilities', 'panel-skills'];
+                savedPag2 = ['panel-inventory', 'panel-conditions', 'panel-background'];
+            }
+
+            savedPag1.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) pag1.appendChild(element);
+            });
+            savedPag2.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) pag2.appendChild(element);
+            });
+
+            document.querySelectorAll('.panel.collapsed').forEach(panel => {
+                panel.classList.remove('collapsed');
+                const content = panel.querySelector('.panel-content');
+                if (content) content.style.display = '';
+                const button = panel.querySelector('.minimize-btn');
+                if (button) button.innerText = '_';
+            });
+
+            const collapsed = Array.isArray(data.panelState.collapsed) ? data.panelState.collapsed : [];
+            collapsed.forEach(id => {
+                const element = document.getElementById(id);
+                if (!element) return;
+                element.classList.add('collapsed');
+                const button = element.querySelector('.minimize-btn');
+                if (button) button.innerText = '+';
+                const content = element.querySelector('.panel-content');
+                if (content) content.style.display = 'none';
+            });
+        }
+
+        const portraitImg = document.getElementById('portraitImg');
+        const portraitPlaceholder = document.getElementById('portraitPlaceholder');
+        if (typeof data.portrait === 'string' && data.portrait) {
+            portraitImg.src = data.portrait;
+            portraitImg.style.display = 'block';
+            portraitPlaceholder.style.display = 'none';
+        } else if (data.portrait === '') {
+            portraitImg.removeAttribute('src');
+            portraitImg.style.display = 'none';
+            portraitPlaceholder.style.display = 'block';
+
+        }
         
         // NOVO SISTEMA DE LOAD V3
         if (data.version && data.version >= 3) {
@@ -1752,25 +2401,62 @@
             if(data.boxes) { const boxes = document.querySelectorAll('.container .box'); data.boxes.forEach((isFilled, i) => { if(boxes[i]) { if (isFilled) boxes[i].classList.add('filled'); else boxes[i].classList.remove('filled'); } }); }
         }
 
-        if (data.items) { document.getElementById('inventoryList').innerHTML = ''; data.items.forEach(it => adicionarItem(it.nome, it.peso, it.desc, true)); }
-        if (data.initiative) { initList = data.initiative.list || []; activeTurnIndex = data.initiative.turn || -1; }
-        if (data.macros) { 
-            combatMacros = data.macros.map(m => ({
-                id: m.id,
-                nome: m.nome,
-                attr: m.attr || 'FOR',
-                skill: m.skill !== undefined ? m.skill : (m.hit || 0),
-                crit: m.crit || '',
-                dmg: m.dmg
-            })); 
-            renderMacros(); 
+        if (Array.isArray(data.items)) {
+            document.getElementById('inventoryList').replaceChildren();
+            data.items.forEach(item => adicionarItem(item?.nome, item?.peso, item?.desc, true));
+        }
+
+        if (data.initiative && typeof data.initiative === 'object') {
+            initList = Array.isArray(data.initiative.list)
+                ? data.initiative.list.map((item, index) => ({
+                    id: item?.id ?? `initiative_${Date.now()}_${index}`,
+                    name: String(item?.name ?? (item?.isEnemy ? 'HOSTIL' : 'ALIADO')),
+                    isEnemy: Boolean(item?.isEnemy)
+                }))
+                : [];
+            activeTurnIndex = Number.isInteger(data.initiative.turn) ? data.initiative.turn : -1;
+            if (activeTurnIndex >= initList.length) activeTurnIndex = initList.length ? 0 : -1;
+            renderInitiative();
+        }
+
+        if (Array.isArray(data.macros)) {
+            combatMacros = data.macros.map((macro, index) => ({
+                id: macro?.id ?? `macro_${Date.now()}_${index}`,
+                nome: String(macro?.nome ?? ''),
+                attr: ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'].includes(macro?.attr) ? macro.attr : 'FOR',
+                skill: Number.parseInt(macro?.skill ?? macro?.hit, 10) || 0,
+                crit: String(macro?.crit ?? ''),
+                dmg: String(macro?.dmg ?? '0')
+            }));
+            renderMacros();
         }
         
-        if (data.board) { 
-            boardNodes = []; boardLinks = data.board.links || []; document.getElementById('boardNodes').innerHTML = ''; 
-            if(data.board.notes) { data.board.notes.forEach(n => { addBoardNote(n.id, n.x, n.y, n.text); boardNodes.push(n); }); } drawBoardLines(); 
-            document.getElementById('logList').innerHTML = ''; boardLogs = data.board.logs || [];
-            if(boardLogs.length > 0) { boardLogs.reverse().forEach(l => { addLogEntry(l.text, l.date, l.id); }); }
+        if (data.board && typeof data.board === 'object') {
+            boardNodes = [];
+            boardLinks = Array.isArray(data.board.links)
+                ? data.board.links.filter(link => link && typeof link.from === 'string' && typeof link.to === 'string')
+                : [];
+            document.getElementById('boardNodes').replaceChildren();
+
+            if (Array.isArray(data.board.notes)) {
+                data.board.notes.forEach(note => {
+                    const normalizedNote = {
+                        id: String(note?.id || `note_${Date.now()}_${boardNodes.length}`),
+                        x: Number(note?.x) || 0,
+                        y: Number(note?.y) || 0,
+                        text: String(note?.text ?? '')
+                    };
+                    addBoardNote(normalizedNote.id, normalizedNote.x, normalizedNote.y, normalizedNote.text);
+                    boardNodes.push(normalizedNote);
+                });
+            }
+            drawBoardLines();
+
+            document.getElementById('logList').replaceChildren();
+            boardLogs = Array.isArray(data.board.logs) ? data.board.logs : [];
+            [...boardLogs].reverse().forEach(log => {
+                addLogEntry(String(log?.text ?? ''), String(log?.date ?? ''), String(log?.id || `log_${Date.now()}`));
+            });
         }
         
         atualizarCalculos(); updatePortraitHUD(); atualizarCoresPericias();
@@ -1794,8 +2480,11 @@
     function executarReset(tipo) {
         playSfx('click'); document.getElementById('resetModal').style.display = 'none';
         if (tipo === 'layout') { 
-            let saved = localStorage.getItem('FichaDarkSave'); 
-            if (saved) { try { let data = JSON.parse(saved); delete data.panelState; localStorage.setItem('FichaDarkSave', JSON.stringify(data)); } catch(e) {} } 
+            const saved = readStoredSave();
+            if (saved) {
+                delete saved.panelState;
+                writeStoredSave(saved);
+            }
             location.reload(); 
         } else if (tipo === 'ficha') { 
             document.querySelectorAll('.container input[type="text"], .container input[type="number"], .container input[type="hidden"], .container textarea').forEach(el => el.value = ""); 
@@ -1815,13 +2504,18 @@
             combatMacros = []; renderMacros();
             resetBoardView();
             
-            atualizarCalculos(); playSfx('lock'); localStorage.removeItem('FichaDarkSave'); abrirModalCustom("SISTEMA // Memória apagada. Banco de dados redefinido.", false, false, function(){}); 
+            atualizarCalculos(); playSfx('lock'); removeStoredSave(); abrirModalCustom("SISTEMA // Memória apagada. Banco de dados redefinido.", false, false, function(){}); 
         }
     }
 
     function carregarLocalData() {
-        const saved = localStorage.getItem('FichaDarkSave');
-        if (saved) { try { processAndLoadDataMap(JSON.parse(saved)); } catch (e) { console.error("Falha ao carregar save local.", e); } }
+        const saved = readStoredSave();
+        if (!saved) return;
+        try {
+            processAndLoadDataMap(saved);
+        } catch (error) {
+            console.error('Falha ao carregar save local.', error);
+        }
     }
 </script>
 
