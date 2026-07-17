@@ -744,6 +744,14 @@
                     <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudEnabled" checked onchange="updateObsPreferences()" style="width:auto;"> HUD PERMANENTE</label>
                     <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudConditions" checked onchange="updateObsPreferences()" style="width:auto;"> CONDIÇÕES NO HUD</label>
                     <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudPortrait" checked onchange="updateObsPreferences()" style="width:auto;"> RETRATO NO HUD</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0;"><span>LAYOUT</span><select id="obsOverlayLayout" onchange="updateObsPreferences()" style="width:auto; min-width:165px; padding:5px 7px; font-size:0.72rem;">
+                        <option value="standard">PADRÃO</option>
+                        <option value="compact">COMPACTO</option>
+                        <option value="lowerthird">LOWER THIRD</option>
+                        <option value="sidebar">LATERAL</option>
+                        <option value="topbar">SUPERIOR CENTRAL</option>
+                        <option value="mirrored">ESPELHADO</option>
+                    </select></label>
                     <label style="display:flex; align-items:center; gap:7px; margin:0;"><span>DURAÇÃO</span><input type="number" id="obsDuration" min="2" max="15" step="1" value="6" onchange="updateObsPreferences()" style="width:60px; padding:4px; text-align:center;"><span>SEG.</span></label>
                     <span id="obsStatusText">[ AGUARDANDO CONFIGURAÇÃO ]</span>
                 </div>
@@ -1056,7 +1064,7 @@
     let activeTurnIndex = -1;
     let combatMacros = [];
     let editingMacroId = null;
-    let obsSettings = { enabled: false, channel: '', duration: 6000, showName: true, hudEnabled: true, hudConditions: true, hudPortrait: true };
+    let obsSettings = { enabled: false, channel: '', duration: 6000, showName: true, hudEnabled: true, hudConditions: true, hudPortrait: true, layout: 'standard' };
     let obsBroadcastChannel = null;
     let obsPortraitThumbnail = '';
     let obsPortraitSource = '';
@@ -1080,6 +1088,7 @@
     const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
     const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
     const ALLOWED_SHAPES = new Set(['default', 'round', 'angular']);
+    const ALLOWED_OBS_LAYOUTS = new Set(['standard', 'compact', 'lowerthird', 'sidebar', 'topbar', 'mirrored']);
 
     function escapeHTML(value) {
         return String(value ?? '')
@@ -1144,6 +1153,11 @@
         return String(value ?? '').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
     }
 
+    function sanitizeObsLayout(value) {
+        const layout = String(value ?? '').trim().toLowerCase();
+        return ALLOWED_OBS_LAYOUTS.has(layout) ? layout : 'standard';
+    }
+
     function ensureObsChannel() {
         obsSettings.channel = sanitizeObsChannel(obsSettings.channel);
         if (obsSettings.channel.length < 16) obsSettings.channel = generateObsChannel();
@@ -1195,6 +1209,8 @@
         if (conditionsInput) conditionsInput.checked = obsSettings.hudConditions;
         const portraitInput = document.getElementById('obsHudPortrait');
         if (portraitInput) portraitInput.checked = obsSettings.hudPortrait;
+        const layoutInput = document.getElementById('obsOverlayLayout');
+        if (layoutInput) layoutInput.value = sanitizeObsLayout(obsSettings.layout);
         const durationInput = document.getElementById('obsDuration');
         if (durationInput) durationInput.value = String(Math.round(obsSettings.duration / 1000));
         setObsStatus(obsSettings.enabled ? 'TRANSMISSÃO ATIVA' : 'TRANSMISSÃO DESATIVADA', obsSettings.enabled ? 'ok' : 'idle');
@@ -1248,6 +1264,7 @@
         obsSettings.hudEnabled = document.getElementById('obsHudEnabled')?.checked !== false;
         obsSettings.hudConditions = document.getElementById('obsHudConditions')?.checked !== false;
         obsSettings.hudPortrait = document.getElementById('obsHudPortrait')?.checked !== false;
+        obsSettings.layout = sanitizeObsLayout(document.getElementById('obsOverlayLayout')?.value);
         if (obsSettings.hudPortrait) refreshObsPortraitThumbnail();
         syncObsControls();
         writeGlobalObsSettings();
@@ -1286,6 +1303,7 @@
             duration: obsSettings.duration,
             character: obsSettings.showName ? characterName : '',
             theme: getCurrentThemeName(),
+            layout: sanitizeObsLayout(obsSettings.layout),
             channel: ensureObsChannel(),
             profileId: activeProfileId || '',
             ...data
@@ -1455,6 +1473,7 @@
             obsSettings.hudEnabled = source.hudEnabled !== false;
             obsSettings.hudConditions = source.hudConditions !== false;
             obsSettings.hudPortrait = source.hudPortrait !== false;
+            obsSettings.layout = sanitizeObsLayout(source.layout);
         }
         ensureObsChannel();
         writeGlobalObsSettings();
@@ -1792,7 +1811,7 @@
         if (!obsSettings.enabled && !force) return false;
         refreshObsPortraitThumbnail();
         const hud = getObsHudState();
-        const signature = JSON.stringify({ hud, name: document.getElementById('charNameInput')?.value || '', theme: getCurrentThemeName() });
+        const signature = JSON.stringify({ hud, name: document.getElementById('charNameInput')?.value || '', theme: getCurrentThemeName(), layout: sanitizeObsLayout(obsSettings.layout) });
         if (!force && signature === lastHudSignature) return false;
         lastHudSignature = signature;
         sendObsEvent({ event: 'hud', title: 'HUD', subtitle: 'STATUS', rolls: [], chosen: 0, bonus: 0, total: 0, damage: null, hud }, force);
