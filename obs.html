@@ -25,6 +25,30 @@
         body.theme-contencao { --main:#b3e6ff; --dim:#5c99cc; --accent:#80d4ff; --alert:#d90011; --gold:#00ccff; --panel:rgba(2,6,15,.95); --line:rgba(128,212,255,.35); }
         body.theme-neon { --main:#00ffff; --dim:#008888; --accent:#ff00ff; --alert:#ff0055; --gold:#ffff00; --panel:rgba(5,5,16,.94); --line:rgba(255,0,255,.4); }
         body.theme-combat { --main:#ffffff; --dim:#cc7777; --accent:#ff2020; --alert:#ff2020; --gold:#ffffff; --panel:rgba(10,0,0,.95); --line:rgba(255,0,0,.45); }
+
+        .persistent-hud {
+            position: fixed; top: 4vh; left: 3vw; width: min(430px, 42vw); min-width: 310px;
+            background: linear-gradient(110deg, var(--panel), rgba(0,0,0,.48));
+            border: 1px solid var(--line); border-left: 4px solid var(--accent);
+            padding: 14px 16px; box-shadow: 0 14px 38px rgba(0,0,0,.62);
+            opacity: 0; transform: translateX(-20px); transition: opacity .35s, transform .35s;
+            pointer-events: none;
+        }
+        .persistent-hud.visible { opacity: 1; transform: translateX(0); }
+        .hud-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 10px; }
+        .hud-character { font-family:'Oswald',sans-serif; font-size: 22px; letter-spacing: 2px; text-transform: uppercase; color: var(--main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hud-afi { color: var(--dim); font-size: 11px; letter-spacing: 2px; white-space: nowrap; }
+        .hud-stat { display: grid; grid-template-columns: 42px 1fr 78px; align-items: center; gap: 9px; margin: 7px 0; }
+        .hud-stat-label { color: var(--dim); font-size: 11px; letter-spacing: 2px; }
+        .hud-track { height: 7px; border: 1px solid var(--line); background: rgba(0,0,0,.55); overflow: hidden; }
+        .hud-fill { height: 100%; width: 0; background: var(--accent); transition: width .45s ease; }
+        .hud-stat.vd .hud-fill { background: var(--alert); }
+        .hud-stat.san .hud-fill { background: var(--gold); }
+        .hud-value { text-align: right; color: var(--main); font-size: 13px; letter-spacing: 1px; }
+        .hud-conditions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; min-height: 0; }
+        .hud-condition { border: 1px solid var(--line); color: var(--dim); padding: 3px 6px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+        @media (max-width:700px) { .persistent-hud { width: 88vw; min-width: 0; top: 2vh; left: 3vw; } }
+
         #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 5vw 8vh; pointer-events: none; }
         .card {
             width: min(760px, 90vw); min-height: 190px; position: relative; overflow: hidden;
@@ -61,6 +85,13 @@
     </style>
 </head>
 <body>
+    <aside id="persistentHud" class="persistent-hud" aria-live="polite">
+        <div class="hud-header"><div id="hudCharacter" class="hud-character">DESCONHECIDO</div><div id="hudAfi" class="hud-afi">AFI 1</div></div>
+        <div class="hud-stat vd"><span class="hud-stat-label">VD</span><div class="hud-track"><div id="hudVdFill" class="hud-fill"></div></div><span id="hudVdValue" class="hud-value">0 / 0</span></div>
+        <div class="hud-stat san"><span class="hud-stat-label">SAN</span><div class="hud-track"><div id="hudSanFill" class="hud-fill"></div></div><span id="hudSanValue" class="hud-value">0 / 0</span></div>
+        <div class="hud-stat pe"><span class="hud-stat-label">PE</span><div class="hud-track"><div id="hudPeFill" class="hud-fill"></div></div><span id="hudPeValue" class="hud-value">0 / 0</span></div>
+        <div id="hudConditions" class="hud-conditions"></div>
+    </aside>
     <main id="stage" aria-live="polite"></main>
     <div id="connection" class="connection">AGUARDANDO SINAL...</div>
     <script>
@@ -71,6 +102,10 @@
             const defaultDuration = Math.min(15000, Math.max(2000, (Number.parseInt(params.get('duration'), 10) || 6) * 1000));
             const stage = document.getElementById('stage');
             const connection = document.getElementById('connection');
+            const persistentHud = document.getElementById('persistentHud');
+            const hudCharacter = document.getElementById('hudCharacter');
+            const hudAfi = document.getElementById('hudAfi');
+            const hudConditions = document.getElementById('hudConditions');
             const queue = [];
             const receivedIds = new Set();
             const bootTime = Date.now();
@@ -98,7 +133,8 @@
                 if (!payload || typeof payload !== 'object') return null;
                 if (payload.channel && String(payload.channel) !== channel) return null;
                 const timestamp = Number(payload.timestamp) || Date.now();
-                if (timestamp < bootTime - 2500) return null;
+                const eventType = String(payload.event || 'roll');
+                if (eventType !== 'hud' && timestamp < bootTime - 2500) return null;
                 const id = String(payload.id || `${timestamp}-${Math.random()}`);
                 if (receivedIds.has(id)) return null;
                 receivedIds.add(id);
@@ -107,7 +143,7 @@
                     id,
                     timestamp,
                     duration: Math.min(15000, Math.max(2000, Number(payload.duration) || defaultDuration)),
-                    event: String(payload.event || 'roll'),
+                    event: eventType,
                     character: String(payload.character || '').slice(0, 80),
                     title: String(payload.title || 'ROLAGEM').slice(0, 120),
                     subtitle: String(payload.subtitle || 'DARK DASHBOARD').slice(0, 100),
@@ -118,13 +154,43 @@
                     damage: payload.damage === null || payload.damage === undefined ? null : Math.max(0, Number(payload.damage) || 0),
                     critical: Boolean(payload.critical),
                     failure: Boolean(payload.failure),
-                    theme: String(payload.theme || 'default')
+                    theme: String(payload.theme || 'default'),
+                    hud: payload.hud && typeof payload.hud === 'object' ? payload.hud : null
                 };
+            }
+
+
+            function clampPercent(current, max) {
+                const maximum = Math.max(1, Number(max) || 1);
+                return Math.max(0, Math.min(100, ((Number(current) || 0) / maximum) * 100));
+            }
+
+            function updateHud(event) {
+                const hud = event.hud;
+                if (!hud || hud.enabled === false) {
+                    persistentHud.classList.remove('visible');
+                    return;
+                }
+                applyTheme(event.theme);
+                hudCharacter.textContent = event.character || 'DESCONHECIDO';
+                hudAfi.textContent = `AFI ${Number(hud.afi) || 1}`;
+                [['Vd','vd'], ['San','san'], ['Pe','pe']].forEach(([prefix, key]) => {
+                    const stat = hud[key] || { current: 0, max: 1 };
+                    document.getElementById(`hud${prefix}Fill`).style.width = `${clampPercent(stat.current, stat.max)}%`;
+                    document.getElementById(`hud${prefix}Value`).textContent = `${Number(stat.current) || 0} / ${Math.max(1, Number(stat.max) || 1)}`;
+                });
+                hudConditions.replaceChildren();
+                const conditions = Array.isArray(hud.conditions) ? hud.conditions.slice(0, 8) : [];
+                conditions.forEach(condition => {
+                    const tag = document.createElement('span'); tag.className = 'hud-condition'; tag.textContent = String(condition).slice(0, 40); hudConditions.appendChild(tag);
+                });
+                persistentHud.classList.add('visible');
             }
 
             function enqueue(payload) {
                 const event = normalize(payload);
                 if (!event) return;
+                if (event.event === 'hud') { updateHud(event); return; }
                 queue.push(event);
                 if (!active) showNext();
             }
