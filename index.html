@@ -850,6 +850,7 @@
                         <input type="number" id="macroSkill" placeholder="PERÍCIA (+X)" style="flex:1; min-width: 80px; font-size: 0.85rem;">
                         <input type="text" id="macroCrit" placeholder="CRÍTICO (Ex: x2, +1d8)" style="flex:1; min-width: 100px; font-size: 0.85rem;">
                         <input type="text" id="macroDmg" placeholder="DANO (Ex: 1d8+2)" style="flex:1; min-width: 100px; font-size: 0.85rem;">
+                        <input type="number" id="macroPeCost" placeholder="CUSTO PE" min="0" step="1" style="flex:0.7; min-width: 85px; font-size: 0.85rem;">
                         <button id="macroSubmitBtn" class="sys-btn" style="color: var(--alert-color); border-color: var(--alert-color);" onclick="adicionarMacro()">+ ADD</button>
                         <button id="macroCancelBtn" class="sys-btn" style="display:none; color: var(--dim-text); border-color: var(--dim-text);" onclick="cancelarEdicaoMacro()">CANCELAR</button>
                     </div>
@@ -1446,6 +1447,7 @@
         const skillInput = document.getElementById('macroSkill');
         const critInput = document.getElementById('macroCrit');
         const damageInput = document.getElementById('macroDmg');
+        const peCostInput = document.getElementById('macroPeCost');
         const submitButton = document.getElementById('macroSubmitBtn');
         const cancelButton = document.getElementById('macroCancelBtn');
 
@@ -1454,6 +1456,7 @@
         if (skillInput) skillInput.value = '';
         if (critInput) critInput.value = '';
         if (damageInput) damageInput.value = '';
+        if (peCostInput) peCostInput.value = '';
         if (submitButton) {
             submitButton.textContent = '+ ADD';
             submitButton.style.color = 'var(--alert-color)';
@@ -1470,13 +1473,15 @@
         const skillInput = document.getElementById('macroSkill');
         const critInput = document.getElementById('macroCrit');
         const damageInput = document.getElementById('macroDmg');
-        if (!nameInput || !attrInput || !skillInput || !critInput || !damageInput) return;
+        const peCostInput = document.getElementById('macroPeCost');
+        if (!nameInput || !attrInput || !skillInput || !critInput || !damageInput || !peCostInput) return;
 
         const nome = nameInput.value.trim();
         const attr = attrInput.value;
         const skill = Number.parseInt(skillInput.value, 10) || 0;
         const crit = critInput.value.trim();
         const dmg = damageInput.value.trim();
+        const peCost = Math.max(0, Number.parseInt(peCostInput.value, 10) || 0);
 
         if (!nome || !dmg) {
             abrirModalCustom('ERRO // Preencha o Nome e o Dano da arma/ação.', false, false, function(){});
@@ -1496,11 +1501,12 @@
                 attr,
                 skill,
                 crit,
-                dmg
+                dmg,
+                peCost
             };
         } else {
             const id = 'macro_' + Date.now();
-            combatMacros.push({ id, nome, attr, skill, crit, dmg });
+            combatMacros.push({ id, nome, attr, skill, crit, dmg, peCost });
         }
 
         limparFormularioMacro();
@@ -1520,6 +1526,7 @@
         const skillInput = document.getElementById('macroSkill');
         const critInput = document.getElementById('macroCrit');
         const damageInput = document.getElementById('macroDmg');
+        const peCostInput = document.getElementById('macroPeCost');
         const submitButton = document.getElementById('macroSubmitBtn');
         const cancelButton = document.getElementById('macroCancelBtn');
 
@@ -1528,6 +1535,7 @@
         if (skillInput) skillInput.value = Number.parseInt(macro.skill, 10) || 0;
         if (critInput) critInput.value = String(macro.crit ?? '');
         if (damageInput) damageInput.value = String(macro.dmg ?? '');
+        if (peCostInput) peCostInput.value = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
         if (submitButton) {
             submitButton.textContent = 'SALVAR';
             submitButton.style.color = 'var(--accent-green)';
@@ -1574,7 +1582,8 @@
 
             const details = document.createElement('span');
             details.style.cssText = 'font-size:0.8rem; color:var(--dim-text);';
-            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} ]`;
+            const macroPeCost = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
+            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} | PE: ${macroPeCost} ]`;
 
             info.append(name, details);
 
@@ -1608,7 +1617,27 @@
         const macro = combatMacros.find(item => item.id === id);
         if (!macro) return;
 
+        const resultArea = document.getElementById('diceResultArea');
+        const modal = document.getElementById('diceModal');
+        const currentPeInput = document.getElementById('pe_atual');
+        if (!resultArea || !modal || !currentPeInput) return;
+
         const activeConds = getActiveConditions();
+        const basePeCost = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
+        const effectivePeCost = basePeCost > 0 && activeConds.cond_alquebrado ? basePeCost + 1 : basePeCost;
+        const currentPe = Math.max(0, Number.parseInt(currentPeInput.value, 10) || 0);
+        if (effectivePeCost > currentPe) {
+            abrirModalCustom(`PE INSUFICIENTE // A macro exige ${effectivePeCost} PE, mas você possui ${currentPe}.`, false, false, function(){});
+            return;
+        }
+
+        const remainingPe = currentPe - effectivePeCost;
+        if (effectivePeCost > 0) {
+            currentPeInput.value = String(remainingPe);
+            atualizarCalculos();
+            salvarLocalData();
+        }
+
         const effectiveAttributes = getEffectiveAttributes();
         const effectiveAttribute = Number(effectiveAttributes[macro.attr]) || 0;
         let penalty = 0;
@@ -1705,14 +1734,13 @@
             <div style="font-size:2rem; font-weight:bold; color:var(--alert-color); text-shadow:0 0 10px rgba(255,0,0,0.5);">${Math.max(0, damageTotal)}</div>
             <div style="color:var(--dim-text); font-size:0.75rem;">${damageDetail}</div>
         </div>`;
+        const peText = effectivePeCost > 0
+            ? `<div style="margin-top:15px; padding-top:10px; border-top:1px dashed var(--border-color); color:var(--accent-green); font-size:0.8rem; letter-spacing:2px;">PE GASTO [ ${effectivePeCost} ] // RESTANTE [ ${remainingPe} ]${activeConds.cond_alquebrado ? ' // ALQUEBRADO +1' : ''}</div>`
+            : '';
         const finalResult = `<div class="dice-result-box" style="text-align:center; border-color:var(--alert-color); padding-top:15px;">
             <div style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-bottom:15px; letter-spacing:2px;">MACRO // ${escapeHTML(macro.nome).toUpperCase()}</div>
-            ${criticalText}${failureText}${attackText}${damageText}
+            ${criticalText}${failureText}${attackText}${damageText}${peText}
         </div>`;
-
-        const resultArea = document.getElementById('diceResultArea');
-        const modal = document.getElementById('diceModal');
-        if (!resultArea || !modal) return;
         resultArea.style.display = 'block';
         resultArea.innerHTML = '<div class="dice-result-box dice-suspense-container"><div class="rolling-dice-anim" style="font-size:4rem;">🎲</div><div class="dice-suspense-value" id="macroSuspenseValue">--</div><div style="color:var(--dim-text); margin-top:15px; letter-spacing:2px;">CALCULANDO IMPACTO TÁTICO...</div></div>';
 
@@ -1745,7 +1773,9 @@
                 failure: isFailure,
                 damage: Math.max(0, damageTotal),
                 damageRolls,
-                damageDetail
+                damageDetail,
+                peCost: effectivePeCost,
+                peRemaining: remainingPe
             });
         }, 1500);
     }
@@ -2982,7 +3012,8 @@
                 attr: ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'].includes(macro?.attr) ? macro.attr : 'FOR',
                 skill: Number.parseInt(macro?.skill ?? macro?.hit, 10) || 0,
                 crit: String(macro?.crit ?? ''),
-                dmg: String(macro?.dmg ?? '0')
+                dmg: String(macro?.dmg ?? '0'),
+                peCost: Math.max(0, Number.parseInt(macro?.peCost ?? macro?.costPe ?? macro?.pe, 10) || 0)
             }));
             renderMacros();
         }
