@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK // OBS OVERLAY</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Share+Tech+Mono&display=swap');
+        :root {
+            --main: #e8e8e8;
+            --dim: #777777;
+            --accent: #ffffff;
+            --alert: #ff2929;
+            --gold: #ffcc33;
+            --panel: rgba(5, 5, 5, 0.92);
+            --line: rgba(255, 255, 255, 0.2);
+        }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent !important; }
+        body { font-family: 'Share Tech Mono', monospace; color: var(--main); }
+        body.theme-architect { --main:#69f0ae; --dim:#4caf50; --accent:#69f0ae; --alert:#ff5252; --gold:#b2ff59; --panel:rgba(2,8,2,.93); --line:rgba(105,240,174,.3); }
+        body.theme-light { --main:#111; --dim:#555; --accent:#222; --alert:#d32f2f; --gold:#e65100; --panel:rgba(245,245,245,.94); --line:rgba(0,0,0,.25); }
+        body.theme-ambar { --main:#ffb000; --dim:#b37700; --accent:#ffcc00; --alert:#ff3300; --gold:#ffe066; --panel:rgba(10,5,0,.94); --line:rgba(255,176,0,.3); }
+        body.theme-ordem { --main:#f0f0f0; --dim:#8d8d8d; --accent:#e60000; --alert:#ff1a1a; --gold:#ffffff; --panel:rgba(0,0,0,.95); --line:rgba(230,0,0,.45); }
+        body.theme-contencao { --main:#b3e6ff; --dim:#5c99cc; --accent:#80d4ff; --alert:#d90011; --gold:#00ccff; --panel:rgba(2,6,15,.95); --line:rgba(128,212,255,.35); }
+        body.theme-neon { --main:#00ffff; --dim:#008888; --accent:#ff00ff; --alert:#ff0055; --gold:#ffff00; --panel:rgba(5,5,16,.94); --line:rgba(255,0,255,.4); }
+        body.theme-combat { --main:#ffffff; --dim:#cc7777; --accent:#ff2020; --alert:#ff2020; --gold:#ffffff; --panel:rgba(10,0,0,.95); --line:rgba(255,0,0,.45); }
+        #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 5vw 8vh; pointer-events: none; }
+        .card {
+            width: min(760px, 90vw); min-height: 190px; position: relative; overflow: hidden;
+            background: linear-gradient(110deg, var(--panel), rgba(0,0,0,.55));
+            border: 1px solid var(--line); border-left: 5px solid var(--accent);
+            padding: 24px 30px 22px; box-shadow: 0 18px 55px rgba(0,0,0,.75), 0 0 28px color-mix(in srgb, var(--accent) 22%, transparent);
+            opacity: 0; transform: translateY(55px) scale(.97); filter: blur(8px);
+        }
+        .card.visible { animation: enter .52s cubic-bezier(.18,.86,.3,1.15) forwards; }
+        .card.leaving { animation: leave .38s ease-in forwards; }
+        .card.critical { border-color: var(--gold); border-left-color: var(--gold); }
+        .card.failure { border-color: var(--alert); border-left-color: var(--alert); }
+        .scanlines { position:absolute; inset:0; opacity:.12; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,var(--main) 4px); mix-blend-mode:overlay; }
+        .topline { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; border-bottom:1px solid var(--line); padding-bottom:12px; }
+        .character { color:var(--dim); font-size:14px; letter-spacing:3px; text-transform:uppercase; min-height:18px; }
+        .title { font-family:'Oswald',sans-serif; color:var(--main); font-size:30px; line-height:1.05; letter-spacing:2px; text-transform:uppercase; margin-top:3px; }
+        .badge { border:1px solid var(--line); color:var(--accent); padding:6px 10px; font-size:12px; letter-spacing:2px; white-space:nowrap; }
+        .card.critical .badge { color:var(--gold); border-color:var(--gold); }
+        .card.failure .badge { color:var(--alert); border-color:var(--alert); }
+        .content { display:grid; grid-template-columns:1fr auto; gap:28px; align-items:end; padding-top:16px; }
+        .rolls { color:var(--dim); font-size:16px; letter-spacing:2px; word-break:break-word; }
+        .chosen { color:var(--main); font-size:18px; margin-top:9px; }
+        .chosen strong { color:var(--accent); font-size:28px; }
+        .result-wrap { display:flex; gap:18px; align-items:flex-end; }
+        .result-block { min-width:125px; text-align:right; }
+        .result-label { color:var(--dim); font-size:11px; letter-spacing:2px; }
+        .result { color:var(--accent); font-family:'Oswald',sans-serif; font-size:64px; font-weight:700; line-height:.9; text-shadow:0 0 20px color-mix(in srgb, var(--accent) 45%, transparent); }
+        .damage .result { color:var(--alert); text-shadow:0 0 20px color-mix(in srgb, var(--alert) 45%, transparent); }
+        .connection { position:fixed; right:20px; bottom:18px; color:rgba(255,255,255,.3); font-size:11px; letter-spacing:2px; opacity:0; transition:.3s; }
+        .connection.show { opacity:1; }
+        @keyframes enter { 0%{opacity:0;transform:translateY(55px) scale(.97);filter:blur(8px)} 55%{opacity:1;filter:blur(0)} 100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)} }
+        @keyframes leave { to{opacity:0;transform:translateY(-35px) scale(.98);filter:blur(7px)} }
+        @media (max-width:700px) { .card{padding:18px 20px}.title{font-size:23px}.content{grid-template-columns:1fr;gap:12px}.result-wrap{justify-content:flex-end}.result{font-size:52px} }
+    </style>
+</head>
+<body>
+    <main id="stage" aria-live="polite"></main>
+    <div id="connection" class="connection">AGUARDANDO SINAL...</div>
+    <script>
+        (() => {
+            'use strict';
+            const params = new URLSearchParams(location.search);
+            const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+            const defaultDuration = Math.min(15000, Math.max(2000, (Number.parseInt(params.get('duration'), 10) || 6) * 1000));
+            const stage = document.getElementById('stage');
+            const connection = document.getElementById('connection');
+            const queue = [];
+            const receivedIds = new Set();
+            const bootTime = Date.now();
+            let active = false;
+            let eventSource = null;
+            let broadcastChannel = null;
+
+            function safe(value) {
+                return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+            }
+
+            function setConnection(text, visible = true) {
+                connection.textContent = text;
+                connection.classList.toggle('show', visible);
+                if (visible) window.setTimeout(() => connection.classList.remove('show'), 2500);
+            }
+
+            function applyTheme(theme) {
+                document.body.className = '';
+                const allowed = new Set(['architect','light','ambar','ordem','contencao','neon','combat']);
+                if (allowed.has(theme)) document.body.classList.add(`theme-${theme}`);
+            }
+
+            function normalize(payload) {
+                if (!payload || typeof payload !== 'object') return null;
+                if (payload.channel && String(payload.channel) !== channel) return null;
+                const timestamp = Number(payload.timestamp) || Date.now();
+                if (timestamp < bootTime - 2500) return null;
+                const id = String(payload.id || `${timestamp}-${Math.random()}`);
+                if (receivedIds.has(id)) return null;
+                receivedIds.add(id);
+                if (receivedIds.size > 150) receivedIds.delete(receivedIds.values().next().value);
+                return {
+                    id,
+                    timestamp,
+                    duration: Math.min(15000, Math.max(2000, Number(payload.duration) || defaultDuration)),
+                    event: String(payload.event || 'roll'),
+                    character: String(payload.character || '').slice(0, 80),
+                    title: String(payload.title || 'ROLAGEM').slice(0, 120),
+                    subtitle: String(payload.subtitle || 'DARK DASHBOARD').slice(0, 100),
+                    rolls: Array.isArray(payload.rolls) ? payload.rolls.slice(0, 30).map(Number) : [],
+                    chosen: Number(payload.chosen) || 0,
+                    bonus: Number(payload.bonus) || 0,
+                    total: Number(payload.total) || 0,
+                    damage: payload.damage === null || payload.damage === undefined ? null : Math.max(0, Number(payload.damage) || 0),
+                    critical: Boolean(payload.critical),
+                    failure: Boolean(payload.failure),
+                    theme: String(payload.theme || 'default')
+                };
+            }
+
+            function enqueue(payload) {
+                const event = normalize(payload);
+                if (!event) return;
+                queue.push(event);
+                if (!active) showNext();
+            }
+
+            function showNext() {
+                if (!queue.length) { active = false; return; }
+                active = true;
+                const event = queue.shift();
+                applyTheme(event.theme);
+                const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
+                const bonus = event.bonus ? ` ${event.bonus > 0 ? '+' : ''}${event.bonus}` : '';
+                const rolls = event.rolls.length ? `[ ${event.rolls.join(' | ')} ]` : '[ -- ]';
+                const card = document.createElement('section');
+                card.className = `card${event.critical ? ' critical' : ''}${event.failure ? ' failure' : ''}`;
+                card.innerHTML = `
+                    <div class="scanlines"></div>
+                    <div class="topline">
+                        <div>
+                            <div class="character">${safe(event.character)}</div>
+                            <div class="title">${safe(event.title)}</div>
+                        </div>
+                        <div class="badge">${safe(status)}</div>
+                    </div>
+                    <div class="content">
+                        <div>
+                            <div class="rolls">DADOS: ${safe(rolls)}</div>
+                            <div class="chosen">ESCOLHIDO: <strong>${event.chosen}</strong>${safe(bonus)}</div>
+                        </div>
+                        <div class="result-wrap">
+                            ${event.damage !== null ? `<div class="result-block damage"><div class="result-label">DANO</div><div class="result">${event.damage}</div></div>` : ''}
+                            <div class="result-block"><div class="result-label">${safe(event.subtitle)}</div><div class="result">${event.total}</div></div>
+                        </div>
+                    </div>`;
+                stage.replaceChildren(card);
+                requestAnimationFrame(() => card.classList.add('visible'));
+                window.setTimeout(() => {
+                    card.classList.remove('visible');
+                    card.classList.add('leaving');
+                    window.setTimeout(() => { card.remove(); showNext(); }, 420);
+                }, event.duration);
+            }
+
+            function parseRelayMessage(raw) {
+                try {
+                    const envelope = JSON.parse(raw);
+                    if (envelope.event !== 'message') return;
+                    enqueue(JSON.parse(envelope.message));
+                } catch (error) {
+                    console.warn('Evento remoto inválido.', error);
+                }
+            }
+
+            if (!channel || channel.length < 16) {
+                setConnection('CANAL INVÁLIDO — COPIE A URL PELO DASHBOARD', true);
+                return;
+            }
+
+            if ('BroadcastChannel' in window) {
+                try {
+                    broadcastChannel = new BroadcastChannel(`dark-obs-${channel}`);
+                    broadcastChannel.addEventListener('message', event => enqueue(event.data));
+                } catch (error) { console.warn(error); }
+            }
+
+            window.addEventListener('storage', event => {
+                if (event.key !== 'DarkObsLastEvent' || !event.newValue) return;
+                try { enqueue(JSON.parse(event.newValue)); } catch (error) { console.warn(error); }
+            });
+
+            try {
+                eventSource = new EventSource(`https://ntfy.sh/${encodeURIComponent(channel)}/sse`);
+                eventSource.addEventListener('open', () => setConnection('OVERLAY CONECTADO', true));
+                eventSource.onmessage = event => parseRelayMessage(event.data);
+                eventSource.onerror = () => setConnection('RECONECTANDO AO RELAY...', true);
+            } catch (error) {
+                setConnection('RELAY REMOTO INDISPONÍVEL', true);
+                console.warn(error);
+            }
+        })();
+    </script>
+</body>
+</html>
