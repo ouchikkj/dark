@@ -315,8 +315,13 @@
         .bar-fill { height: 100%; transition: width 0.5s ease; background: var(--menu-accent); }
         .hud-nex { font-size: 1.2rem; color: var(--dim-text); margin-top: 10px; letter-spacing: 3px; border-top: 1px dashed var(--border-color); padding-top: 15px;}
         .hud-nex span { color: var(--menu-accent); text-shadow: 0 0 5px var(--glow); font-size: 1.8rem; font-weight: bold;}
-        .menu-right-nav { flex: 1.5; display: flex; flex-direction: column; justify-content: center; padding-left: 80px; position: relative; }
-        .menu-list { display: flex; flex-direction: column; gap: 20px; position: relative; z-index: 2; }
+        .menu-right-nav { flex: 1.5; min-width: 0; height: 100vh; display: flex; flex-direction: column; justify-content: flex-start; padding: 40px 60px 40px 80px; position: relative; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+        .menu-right-nav::-webkit-scrollbar { width: 6px; }
+        .menu-right-nav::-webkit-scrollbar-track { background: transparent; }
+        .menu-right-nav::-webkit-scrollbar-thumb { background: var(--border-color); }
+        .menu-list { display: flex; flex-direction: column; gap: 20px; width: 100%; min-width: 0; flex-shrink: 0; position: relative; z-index: 2; }
+        #mainMenuList { margin: auto 0; }
+        #optionsMenuList { margin: 0; padding-bottom: 20px; }
         .menu-item { display: flex; align-items: center; font-size: 2.2rem; color: var(--dim-text); text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; width: fit-content; letter-spacing: 4px; }
         .menu-item:hover { color: var(--menu-accent); transform: translateX(20px); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
         .menu-icon { width: 40px; height: 40px; border: 2px solid var(--border-color); margin-right: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; background: transparent; color: var(--dim-text); }
@@ -330,6 +335,32 @@
         .sys-btn { background: rgba(0,0,0,0.3); color: var(--dim-text); border: 1px solid var(--border-color); padding: 8px 15px; font-family: inherit; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 1px; border-radius: 2px; }
         .sys-btn:hover:not(:disabled) { color: var(--bg-color); border-color: var(--menu-accent); background: var(--menu-accent); box-shadow: 0 0 10px var(--glow); }
         .sys-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); font-weight: bold; }
+        .obs-config-grid { display: grid; grid-template-columns: minmax(180px, 0.8fr) minmax(0, 2fr); gap: 10px; align-items: end; width: 100%; max-width: 900px; }
+
+        @media (max-height: 820px) {
+            .menu-right-nav { padding-top: 25px; padding-bottom: 25px; }
+            .menu-list { gap: 14px; }
+            .options-group { margin-bottom: 18px; }
+            .menu-item { font-size: 1.9rem; }
+        }
+        @media (max-width: 1100px) {
+            .menu-left-art { flex: 0 0 34%; padding: 35px 25px; }
+            .menu-right-nav { flex: 1; padding: 35px 30px 35px 45px; }
+            .menu-item { font-size: 1.7rem; letter-spacing: 3px; }
+            .obs-config-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 760px) {
+            .game-menu-overlay { display: block; overflow: hidden; }
+            .menu-left-art { display: none; }
+            .menu-right-nav { width: 100%; height: 100vh; padding: 25px 18px 35px; }
+            .menu-item { width: 100%; font-size: 1.25rem; letter-spacing: 2px; }
+            .menu-icon { flex: 0 0 34px; width: 34px; height: 34px; margin-right: 12px; }
+            .menu-item:hover, .menu-item.highlight:hover { transform: translateX(5px); }
+            .menu-divider { width: 100%; }
+            .options-row { gap: 8px; }
+            .sys-btn { padding: 7px 10px; font-size: 0.75rem; }
+            .obs-config-grid { grid-template-columns: minmax(0, 1fr); }
+        }
 
         /* OVERLAYS E TELAS FLUTUANTES */
         .overlay-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); z-index: 90000; display: none; overflow-y: auto; }
@@ -638,6 +669,30 @@
                 </div>
             </div>
             <div class="options-group">
+                <span class="options-label">INTEGRAÇÃO OBS // OVERLAY DE ROLAGENS</span>
+                <div class="options-row" style="margin-bottom: 10px;">
+                    <button id="btn-obs-toggle" class="sys-btn" onclick="toggleObsIntegration(this)">OBS: DESLIGADO</button>
+                    <button class="sys-btn" onclick="copyObsOverlayUrl()">COPIAR URL DO OVERLAY</button>
+                    <button class="sys-btn" onclick="testObsOverlay()">TESTAR OVERLAY</button>
+                </div>
+                <div class="obs-config-grid">
+                    <div>
+                        <label for="obsChannelInput">CANAL PRIVADO</label>
+                        <input type="text" id="obsChannelInput" autocomplete="off" spellcheck="false" onchange="updateObsChannel(this.value)" style="font-size:0.78rem; padding:7px 5px;">
+                    </div>
+                    <div>
+                        <label for="obsOverlayUrl">URL PARA A FONTE DE NAVEGADOR</label>
+                        <input type="text" id="obsOverlayUrl" readonly onclick="this.select()" style="font-size:0.72rem; padding:7px 5px; color:var(--dim-text);">
+                    </div>
+                </div>
+                <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-top:10px; color:var(--dim-text); font-size:0.72rem; letter-spacing:1px;">
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsShowName" checked onchange="updateObsPreferences()" style="width:auto;"> MOSTRAR NOME</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0;"><span>DURAÇÃO</span><input type="number" id="obsDuration" min="2" max="15" step="1" value="6" onchange="updateObsPreferences()" style="width:60px; padding:4px; text-align:center;"><span>SEG.</span></label>
+                    <span id="obsStatusText">[ AGUARDANDO CONFIGURAÇÃO ]</span>
+                </div>
+                <div style="margin-top:8px; color:var(--dim-text); font-size:0.66rem; line-height:1.4; max-width:850px;">O canal funciona como uma chave. Somente resultados de rolagens são transmitidos; não compartilhe a URL publicamente.</div>
+            </div>
+            <div class="options-group">
                 <span class="options-label">DADOS E ARQUIVOS</span>
                 <div class="options-row">
                     <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importarFicha(event)">
@@ -940,8 +995,12 @@
     let initList = [];
     let activeTurnIndex = -1;
     let combatMacros = [];
+    let obsSettings = { enabled: false, channel: '', duration: 6000, showName: true };
+    let obsBroadcastChannel = null;
 
     const STORAGE_KEY = 'FichaDarkSave';
+    const OBS_RELAY_BASE = 'https://ntfy.sh';
+    const OBS_LOCAL_EVENT_KEY = 'DarkObsLastEvent';
     const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon']);
     const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
     const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
@@ -996,6 +1055,197 @@
 
     function isOverlayActive(id) {
         return document.getElementById(id)?.classList.contains('active') ?? false;
+    }
+
+    // INTEGRAÇÃO OBS // Envia apenas resultados de rolagens para o overlay.
+    function generateObsChannel() {
+        const bytes = new Uint8Array(16);
+        if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+        else for (let index = 0; index < bytes.length; index++) bytes[index] = Math.floor(Math.random() * 256);
+        return `dark-obs-${Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    function sanitizeObsChannel(value) {
+        return String(value ?? '').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    }
+
+    function ensureObsChannel() {
+        obsSettings.channel = sanitizeObsChannel(obsSettings.channel);
+        if (obsSettings.channel.length < 16) obsSettings.channel = generateObsChannel();
+        return obsSettings.channel;
+    }
+
+    function getCurrentThemeName() {
+        if (isCombatMode || document.body.classList.contains('theme-combat')) return 'combat';
+        const themeClass = Array.from(document.body.classList).find(className => className.startsWith('theme-'));
+        return themeClass ? themeClass.replace('theme-', '') : 'default';
+    }
+
+    function getObsOverlayUrl() {
+        const channel = ensureObsChannel();
+        let overlayUrl;
+        try {
+            overlayUrl = new URL('obs.html', window.location.href);
+        } catch (error) {
+            return `obs.html?channel=${encodeURIComponent(channel)}`;
+        }
+        overlayUrl.searchParams.set('channel', channel);
+        overlayUrl.searchParams.set('duration', String(Math.round(obsSettings.duration / 1000)));
+        return overlayUrl.href;
+    }
+
+    function setObsStatus(message, state = 'idle') {
+        const status = document.getElementById('obsStatusText');
+        if (!status) return;
+        status.textContent = `[ ${String(message || '').toUpperCase()} ]`;
+        status.style.color = state === 'ok' ? 'var(--accent-green)' : state === 'error' ? 'var(--alert-color)' : 'var(--dim-text)';
+    }
+
+    function syncObsControls() {
+        ensureObsChannel();
+        const toggle = document.getElementById('btn-obs-toggle');
+        if (toggle) {
+            toggle.textContent = obsSettings.enabled ? 'OBS: LIGADO' : 'OBS: DESLIGADO';
+            toggle.classList.toggle('active', obsSettings.enabled);
+        }
+        const channelInput = document.getElementById('obsChannelInput');
+        if (channelInput && channelInput.value !== obsSettings.channel) channelInput.value = obsSettings.channel;
+        const urlInput = document.getElementById('obsOverlayUrl');
+        if (urlInput) urlInput.value = getObsOverlayUrl();
+        const nameInput = document.getElementById('obsShowName');
+        if (nameInput) nameInput.checked = obsSettings.showName;
+        const durationInput = document.getElementById('obsDuration');
+        if (durationInput) durationInput.value = String(Math.round(obsSettings.duration / 1000));
+        setObsStatus(obsSettings.enabled ? 'TRANSMISSÃO ATIVA' : 'TRANSMISSÃO DESATIVADA', obsSettings.enabled ? 'ok' : 'idle');
+    }
+
+    function initObsIntegration() {
+        ensureObsChannel();
+        if ('BroadcastChannel' in window) {
+            try {
+                obsBroadcastChannel?.close();
+                obsBroadcastChannel = new BroadcastChannel(`dark-obs-${obsSettings.channel}`);
+            } catch (error) {
+                console.warn('BroadcastChannel indisponível para o overlay OBS.', error);
+                obsBroadcastChannel = null;
+            }
+        }
+        syncObsControls();
+    }
+
+    function toggleObsIntegration(button) {
+        obsSettings.enabled = !obsSettings.enabled;
+        syncObsControls();
+        playSfx('click');
+        salvarLocalData();
+        if (obsSettings.enabled) testObsOverlay();
+    }
+
+    function updateObsChannel(value) {
+        const sanitized = sanitizeObsChannel(value);
+        if (sanitized === obsSettings.channel) return;
+        obsSettings.channel = sanitized;
+        ensureObsChannel();
+        initObsIntegration();
+        salvarLocalData();
+    }
+
+    function updateObsPreferences() {
+        const durationSeconds = Number.parseInt(document.getElementById('obsDuration')?.value, 10);
+        obsSettings.duration = Math.min(15000, Math.max(2000, Number.isFinite(durationSeconds) ? durationSeconds * 1000 : 6000));
+        obsSettings.showName = document.getElementById('obsShowName')?.checked !== false;
+        syncObsControls();
+        salvarLocalData();
+    }
+
+    async function copyObsOverlayUrl() {
+        const url = getObsOverlayUrl();
+        const input = document.getElementById('obsOverlayUrl');
+        if (input) input.value = url;
+        try {
+            if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
+            else {
+                input?.focus();
+                input?.select();
+                document.execCommand('copy');
+            }
+            setObsStatus('URL COPIADA', 'ok');
+            playSfx('box');
+        } catch (error) {
+            console.warn('Não foi possível copiar a URL automaticamente.', error);
+            input?.focus();
+            input?.select();
+            setObsStatus('SELECIONE E COPIE A URL', 'error');
+        }
+    }
+
+    function buildObsPayload(data) {
+        const characterName = document.getElementById('charNameInput')?.value?.trim() || 'DESCONHECIDO';
+        return {
+            version: 1,
+            source: 'dark-dashboard',
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+            timestamp: Date.now(),
+            duration: obsSettings.duration,
+            character: obsSettings.showName ? characterName : '',
+            theme: getCurrentThemeName(),
+            channel: ensureObsChannel(),
+            ...data
+        };
+    }
+
+    async function sendObsEvent(data, force = false) {
+        if (!force && !obsSettings.enabled) return false;
+        const channel = ensureObsChannel();
+        const payload = buildObsPayload(data);
+        const serialized = JSON.stringify(payload);
+        let deliveredLocally = false;
+
+        try {
+            obsBroadcastChannel?.postMessage(payload);
+            deliveredLocally = Boolean(obsBroadcastChannel);
+        } catch (error) {
+            console.warn('Falha no canal local do overlay.', error);
+        }
+        try {
+            localStorage.setItem(OBS_LOCAL_EVENT_KEY, serialized);
+            deliveredLocally = true;
+        } catch (error) {
+            console.warn('Falha ao registrar evento local do overlay.', error);
+        }
+
+        try {
+            const response = await fetch(`${OBS_RELAY_BASE}/${encodeURIComponent(channel)}`, {
+                method: 'POST',
+                body: serialized,
+                mode: 'cors',
+                cache: 'no-store',
+                keepalive: true
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            setObsStatus('RESULTADO ENVIADO', 'ok');
+            return true;
+        } catch (error) {
+            console.warn('Relay remoto do OBS indisponível; tentativa local mantida.', error);
+            setObsStatus(deliveredLocally ? 'ENVIADO LOCALMENTE' : 'FALHA NA TRANSMISSÃO', deliveredLocally ? 'ok' : 'error');
+            return deliveredLocally;
+        }
+    }
+
+    function testObsOverlay() {
+        sendObsEvent({
+            event: 'test',
+            title: 'CONEXÃO ESTABELECIDA',
+            subtitle: 'DARK DASHBOARD // OBS',
+            rolls: [7, 13, 20],
+            chosen: 20,
+            bonus: 5,
+            total: 25,
+            critical: true,
+            failure: false,
+            damage: null
+        }, true);
+        playSfx('alert');
     }
     
     // Variáveis do Quadro Canvas (Pan e Zoom)
@@ -1165,7 +1415,8 @@
             });
         }
 
-        carregarLocalData(); 
+        carregarLocalData();
+        initObsIntegration();
         initParticles();
         
         // Ativa listeners de mudança e cores
@@ -1381,6 +1632,20 @@
             if (!document.body.contains(resultArea)) return;
             playSfx('alert');
             resultArea.innerHTML = finalResult;
+            sendObsEvent({
+                event: 'macro',
+                title: `MACRO // ${macro.nome}`,
+                subtitle: `ATAQUE ${macro.attr}`,
+                rolls: d20Rolls,
+                chosen: chosenD20,
+                bonus: skillBonus,
+                total: hitTotal,
+                critical: isCritical,
+                failure: isFailure,
+                damage: Math.max(0, damageTotal),
+                damageRolls,
+                damageDetail
+            });
         }, 1500);
     }
 
@@ -2144,6 +2409,18 @@
             let chosenDie = isDisadvantage ? Math.min(...rolls) : Math.max(...rolls); let total = chosenDie + bonus; let rollsText = rolls.join(' | ');
             let bonusLine = bonus > 0 ? `<div style="margin-top: 10px; color: var(--text-main);">BÔNUS DE PERÍCIA (${skillName}): +${bonus}</div>` : ''; let disadvText = isDisadvantage ? `<div style="margin-top: 5px; color: var(--alert-color); font-size: 0.8rem;">(DESVANTAGEM APLICADA: MENOR RESULTADO)</div>` : '';
             resultArea.innerHTML = `<div class="dice-result-box"><div class="dice-array">DADOS ROLADOS: [ ${rollsText} ]</div><div>DADO ESCOLHIDO: <span class="dice-highest">${chosenDie}</span></div>${disadvText}${bonusLine}<div class="dice-total">RESULTADO FINAL: ${total}</div></div>`;
+            sendObsEvent({
+                event: 'roll',
+                title: bonus > 0 ? `${currentRollData.attr} // ${skillName}` : currentRollData.attr,
+                subtitle: isDisadvantage ? 'ROLAGEM COM DESVANTAGEM' : (bonus > 0 ? 'TESTE DE PERÍCIA' : 'TESTE DE ATRIBUTO'),
+                rolls,
+                chosen: chosenDie,
+                bonus,
+                total,
+                critical: chosenDie === 20,
+                failure: chosenDie === 1,
+                damage: null
+            });
             playSfx('alert'); btnRoll.disabled = false; btnRoll.innerHTML = '[ NOVA ROLAGEM ]';
         }, 1200);
     }
@@ -2319,9 +2596,10 @@
         };
         
         const data = {
-            version: 3, dataMap: dataMap, safeBoxes: safeBoxes,
+            version: 4, dataMap: dataMap, safeBoxes: safeBoxes,
             theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
             vignette: isVignetteEnabled,
+            obs: { enabled: obsSettings.enabled, channel: ensureObsChannel(), duration: obsSettings.duration, showName: obsSettings.showName },
             items: inventoryItems, combatMode: isCombatMode, portrait: imgBase64,
             panelState: { pag1: pag1Order, pag2: pag2Order, collapsed: collapsedPanels },
             board: { notes: updatedBoardNotes, links: boardLinks, logs: updatedLogs },
@@ -2459,6 +2737,16 @@
                 delete background.dataset.b64;
             }
         }
+
+        if (data.obs && typeof data.obs === 'object') {
+            obsSettings.enabled = Boolean(data.obs.enabled);
+            obsSettings.channel = sanitizeObsChannel(data.obs.channel);
+            const savedDuration = Number.parseInt(data.obs.duration, 10);
+            obsSettings.duration = Number.isFinite(savedDuration) ? Math.min(15000, Math.max(2000, savedDuration)) : 6000;
+            obsSettings.showName = data.obs.showName !== false;
+        }
+        ensureObsChannel();
+        syncObsControls();
 
         if (data.panelState && typeof data.panelState === 'object') {
             const pag1 = document.getElementById('pag1');
