@@ -1314,7 +1314,20 @@
         if (!force && !obsSettings.enabled) return false;
         const channel = ensureObsChannel();
         const payload = buildObsPayload(data);
-        const serialized = JSON.stringify(payload);
+        let serialized = JSON.stringify(payload);
+        const payloadSize = value => {
+            try { return new TextEncoder().encode(value).length; }
+            catch (error) { return unescape(encodeURIComponent(value)).length; }
+        };
+        if (payload.event === 'hud' && payloadSize(serialized) > 3600 && payload.hud?.portrait) {
+            payload.hud = { ...payload.hud, portrait: '' };
+            serialized = JSON.stringify(payload);
+            setObsStatus('HUD ENVIADO SEM RETRATO: MINIATURA EXCEDEU O LIMITE', 'error');
+        }
+        if (payload.event === 'hud' && payloadSize(serialized) > 3900 && Array.isArray(payload.hud?.conditions)) {
+            payload.hud = { ...payload.hud, conditions: payload.hud.conditions.slice(0, 3) };
+            serialized = JSON.stringify(payload);
+        }
         let deliveredLocally = false;
 
         try {
@@ -1331,18 +1344,28 @@
         }
 
         try {
+            const controller = new AbortController();
+            const timeoutId = window.setTimeout(() => controller.abort(), 7000);
             const response = await fetch(`${OBS_RELAY_BASE}/${encodeURIComponent(channel)}`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                 body: serialized,
                 mode: 'cors',
                 cache: 'no-store',
-                keepalive: true
+                credentials: 'omit',
+                keepalive: true,
+                signal: controller.signal
             });
+            window.clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            setObsStatus('RESULTADO ENVIADO', 'ok');
+            setObsStatus(payload.remoteOnly ? 'TESTE REMOTO ENVIADO' : 'RESULTADO ENVIADO', 'ok');
             return true;
         } catch (error) {
             console.warn('Relay remoto do OBS indisponível; tentativa local mantida.', error);
+            if (payload.remoteOnly) {
+                setObsStatus('RELAY REMOTO NÃO RESPONDEU', 'error');
+                return false;
+            }
             setObsStatus(deliveredLocally ? 'ENVIADO LOCALMENTE' : 'FALHA NA TRANSMISSÃO', deliveredLocally ? 'ok' : 'error');
             return deliveredLocally;
         }
@@ -1359,8 +1382,11 @@
             total: 25,
             critical: true,
             failure: false,
-            damage: null
-        }, true);
+            damage: null,
+            remoteOnly: true
+        }, true).then(sent => {
+            if (sent) window.setTimeout(() => sendObsHudUpdate(true), 500);
+        });
         playSfx('alert');
     }
     
@@ -1739,10 +1765,10 @@
         const sourceX = Math.max(0, (image.naturalWidth - sourceSize) / 2);
         const sourceY = Math.max(0, (image.naturalHeight - sourceSize) / 2);
         const attempts = [
-            { size: 72, quality: 0.52 },
-            { size: 64, quality: 0.44 },
-            { size: 56, quality: 0.36 },
-            { size: 48, quality: 0.30 }
+            { size: 56, quality: 0.40 },
+            { size: 48, quality: 0.32 },
+            { size: 40, quality: 0.26 },
+            { size: 36, quality: 0.22 }
         ];
         let smallest = '';
         for (const attempt of attempts) {
@@ -1757,9 +1783,9 @@
             let dataUrl = canvas.toDataURL('image/webp', attempt.quality);
             if (!dataUrl.startsWith('data:image/webp')) dataUrl = canvas.toDataURL('image/jpeg', attempt.quality);
             if (!smallest || dataUrl.length < smallest.length) smallest = dataUrl;
-            if (dataUrl.length <= 2800) return dataUrl;
+            if (dataUrl.length <= 1500) return dataUrl;
         }
-        return smallest.length <= 3600 ? smallest : '';
+        return smallest.length <= 1900 ? smallest : '';
     }
 
     function refreshObsPortraitThumbnail() {
