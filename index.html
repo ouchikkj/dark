@@ -86,6 +86,30 @@
         body.font-pixel .menu-item { font-size: 1.1rem !important; }
         body.font-pixel .status-inputs input, body.font-pixel .def-box input { font-size: 1.2rem !important; }
 
+        /* --- CUSTOM SHAPES (GEOMETRIA DA INTERFACE) --- */
+        body.shape-round .panel, body.shape-round .sys-btn, body.shape-round .macro-item, body.shape-round .status-box, body.shape-round .def-box, body.shape-round .ability-card, body.shape-round .inventory-item, body.shape-round select, body.shape-round .modal-content, body.shape-round .portrait-box {
+            border-radius: 12px !important;
+        }
+        body.shape-round .box { border-radius: 4px !important; }
+        
+        body.shape-angular .panel, body.shape-angular .status-box, body.shape-angular .ability-card, body.shape-angular .inventory-item, body.shape-angular .modal-content, body.shape-angular .portrait-box {
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            border-radius: 0 !important;
+        }
+        body.shape-angular .sys-btn, body.shape-angular .fixed-menu-btn, body.shape-angular .fixed-combat-btn {
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            transform: none !important;
+        }
+        body.shape-angular .def-box { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border-radius: 0; }
+
+        /* --- WALLPAPER BACKGROUND --- */
+        .custom-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0; opacity: 0.18; mix-blend-mode: normal;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            display: none; pointer-events: none;
+        }
+
         /* --- EFEITOS VISUAIS: PARTICULAS E SANGUE --- */
         .particles-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; overflow: hidden; }
         .particle { position: absolute; background: var(--glow); border-radius: 50%; opacity: 0; animation: float-up linear infinite; }
@@ -220,9 +244,9 @@
         @media print {
             @page { size: A4 portrait; margin: 10mm; }
             body, html { background-color: #ffffff !important; color: #000000 !important; padding: 0 !important; margin: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            * { color: #000000 !important; text-shadow: none !important; border-color: #000000 !important; }
+            * { color: #000000 !important; text-shadow: none !important; border-color: #000000 !important; clip-path: none !important; border-radius: 0 !important; }
             
-            .blood-vignette, .particles-container, .top-fixed-controls, .mute-btn, .panel-controls, .hide-in-combat, .add-item-form, #btnConcluirAtributos, .glitch-overlay, #gameMenuOverlay, .overlay-screen, .modal-overlay, #classDetails, .bonus-display, .status-alert, .minimize-btn, .drag-handle, .combat-only-panel { display: none !important; }
+            .custom-bg, .blood-vignette, .particles-container, .top-fixed-controls, .mute-btn, .panel-controls, .hide-in-combat, .add-item-form, #btnConcluirAtributos, .glitch-overlay, #gameMenuOverlay, .overlay-screen, .modal-overlay, #classDetails, .bonus-display, .status-alert, .minimize-btn, .drag-handle, .combat-only-panel { display: none !important; }
             .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
             .pages-wrapper { display: block !important; column-count: 1 !important; }
             .page { display: block !important; opacity: 1 !important; page-break-after: always; }
@@ -494,6 +518,9 @@
         .dice-array { color: var(--dim-text); font-size: 0.9rem; margin-bottom: 15px; letter-spacing: 3px; }
         .dice-highest { color: var(--glow); font-weight: bold; font-size: 1.5rem; }
         .dice-total { color: var(--accent-green); font-size: 1.8rem; font-weight: normal; margin-top: 20px; border-top: 1px dashed var(--border-color); padding-top: 20px;}
+        
+        .dice-suspense-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px; }
+        .dice-suspense-value { font-size: 4rem; font-weight: bold; color: var(--glow); text-shadow: 0 0 15px var(--glow); font-family: monospace; letter-spacing: 2px; margin-top: 10px; }
 
         @keyframes glitch-spin {
             0% { transform: translate(0) rotate(0deg) scale(1); text-shadow: 2px 0 var(--alert-color), -2px 0 var(--accent-green); }
@@ -515,6 +542,7 @@
 <div id="glitchOverlay" class="glitch-overlay"></div>
 <div id="bloodVignette" class="blood-vignette"></div>
 <div id="particlesContainer" class="particles-container"></div>
+<div id="customBgContainer" class="custom-bg"></div>
 
 <div class="top-fixed-controls">
     <button class="fixed-menu-btn" onclick="toggleMenu()">
@@ -578,6 +606,22 @@
                     <button id="btn-font-pixel" class="sys-btn" onclick="setFont('pixel', this)">PIXEL</button>
                     <button id="btn-font-typewriter" class="sys-btn" onclick="setFont('typewriter', this)">MÁQUINA</button>
                     <button id="btn-font-book" class="sys-btn" onclick="setFont('book', this)">LIVRO</button>
+                </div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">GEOMETRIA DA INTERFACE</span>
+                <div class="options-row">
+                    <button id="btn-shape-default" class="sys-btn active" onclick="setShape('default', this)">PADRÃO</button>
+                    <button id="btn-shape-round" class="sys-btn" onclick="setShape('round', this)">ARREDONDADO</button>
+                    <button id="btn-shape-angular" class="sys-btn" onclick="setShape('angular', this)">ANGULAR</button>
+                </div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">PLANO DE FUNDO (WALLPAPER)</span>
+                <div class="options-row">
+                    <input type="file" id="bgUploadInput" style="display: none;" accept="image/*" onchange="loadCustomBackground(event)">
+                    <button class="sys-btn" onclick="document.getElementById('bgUploadInput').click()">ENVIAR IMAGEM</button>
+                    <button class="sys-btn" onclick="clearCustomBackground()" style="color: var(--alert-color); border-color: var(--alert-color);">REMOVER</button>
                 </div>
             </div>
             <div class="options-group">
@@ -901,6 +945,7 @@
     const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon']);
     const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
     const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
+    const ALLOWED_SHAPES = new Set(['default', 'round', 'angular']);
 
     function escapeHTML(value) {
         return String(value ?? '')
@@ -1019,6 +1064,89 @@
         salvarLocalData();
     }
 
+    function setShape(type, btnElement) {
+        const shapeType = ALLOWED_SHAPES.has(type) ? type : 'default';
+        playSfx('click');
+        document.body.classList.remove('shape-round', 'shape-angular');
+        if (shapeType !== 'default') document.body.classList.add(`shape-${shapeType}`);
+
+        const buttons = btnElement?.parentElement?.querySelectorAll('.sys-btn')
+            || document.querySelectorAll('[id^="btn-shape-"]');
+        buttons.forEach(button => button.classList.remove('active'));
+        document.getElementById(`btn-shape-${shapeType}`)?.classList.add('active');
+        salvarLocalData();
+    }
+
+    function loadCustomBackground(event) {
+        const input = event?.target;
+        const file = input?.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            abrirModalCustom('ERRO // Selecione um arquivo de imagem válido.', false, false, function(){});
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => {
+            abrirModalCustom('ERRO // Não foi possível ler a imagem selecionada.', false, false, function(){});
+            input.value = '';
+        };
+        reader.onload = e => {
+            const image = new Image();
+            image.onerror = () => {
+                abrirModalCustom('ERRO // A imagem selecionada não pôde ser processada.', false, false, function(){});
+                input.value = '';
+            };
+            image.onload = () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const maxSize = 1920;
+                    let width = image.naturalWidth || image.width;
+                    let height = image.naturalHeight || image.height;
+                    if (!width || !height) throw new Error('Dimensões inválidas.');
+
+                    const scale = Math.min(1, maxSize / Math.max(width, height));
+                    width = Math.max(1, Math.round(width * scale));
+                    height = Math.max(1, Math.round(height * scale));
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const context = canvas.getContext('2d');
+                    if (!context) throw new Error('Canvas indisponível.');
+                    context.drawImage(image, 0, 0, width, height);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.5);
+                    const background = document.getElementById('customBgContainer');
+                    if (!background) return;
+                    background.style.backgroundImage = `url("${base64}")`;
+                    background.style.display = 'block';
+                    background.dataset.b64 = base64;
+                    autoSalvarOtimizado();
+                } catch (error) {
+                    console.error('Falha ao processar wallpaper.', error);
+                    abrirModalCustom('ERRO // Não foi possível aplicar o plano de fundo.', false, false, function(){});
+                } finally {
+                    input.value = '';
+                }
+            };
+            image.src = String(e.target?.result || '');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearCustomBackground() {
+        playSfx('click');
+        const background = document.getElementById('customBgContainer');
+        if (!background) return;
+        background.style.backgroundImage = 'none';
+        background.style.display = 'none';
+        delete background.dataset.b64;
+        const input = document.getElementById('bgUploadInput');
+        if (input) input.value = '';
+        salvarLocalData();
+    }
+
     function windowInitSetup() {
         // Gera o DOM dos atributos ANTES de carregar os dados
         const attrsList = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA']; 
@@ -1125,133 +1253,135 @@
     }
 
     function rolarMacro(id) {
-        playSfx('roll');
-        let macro = combatMacros.find(m => m.id === id);
-        if(!macro) return;
+        const macro = combatMacros.find(item => item.id === id);
+        if (!macro) return;
 
-        let activeConds = getActiveConditions();
-        let effAttr = getEffectiveAttributes()[macro.attr];
+        const activeConds = getActiveConditions();
+        const effectiveAttributes = getEffectiveAttributes();
+        const effectiveAttribute = Number(effectiveAttributes[macro.attr]) || 0;
         let penalty = 0;
-        if (activeConds.cond_abalado) penalty += 1; 
+        if (activeConds.cond_abalado) penalty += 1;
         if (activeConds.cond_apavorado) penalty += 2;
-        if (macro.attr === 'FOR' || macro.attr === 'DES' || macro.attr === 'VIG') { 
-            if (activeConds.cond_debilitado || activeConds.cond_exausto) penalty += 2; 
-            else if (activeConds.cond_fraco || activeConds.cond_fatigado) penalty += 1; 
-            if (activeConds.cond_cego && (macro.attr === 'FOR' || macro.attr === 'DES')) penalty += 2; 
+        if (['FOR', 'DES', 'VIG'].includes(macro.attr)) {
+            if (activeConds.cond_debilitado || activeConds.cond_exausto) penalty += 2;
+            else if (activeConds.cond_fraco || activeConds.cond_fatigado) penalty += 1;
+            if (activeConds.cond_cego && ['FOR', 'DES'].includes(macro.attr)) penalty += 2;
         }
-        if (macro.attr === 'INT' || macro.attr === 'APA') { 
-            if (activeConds.cond_esmorecido) penalty += 2; 
-            else if (activeConds.cond_frustrado) penalty += 1; 
+        if (['INT', 'APA'].includes(macro.attr)) {
+            if (activeConds.cond_esmorecido) penalty += 2;
+            else if (activeConds.cond_frustrado) penalty += 1;
         }
-        
-        let finalDiceNum = effAttr - penalty;
-        let actualDiceToRoll = finalDiceNum > 0 ? finalDiceNum : Math.abs(finalDiceNum) + 2; 
-        let isDisadvantage = finalDiceNum <= 0;
 
-        let d20Rolls = [];
-        for (let i = 0; i < actualDiceToRoll; i++) {
-            d20Rolls.push(Math.floor(Math.random() * 20) + 1);
-        }
-        let chosenD20 = isDisadvantage ? Math.min(...d20Rolls) : Math.max(...d20Rolls);
+        const finalDiceNumber = effectiveAttribute - penalty;
+        const diceToRoll = finalDiceNumber > 0 ? finalDiceNumber : Math.abs(finalDiceNumber) + 2;
+        const disadvantage = finalDiceNumber <= 0;
+        const d20Rolls = Array.from({ length: Math.max(1, diceToRoll) }, () => Math.floor(Math.random() * 20) + 1);
+        const chosenD20 = disadvantage ? Math.min(...d20Rolls) : Math.max(...d20Rolls);
+        const skillBonus = Number.parseInt(macro.skill, 10) || 0;
+        const hitTotal = chosenD20 + skillBonus;
+        const isCritical = chosenD20 === 20;
+        const isFailure = chosenD20 === 1;
 
-        let hitTotal = chosenD20 + macro.skill;
-        let isCrit = chosenD20 === 20;
-        let isFail = chosenD20 === 1;
+        let damageTotal = 0;
+        const damageRolls = [];
+        let damageExpression = String(macro.dmg || '0').toLowerCase().replace(/\s/g, '');
+        let criticalMultiplier = 1;
+        let extraCriticalBonus = 0;
+        let criticalText = '';
 
-        // --- NOVO PARSER DE DANO INTELIGENTE E COMPLETO ---
-        let dmgTotal = 0;
-        let dmgRolls = [];
-        let dmgString = macro.dmg.toLowerCase().replace(/\s/g, '');
-        
-        let critMultiplier = 1;
-        let extraCritB = 0;
-        let critTextHtml = '';
-
-        if (isCrit) {
-            let c = (macro.crit || "x2").toLowerCase().replace(/\s/g, '');
-            if (c.startsWith('x')) {
-                critMultiplier = parseInt(c.replace('x', '')) || 2;
-                critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DADOS x${critMultiplier} ]</div>`;
-            } else if (c.includes('d')) {
-                if(!c.startsWith('+') && !c.startsWith('-')) c = '+' + c;
-                dmgString += c; 
-                critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO EXTRA: ${escapeHTML(c)} ]</div>`;
-            } else if (c.startsWith('+') || !isNaN(parseInt(c))) {
-                extraCritB = parseInt(c.replace('+', '')) || 0;
-                critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO FIXO: +${extraCritB} ]</div>`;
+        if (isCritical) {
+            let criticalRule = String(macro.crit || 'x2').toLowerCase().replace(/\s/g, '');
+            if (criticalRule.startsWith('x')) {
+                criticalMultiplier = Math.max(1, Number.parseInt(criticalRule.slice(1), 10) || 2);
+                criticalText = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DADOS x${criticalMultiplier} ]</div>`;
+            } else if (criticalRule.includes('d')) {
+                if (!criticalRule.startsWith('+') && !criticalRule.startsWith('-')) criticalRule = `+${criticalRule}`;
+                damageExpression += criticalRule;
+                criticalText = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO EXTRA: ${escapeHTML(criticalRule)} ]</div>`;
+            } else if (criticalRule.startsWith('+') || Number.isFinite(Number.parseInt(criticalRule, 10))) {
+                extraCriticalBonus = Number.parseInt(criticalRule.replace('+', ''), 10) || 0;
+                criticalText = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DANO FIXO: +${extraCriticalBonus} ]</div>`;
             } else {
-                critMultiplier = 2; 
-                critTextHtml = `<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DADOS x2 ]</div>`;
+                criticalMultiplier = 2;
+                criticalText = '<div style="color:var(--gold-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ CRÍTICO! DADOS x2 ]</div>';
             }
         }
 
-        // Garante que todo bloco comece com + se não tiver sinal, para facilitar o split
-        dmgString = dmgString.replace(/(^|[+-])d/g, '$11d'); 
-        if (!dmgString.startsWith('+') && !dmgString.startsWith('-')) {
-            dmgString = '+' + dmgString;
-        }
+        damageExpression = damageExpression.replace(/(^|[+-])d/g, '$11d');
+        if (!damageExpression.startsWith('+') && !damageExpression.startsWith('-')) damageExpression = `+${damageExpression}`;
 
-        let regex = /([+-])(\d+)(?:d(\d+))?/g;
+        const damageRegex = /([+-])(\d+)(?:d(\d+))?/g;
         let match;
-        let dmgBonus = 0; // Guardará a soma dos modificadores fixos
-
-        while ((match = regex.exec(dmgString)) !== null) {
-            let sign = match[1] === '-' ? -1 : 1;
-            let countOrFlat = parseInt(match[2]);
-            
-            if (match[3]) { 
-                // É um dado (ex: +2d6)
-                let faces = parseInt(match[3]);
-                let rollCount = countOrFlat * critMultiplier; // Multiplica apenas a quantia de DADOS
-                for(let i=0; i<rollCount; i++) {
-                    let r = Math.floor(Math.random() * faces) + 1;
-                    let finalR = r * sign;
-                    dmgRolls.push(finalR);
-                    dmgTotal += finalR;
+        let fixedDamageBonus = 0;
+        while ((match = damageRegex.exec(damageExpression)) !== null) {
+            const sign = match[1] === '-' ? -1 : 1;
+            const amount = Number.parseInt(match[2], 10);
+            if (match[3]) {
+                const faces = Number.parseInt(match[3], 10);
+                if (!faces || faces < 1) continue;
+                const rollCount = Math.min(500, amount * criticalMultiplier);
+                for (let index = 0; index < rollCount; index++) {
+                    const roll = (Math.floor(Math.random() * faces) + 1) * sign;
+                    damageRolls.push(roll);
+                    damageTotal += roll;
                 }
-            } else { 
-                // É um número fixo (ex: +40)
-                let flat = countOrFlat * sign;
-                dmgBonus += flat;
-                dmgTotal += flat;
+            } else {
+                const fixed = amount * sign;
+                fixedDamageBonus += fixed;
+                damageTotal += fixed;
             }
         }
+        damageTotal += extraCriticalBonus;
 
-        dmgTotal += extraCritB; // Adiciona bônus crítico puro (se houver)
-
-        let resultArea = document.getElementById('diceResultArea');
-        resultArea.style.display = 'block';
-        
-        let failHtml = isFail ? `<div style="color:var(--alert-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ FALHA CRÍTICA! ]</div>` : '';
-        
-        let hitHtml = `<div style="margin-bottom:15px; border-bottom:1px dashed var(--border-color); padding-bottom:10px;">
+        const failureText = isFailure
+            ? '<div style="color:var(--alert-color); font-weight:bold; font-size:1rem; margin-bottom:5px;">[ FALHA CRÍTICA! ]</div>'
+            : '';
+        const attackText = `<div style="margin-bottom:15px; border-bottom:1px dashed var(--border-color); padding-bottom:10px;">
             <div style="color:var(--dim-text); font-size:0.9rem; letter-spacing:2px;">ATAQUE (${escapeHTML(macro.attr)})</div>
-            <div style="font-size:1.5rem; font-weight:bold; color:${isCrit?'var(--gold-color)':(isFail?'var(--alert-color)':'var(--text-main)')};">${hitTotal} <span style="font-size:0.8rem; color:var(--dim-text); font-weight:normal;">(d20: ${chosenD20} + ${macro.skill})</span></div>
-            ${actualDiceToRoll > 1 ? `<div style="font-size:0.7rem; color:var(--dim-text); margin-top: 5px;">[ ${d20Rolls.join(' | ')} ] ${isDisadvantage ? '(Desvantagem)' : ''}</div>` : ''}
+            <div style="font-size:1.5rem; font-weight:bold; color:${isCritical ? 'var(--gold-color)' : (isFailure ? 'var(--alert-color)' : 'var(--text-main)')};">${hitTotal} <span style="font-size:0.8rem; color:var(--dim-text); font-weight:normal;">(d20: ${chosenD20} + ${skillBonus})</span></div>
+            ${d20Rolls.length > 1 ? `<div style="font-size:0.7rem; color:var(--dim-text); margin-top:5px;">[ ${d20Rolls.join(' | ')} ] ${disadvantage ? '(Desvantagem)' : ''}</div>` : ''}
         </div>`;
 
-        let strRolls = dmgRolls.length > 0 ? `[ ${dmgRolls.map(r => r > 0 ? r : `(${r})`).join(' + ').replace(/\+ \(/g, '- ')} ] ` : '';
-        let totalBonus = dmgBonus + extraCritB;
-        let strBonus = totalBonus !== 0 ? (totalBonus > 0 ? `+ ${totalBonus}` : `- ${Math.abs(totalBonus)}`) : '';
-        let dmgDetail = (strRolls + strBonus).trim() || '0';
-        
-        let dmgHtml = `<div>
+        const rollsText = damageRolls.length
+            ? `[ ${damageRolls.map(roll => roll > 0 ? roll : `(${roll})`).join(' + ').replace(/\+ \(/g, '- ')} ] `
+            : '';
+        const totalBonus = fixedDamageBonus + extraCriticalBonus;
+        const bonusText = totalBonus ? (totalBonus > 0 ? `+ ${totalBonus}` : `- ${Math.abs(totalBonus)}`) : '';
+        const damageDetail = `${rollsText}${bonusText}`.trim() || '0';
+        const damageText = `<div>
             <div style="color:var(--alert-color); font-size:0.9rem; letter-spacing:2px; margin-bottom:5px;">DANO CAUSADO</div>
-            <div style="font-size:2rem; font-weight:bold; color:var(--alert-color); text-shadow: 0 0 10px rgba(255,0,0,0.5);">${Math.max(0, dmgTotal)}</div>
-            <div style="color:var(--dim-text); font-size:0.75rem;">${dmgDetail}</div>
+            <div style="font-size:2rem; font-weight:bold; color:var(--alert-color); text-shadow:0 0 10px rgba(255,0,0,0.5);">${Math.max(0, damageTotal)}</div>
+            <div style="color:var(--dim-text); font-size:0.75rem;">${damageDetail}</div>
+        </div>`;
+        const finalResult = `<div class="dice-result-box" style="text-align:center; border-color:var(--alert-color); padding-top:15px;">
+            <div style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-bottom:15px; letter-spacing:2px;">MACRO // ${escapeHTML(macro.nome).toUpperCase()}</div>
+            ${criticalText}${failureText}${attackText}${damageText}
         </div>`;
 
-        resultArea.innerHTML = `<div class="dice-result-box" style="text-align:center; border-color:var(--alert-color); padding-top: 15px;">
-            <div style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-bottom:15px; letter-spacing:2px;">MACRO // ${escapeHTML(String(macro.nome)).toUpperCase()}</div>
-            ${critTextHtml}${failHtml}${hitHtml}${dmgHtml}
-        </div>`;
+        const resultArea = document.getElementById('diceResultArea');
+        const modal = document.getElementById('diceModal');
+        if (!resultArea || !modal) return;
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = '<div class="dice-result-box dice-suspense-container"><div class="rolling-dice-anim" style="font-size:4rem;">🎲</div><div class="dice-suspense-value" id="macroSuspenseValue">--</div><div style="color:var(--dim-text); margin-top:15px; letter-spacing:2px;">CALCULANDO IMPACTO TÁTICO...</div></div>';
 
-        document.getElementById('btnExecRoll').style.display = 'none'; 
-        let skillSel = document.getElementById('diceSkillSelect');
-        if(skillSel && skillSel.parentElement) skillSel.parentElement.style.display = 'none'; 
-        document.getElementById('diceModalDesc').innerText = "ANÁLISE DE COMBATE";
-        document.getElementById('diceModal').style.display = 'flex';
-        playSfx('alert');
+        document.getElementById('btnExecRoll')?.style.setProperty('display', 'none');
+        const skillSelect = document.getElementById('diceSkillSelect');
+        if (skillSelect?.parentElement) skillSelect.parentElement.style.display = 'none';
+        const description = document.getElementById('diceModalDesc');
+        if (description) description.innerText = 'ANÁLISE DE COMBATE';
+        modal.style.display = 'flex';
+        playSfx('roll');
+
+        const suspenseInterval = window.setInterval(() => {
+            const value = document.getElementById('macroSuspenseValue');
+            if (value) value.innerText = String(Math.floor(Math.random() * 20) + 1);
+        }, 50);
+        window.setTimeout(() => {
+            window.clearInterval(suspenseInterval);
+            if (!document.body.contains(resultArea)) return;
+            playSfx('alert');
+            resultArea.innerHTML = finalResult;
+        }, 1500);
     }
 
     function adicionarItem(nome = null, peso = null, desc = null, isLoading = false) {
@@ -1960,6 +2090,12 @@
                 if(fontType !== 'mono') document.body.classList.add('font-' + fontType);
             }
 
+            const activeShapeButton = document.querySelector('[id^="btn-shape-"].active');
+            if (activeShapeButton) {
+                const shapeType = activeShapeButton.id.replace('btn-shape-', '');
+                if (ALLOWED_SHAPES.has(shapeType) && shapeType !== 'default') document.body.classList.add(`shape-${shapeType}`);
+            }
+
             salvarLocalData();
         }, 150);
     }
@@ -2145,7 +2281,7 @@
 
         let imgBase64 = ''; let portraitImg = document.getElementById('portraitImg'); if(portraitImg && portraitImg.style.display === 'block') { imgBase64 = portraitImg.src; }
         
-        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').replace(/font-\w+/g, '').trim(); 
+        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').replace(/font-\w+/g, '').replace(/shape-\w+/g, '').trim(); 
         if(isCombatMode) { savedTheme = document.body.getAttribute('data-prev-theme') || 'theme-default'; }
         
         let savedFont = 'mono';
@@ -2155,6 +2291,13 @@
         else if(document.body.classList.contains('font-pixel')) savedFont = 'pixel';
         else if(document.body.classList.contains('font-typewriter')) savedFont = 'typewriter';
         else if(document.body.classList.contains('font-book')) savedFont = 'book';
+
+        let savedShape = 'default';
+        if (document.body.classList.contains('shape-round')) savedShape = 'round';
+        else if (document.body.classList.contains('shape-angular')) savedShape = 'angular';
+
+        const background = document.getElementById('customBgContainer');
+        const customBackground = background?.dataset.b64 || '';
 
         let pag1Order = Array.from(document.getElementById('pag1').children).filter(e => e.classList.contains('panel') || e.id === 'panel-attr-specials').map(e => e.id);
         let pag2Order = Array.from(document.getElementById('pag2').children).filter(e => e.classList.contains('panel')).map(e => e.id);
@@ -2177,7 +2320,7 @@
         
         const data = {
             version: 3, dataMap: dataMap, safeBoxes: safeBoxes,
-            theme: savedTheme, fontType: savedFont, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
+            theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
             vignette: isVignetteEnabled,
             items: inventoryItems, combatMode: isCombatMode, portrait: imgBase64,
             panelState: { pag1: pag1Order, pag2: pag2Order, collapsed: collapsedPanels },
@@ -2293,6 +2436,29 @@
         const fontType = ALLOWED_FONTS.has(requestedFont) ? requestedFont : 'mono';
         if (fontType !== 'mono') document.body.classList.add(`font-${fontType}`);
         document.getElementById(`btn-font-${fontType}`)?.classList.add('active');
+
+        document.body.classList.remove('shape-round', 'shape-angular');
+        document.querySelectorAll('[id^="btn-shape-"]').forEach(button => button.classList.remove('active'));
+        const requestedShape = typeof data.shape === 'string' ? data.shape : 'default';
+        const shapeType = ALLOWED_SHAPES.has(requestedShape) ? requestedShape : 'default';
+        if (shapeType !== 'default') document.body.classList.add(`shape-${shapeType}`);
+        document.getElementById(`btn-shape-${shapeType}`)?.classList.add('active');
+
+        const background = document.getElementById('customBgContainer');
+        if (background) {
+            const customBackground = typeof data.customBg === 'string' && data.customBg.startsWith('data:image/')
+                ? data.customBg
+                : '';
+            if (customBackground) {
+                background.style.backgroundImage = `url("${customBackground}")`;
+                background.style.display = 'block';
+                background.dataset.b64 = customBackground;
+            } else {
+                background.style.backgroundImage = 'none';
+                background.style.display = 'none';
+                delete background.dataset.b64;
+            }
+        }
 
         if (data.panelState && typeof data.panelState === 'object') {
             const pag1 = document.getElementById('pag1');
@@ -2518,6 +2684,5 @@
         }
     }
 </script>
-
 </body>
 </html>
