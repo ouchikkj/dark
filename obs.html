@@ -187,8 +187,13 @@
             let eventSource = null;
             let relaySocket = null;
             let relayPollTimer = null;
-            let relayFallbackStarted = false;
-            let sseOpened = false;
+            let relayReconnectTimer = null;
+            let relayWatchdogTimer = null;
+            let relayMode = 'none';
+            let relayFailureCount = 0;
+            let relayPollCycles = 0;
+            let relayPollBusy = false;
+            let lastRelayActivity = Date.now();
             let broadcastChannel = null;
             applyLayout('standard');
 
@@ -337,56 +342,181 @@
                 }, event.duration);
             }
 
+            function noteRelayActivity() {
+                lastRelayActivity = Date.now();
+            }
+
             function parseRelayEnvelope(envelope) {
                 try {
                     const parsed = typeof envelope === 'string' ? JSON.parse(envelope) : envelope;
-                    if (!parsed || parsed.event !== 'message') return;
+                    if (!parsed || typeof parsed !== 'object') return;
+                    noteRelayActivity();
+                    if (parsed.event === 'open' || parsed.event === 'keepalive') return;
+                    if (parsed.event !== 'message') return;
                     enqueue(JSON.parse(parsed.message), 'remote');
                 } catch (error) {
                     console.warn('Evento remoto inválido.', error);
                 }
             }
 
-            async function pollRelay(since = '30s') {
+            async function pollRelay(since = '12h') {
+                if (relayPollBusy) return false;
+                relayPollBusy = true;
+                const controller = new AbortController();
+                const timeoutId = window.setTimeout(() => controller.abort(), 9000);
                 try {
                     const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=${encodeURIComponent(since)}&_=${Date.now()}`;
-                    const response = await fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit' });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const response = await fetch(url, {
+                        mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
+                    });
+                    if (!response.ok) {
+                        if (response.status === 429) setConnection('LIMITE TEMPORÁRIO DO RELAY ATINGIDO', true);
+                        throw new Error(`HTTP ${response.status}`);
+                    }
                     const text = await response.text();
+                    noteRelayActivity();
                     text.split(/\r?\n/).filter(Boolean).forEach(line => parseRelayEnvelope(line));
                     return true;
                 } catch (error) {
                     console.warn('Polling do relay indisponível.', error);
                     return false;
+                } finally {
+                    window.clearTimeout(timeoutId);
+                    relayPollBusy = false;
                 }
             }
 
-            function startPollingFallback() {
-                if (relayPollTimer) return;
-                relayFallbackStarted = true;
-                setConnection('MODO COMPATÍVEL: POLLING', true);
-                pollRelay('latest');
-                relayPollTimer = window.setInterval(() => pollRelay('30s'), 4000);
+            function clearRelayReconnect() {
+                if (relayReconnectTimer) window.clearTimeout(relayReconnectTimer);
+                relayReconnectTimer = null;
             }
 
-            function startWebSocketFallback() {
-                if (relaySocket || relayFallbackStarted) return;
-                relayFallbackStarted = true;
+            function closeRelayTransport() {
+                clearRelayReconnect();
+                if (eventSource) {
+                    try { eventSource.onerror = null; eventSource.onmessage = null; eventSource.close(); } catch (error) {}
+                    eventSource = null;
+                }
+                if (relaySocket) {
+                    try {
+                        relaySocket.onopen = relaySocket.onmessage = relaySocket.onerror = relaySocket.onclose = null;
+                        relaySocket.close();
+                    } catch (error) {}
+                    relaySocket = null;
+                }
+                if (relayPollTimer) window.clearTimeout(relayPollTimer);
+                relayPollTimer = null;
+                relayMode = 'none';
+            }
+
+            function scheduleRelayReconnect(delay = 3000, mode = 'sse') {
+                clearRelayReconnect();
+                if (navigator.onLine === false) {
+                    setConnection('SEM INTERNET — AGUARDANDO RECONEXÃO', true);
+                    return;
+                }
+                relayReconnectTimer = window.setTimeout(() => {
+                    relayReconnectTimer = null;
+                    if (mode === 'websocket') startWebSocketTransport();
+                    else if (mode === 'polling') startPollingFallback();
+                    else startSseTransport();
+                }, delay);
+            }
+
+            function startPollingFallback() {
+                closeRelayTransport();
+                relayMode = 'polling';
+                relayPollCycles = 0;
+                setConnection('MODO COMPATÍVEL // RECUPERANDO SINAL', true);
+
+                const runPoll = async () => {
+                    if (relayMode !== 'polling') return;
+                    const ok = await pollRelay(relayPollCycles === 0 ? '12h' : '90s');
+                    relayPollCycles += 1;
+                    if (ok && relayPollCycles === 1) setConnection('OVERLAY CONECTADO // POLLING', true);
+                    if (relayPollCycles >= 4) {
+                        // O polling é apenas emergência. Tenta restaurar o stream a cada ~2 minutos.
+                        scheduleRelayReconnect(1000, 'sse');
+                        return;
+                    }
+                    relayPollTimer = window.setTimeout(runPoll, ok ? 30000 : 45000);
+                };
+                runPoll();
+            }
+
+            function startWebSocketTransport() {
+                closeRelayTransport();
+                relayMode = 'websocket';
+                setConnection('RECONECTANDO OVERLAY...', true);
                 try {
-                    relaySocket = new WebSocket(`wss://ntfy.sh/${encodeURIComponent(channel)}/ws`);
-                    const fallbackTimer = window.setTimeout(() => {
-                        if (relaySocket?.readyState !== WebSocket.OPEN) startPollingFallback();
-                    }, 4500);
-                    relaySocket.addEventListener('open', () => {
-                        window.clearTimeout(fallbackTimer);
+                    const socket = new WebSocket(`wss://ntfy.sh/${encodeURIComponent(channel)}/ws`);
+                    relaySocket = socket;
+                    const openTimeout = window.setTimeout(() => {
+                        if (relaySocket === socket && socket.readyState !== WebSocket.OPEN) startPollingFallback();
+                    }, 8000);
+                    socket.onopen = () => {
+                        if (relaySocket !== socket) return;
+                        window.clearTimeout(openTimeout);
+                        noteRelayActivity();
+                        relayFailureCount = 0;
                         setConnection('OVERLAY CONECTADO // WEBSOCKET', true);
-                    });
-                    relaySocket.addEventListener('message', event => parseRelayEnvelope(event.data));
-                    relaySocket.addEventListener('error', () => startPollingFallback());
-                    relaySocket.addEventListener('close', () => startPollingFallback());
+                        pollRelay('12h');
+                    };
+                    socket.onmessage = event => parseRelayEnvelope(event.data);
+                    socket.onerror = () => {
+                        window.clearTimeout(openTimeout);
+                        if (relaySocket === socket) startPollingFallback();
+                    };
+                    socket.onclose = () => {
+                        window.clearTimeout(openTimeout);
+                        if (relaySocket === socket) startPollingFallback();
+                    };
                 } catch (error) {
                     console.warn('WebSocket do relay indisponível.', error);
                     startPollingFallback();
+                }
+            }
+
+            function startSseTransport() {
+                closeRelayTransport();
+                relayMode = 'sse';
+                setConnection('CONECTANDO OVERLAY...', true);
+                try {
+                    const source = new EventSource(`https://ntfy.sh/${encodeURIComponent(channel)}/sse`);
+                    eventSource = source;
+                    let opened = false;
+                    const openTimeout = window.setTimeout(() => {
+                        if (!opened && eventSource === source) {
+                            relayFailureCount += 1;
+                            startWebSocketTransport();
+                        }
+                    }, 9000);
+                    source.onopen = () => {
+                        if (eventSource !== source) return;
+                        opened = true;
+                        window.clearTimeout(openTimeout);
+                        noteRelayActivity();
+                        relayFailureCount = 0;
+                        setConnection('OVERLAY CONECTADO // SSE', true);
+                        // Recupera o HUD mais recente do cache do relay após recarregar/reconectar.
+                        pollRelay('12h');
+                    };
+                    source.addEventListener('keepalive', () => noteRelayActivity());
+                    source.addEventListener('open', () => noteRelayActivity());
+                    source.onmessage = event => parseRelayEnvelope(event.data);
+                    source.onerror = () => {
+                        window.clearTimeout(openTimeout);
+                        if (eventSource !== source) return;
+                        relayFailureCount += 1;
+                        try { source.close(); } catch (error) {}
+                        eventSource = null;
+                        if (relayFailureCount >= 2) scheduleRelayReconnect(2500, 'websocket');
+                        else scheduleRelayReconnect(2500, 'sse');
+                    };
+                } catch (error) {
+                    console.warn('SSE do relay indisponível.', error);
+                    relayFailureCount += 1;
+                    startWebSocketTransport();
                 }
             }
 
@@ -407,27 +537,39 @@
                 try { enqueue(JSON.parse(event.newValue), 'local'); } catch (error) { console.warn(error); }
             });
 
-            try {
-                eventSource = new EventSource(`https://ntfy.sh/${encodeURIComponent(channel)}/sse`);
-                const sseFallbackTimer = window.setTimeout(() => {
-                    if (!sseOpened) startWebSocketFallback();
-                }, 4500);
-                eventSource.addEventListener('open', () => {
-                    sseOpened = true;
-                    window.clearTimeout(sseFallbackTimer);
-                    setConnection('OVERLAY CONECTADO // SSE', true);
-                    pollRelay('latest');
-                });
-                eventSource.onmessage = event => parseRelayEnvelope(event.data);
-                eventSource.onerror = () => {
-                    setConnection('SSE INDISPONÍVEL — TENTANDO ALTERNATIVA', true);
-                    startWebSocketFallback();
-                };
-            } catch (error) {
-                setConnection('SSE INDISPONÍVEL — TENTANDO ALTERNATIVA', true);
-                console.warn(error);
-                startWebSocketFallback();
-            }
+            window.addEventListener('online', () => {
+                relayFailureCount = 0;
+                startSseTransport();
+            });
+            window.addEventListener('offline', () => {
+                closeRelayTransport();
+                setConnection('SEM INTERNET — OVERLAY PAUSADO', true);
+            });
+            window.addEventListener('pageshow', () => {
+                if (navigator.onLine === false) return;
+                if (relayMode === 'none') startSseTransport();
+                else pollRelay('12h');
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && navigator.onLine !== false) {
+                    if (Date.now() - lastRelayActivity > 60000 || relayMode === 'none') startSseTransport();
+                    else pollRelay('12h');
+                }
+            });
+            window.addEventListener('beforeunload', closeRelayTransport);
+
+            // O servidor envia keepalive normalmente a cada ~45 s. Se nenhum sinal chegar
+            // por mais de 110 s, a conexão do Chromium/OBS é considerada congelada e refeita.
+            relayWatchdogTimer = window.setInterval(() => {
+                if (navigator.onLine === false || relayMode === 'polling') return;
+                if (Date.now() - lastRelayActivity > 110000) {
+                    setConnection('CONEXÃO CONGELADA — RECONECTANDO', true);
+                    relayFailureCount += 1;
+                    startSseTransport();
+                }
+            }, 15000);
+
+            startSseTransport();
         })();
     </script>
 </body>
