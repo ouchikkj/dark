@@ -171,7 +171,11 @@
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
+            const OVERLAY_VERSION = '2026.07.18.2';
+            const OBS_PROTOCOL_VERSION = 3;
+            const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+            const accessKey = String(params.get('key') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
             const defaultDuration = Math.min(15000, Math.max(2000, (Number.parseInt(params.get('duration'), 10) || 6) * 1000));
             const stage = document.getElementById('stage');
             const connection = document.getElementById('connection');
@@ -227,6 +231,10 @@
             function normalize(payload) {
                 if (!payload || typeof payload !== 'object') return null;
                 if (payload.channel && String(payload.channel) !== channel) return null;
+                if (accessKey && String(payload.accessKey || '') !== accessKey) return null;
+                if (String(payload.event || '') === 'ack') return null;
+                const protocol = Number(payload.protocol) || 2;
+                if (protocol > OBS_PROTOCOL_VERSION) setConnection(`VERSÃO DO OVERLAY DESATUALIZADA // PROTOCOLO ${protocol}`, true);
                 const timestamp = Number(payload.timestamp) || Date.now();
                 const eventType = String(payload.event || 'roll');
                 if (eventType !== 'hud' && timestamp < bootTime - 2500) return null;
@@ -236,6 +244,8 @@
                 if (receivedIds.size > 150) receivedIds.delete(receivedIds.values().next().value);
                 return {
                     id,
+                    protocol,
+                    appVersion: String(payload.appVersion || ''),
                     timestamp,
                     duration: Math.min(15000, Math.max(2000, Number(payload.duration) || defaultDuration)),
                     event: eventType,
@@ -251,6 +261,7 @@
                     failure: Boolean(payload.failure),
                     theme: String(payload.theme || 'default'),
                     layout: String(payload.layout || 'standard'),
+                    accessKey: String(payload.accessKey || ''),
                     hud: payload.hud && typeof payload.hud === 'object' ? {
                         ...payload.hud,
                         portrait: typeof payload.hud.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(payload.hud.portrait) && payload.hud.portrait.length <= 4000 ? payload.hud.portrait : ''
@@ -258,6 +269,28 @@
                 };
             }
 
+
+
+            async function sendAck(event, ackType = 'hud') {
+                const ack = {
+                    version: 3, protocol: OBS_PROTOCOL_VERSION, overlayVersion: OVERLAY_VERSION,
+                    source: 'dark-obs-overlay', event: 'ack', ackType, ackFor: event.id,
+                    id: `ack-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    timestamp: Date.now(), channel, accessKey
+                };
+                try { broadcastChannel?.postMessage(ack); } catch (error) {}
+                try { localStorage.setItem('DarkObsLastAck', JSON.stringify(ack)); } catch (error) {}
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+                    try {
+                        await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+                            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                            body: JSON.stringify(ack), mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
+                        });
+                    } finally { window.clearTimeout(timeoutId); }
+                } catch (error) { console.warn('Confirmação remota do overlay indisponível.', error); }
+            }
 
             function clampPercent(current, max) {
                 const maximum = Math.max(1, Number(max) || 1);
@@ -292,6 +325,7 @@
                     const tag = document.createElement('span'); tag.className = 'hud-condition'; tag.textContent = String(condition).slice(0, 40); hudConditions.appendChild(tag);
                 });
                 persistentHud.classList.add('visible');
+                sendAck(event, 'hud');
             }
 
             function enqueue(payload, transport = 'local') {
@@ -299,6 +333,7 @@
                 const event = normalize(payload);
                 if (!event) return;
                 if (event.event === 'hud') { updateHud(event); return; }
+                if (queue.length >= MAX_QUEUE_SIZE) queue.shift();
                 queue.push(event);
                 if (!active) showNext();
             }
@@ -335,6 +370,7 @@
                     </div>`;
                 stage.replaceChildren(card);
                 requestAnimationFrame(() => card.classList.add('visible'));
+                if (event.event === 'test') sendAck(event, 'test');
                 window.setTimeout(() => {
                     card.classList.remove('visible');
                     card.classList.add('leaving');
@@ -346,17 +382,33 @@
                 lastRelayActivity = Date.now();
             }
 
-            function parseRelayEnvelope(envelope) {
+            function extractRelayPayload(envelope) {
                 try {
                     const parsed = typeof envelope === 'string' ? JSON.parse(envelope) : envelope;
-                    if (!parsed || typeof parsed !== 'object') return;
+                    if (!parsed || typeof parsed !== 'object') return null;
                     noteRelayActivity();
-                    if (parsed.event === 'open' || parsed.event === 'keepalive') return;
-                    if (parsed.event !== 'message') return;
-                    enqueue(JSON.parse(parsed.message), 'remote');
-                } catch (error) {
-                    console.warn('Evento remoto inválido.', error);
-                }
+                    if (parsed.event === 'open' || parsed.event === 'keepalive') return null;
+                    if (parsed.event !== 'message') return null;
+                    const payload = JSON.parse(parsed.message);
+                    if (payload?.event === 'ack') return null;
+                    return payload;
+                } catch (error) { console.warn('Evento remoto inválido.', error); return null; }
+            }
+
+            function parseRelayEnvelope(envelope) {
+                const payload = extractRelayPayload(envelope);
+                if (payload) enqueue(payload, 'remote');
+            }
+
+            function processRelayBatch(text) {
+                const payloads = text.split(/\r?\n/).filter(Boolean).map(extractRelayPayload).filter(Boolean);
+                let latestHud = null;
+                payloads.forEach(payload => {
+                    if (String(payload.event || '') === 'hud') {
+                        if (!latestHud || Number(payload.timestamp || 0) > Number(latestHud.timestamp || 0)) latestHud = payload;
+                    } else if (Number(payload.timestamp || 0) >= bootTime - 2500) enqueue(payload, 'remote');
+                });
+                if (latestHud) enqueue(latestHud, 'remote');
             }
 
             async function pollRelay(since = '12h') {
@@ -366,24 +418,16 @@
                 const timeoutId = window.setTimeout(() => controller.abort(), 9000);
                 try {
                     const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=${encodeURIComponent(since)}&_=${Date.now()}`;
-                    const response = await fetch(url, {
-                        mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
-                    });
+                    const response = await fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal });
                     if (!response.ok) {
                         if (response.status === 429) setConnection('LIMITE TEMPORÁRIO DO RELAY ATINGIDO', true);
                         throw new Error(`HTTP ${response.status}`);
                     }
                     const text = await response.text();
-                    noteRelayActivity();
-                    text.split(/\r?\n/).filter(Boolean).forEach(line => parseRelayEnvelope(line));
-                    return true;
+                    noteRelayActivity(); processRelayBatch(text); return true;
                 } catch (error) {
-                    console.warn('Polling do relay indisponível.', error);
-                    return false;
-                } finally {
-                    window.clearTimeout(timeoutId);
-                    relayPollBusy = false;
-                }
+                    console.warn('Polling do relay indisponível.', error); return false;
+                } finally { window.clearTimeout(timeoutId); relayPollBusy = false; }
             }
 
             function clearRelayReconnect() {
@@ -519,6 +563,8 @@
                     startWebSocketTransport();
                 }
             }
+
+            if (!accessKey) setConnection('CANAL LEGADO SEM CHAVE — RECOPIE A URL', true);
 
             if (!channel || channel.length < 16) {
                 setConnection('CANAL INVÁLIDO — COPIE A URL PELO DASHBOARD', true);
