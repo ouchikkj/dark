@@ -1403,6 +1403,8 @@
     let pendingHudDelivery = null;
     let hudAckTimer = null;
     let hudRetryTimer = null;
+    let lastObsRemotePublishAt = 0;
+    let obsRelayBlockedUntil = 0;
     let obsAckEventSource = null;
     let obsAckReconnectTimer = null;
     let lastObsAckAt = 0;
@@ -1414,7 +1416,7 @@
     let activeProfileId = '';
     let profilesIndex = null;
 
-    const APP_VERSION = '2026.07.19.1';
+    const APP_VERSION = '2026.07.19.2';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -1432,6 +1434,8 @@
     const MAX_HISTORY_ENTRIES = 30;
     const OBS_RELAY_BASE = 'https://ntfy.sh';
     const OBS_LOCAL_EVENT_KEY = 'DarkObsLastEvent';
+    const OBS_HUD_REMOTE_MIN_INTERVAL = 8000;
+    const OBS_RELAY_BACKOFF_MS = 60000;
     const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon', 'theme-custom']);
     const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
     const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
@@ -1850,6 +1854,13 @@
         try { localStorage.setItem(OBS_LOCAL_EVENT_KEY, serialized); deliveredLocally = true; }
         catch (error) { console.warn('Falha ao registrar evento local do overlay.', error); }
 
+        const now = Date.now();
+        if (now < obsRelayBlockedUntil) {
+            const waitSeconds = Math.max(1, Math.ceil((obsRelayBlockedUntil - now) / 1000));
+            setObsStatus(deliveredLocally ? `RELAY EM RECUPERAÇÃO // LOCAL ATIVO // ${waitSeconds}S` : `RELAY EM RECUPERAÇÃO // ${waitSeconds}S`, 'error');
+            return { remote: false, local: deliveredLocally, payload, bytes, trimmed, rateLimited: true, retryAfter: obsRelayBlockedUntil - now };
+        }
+
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), 7000);
         try {
@@ -1858,15 +1869,19 @@
                 mode: 'cors', cache: 'no-store', credentials: 'omit', keepalive: bytes < 64000, signal: controller.signal
             });
             if (!response.ok) { const relayError = new Error(`HTTP ${response.status}`); relayError.status = response.status; throw relayError; }
-            const label = payload.event === 'hud' ? 'HUD PUBLICADO // AGUARDANDO OBS' : payload.remoteOnly ? 'TESTE REMOTO PUBLICADO' : 'RESULTADO PUBLICADO';
+            lastObsRemotePublishAt = Date.now();
+            obsRelayBlockedUntil = 0;
+            const label = payload.event === 'hud' ? 'HUD SINCRONIZADO' : payload.remoteOnly ? 'TESTE REMOTO PUBLICADO' : 'RESULTADO PUBLICADO';
             setObsStatus(trimmed.length ? `${label} // SEM ${trimmed.join(' E ')}` : label, 'ok');
             return { remote: true, local: deliveredLocally, payload, bytes, trimmed };
         } catch (error) {
             console.warn('Relay remoto do OBS indisponível; tentativa local mantida.', error);
-            if (error?.status === 429) setObsStatus('LIMITE TEMPORÁRIO DO RELAY ATINGIDO', 'error');
-            else if (payload.remoteOnly) setObsStatus('TESTE REMOTO NÃO CHEGOU AO RELAY', 'error');
+            if (error?.status === 429) {
+                obsRelayBlockedUntil = Date.now() + OBS_RELAY_BACKOFF_MS;
+                setObsStatus(deliveredLocally ? 'RELAY EM PAUSA // ENTREGA LOCAL ATIVA' : 'RELAY EM PAUSA // RECUPERAÇÃO AUTOMÁTICA', 'error');
+            } else if (payload.remoteOnly) setObsStatus('TESTE REMOTO NÃO CHEGOU AO RELAY', 'error');
             else setObsStatus(deliveredLocally ? 'SOMENTE ENTREGA LOCAL // OBS REMOTO NÃO CONFIRMADO' : 'FALHA NA TRANSMISSÃO', 'error');
-            return { remote: false, local: deliveredLocally, payload, bytes, trimmed, error };
+            return { remote: false, local: deliveredLocally, payload, bytes, trimmed, error, rateLimited: error?.status === 429, retryAfter: error?.status === 429 ? OBS_RELAY_BACKOFF_MS : 0 };
         } finally { window.clearTimeout(timeoutId); }
     }
 
@@ -2466,7 +2481,11 @@
 
     function scheduleObsHudUpdate(immediate = false) {
         clearTimeout(hudUpdateTimer);
-        hudUpdateTimer = window.setTimeout(() => sendObsHudUpdate(false), immediate ? 0 : 650);
+        const now = Date.now();
+        const relayWait = Math.max(0, obsRelayBlockedUntil - now);
+        const intervalWait = Math.max(0, OBS_HUD_REMOTE_MIN_INTERVAL - (now - lastObsRemotePublishAt));
+        const baseDelay = immediate ? 0 : 1800;
+        hudUpdateTimer = window.setTimeout(() => sendObsHudUpdate(false), Math.max(baseDelay, relayWait, intervalWait));
     }
 
     async function sendObsHudUpdate(force = false, attempt = 0) {
@@ -2474,28 +2493,33 @@
         refreshObsPortraitThumbnail();
         const hud = getObsHudState();
         const signature = JSON.stringify({ hud, name: document.getElementById('charNameInput')?.value || '', theme: getCurrentThemeName(), layout: sanitizeObsLayout(obsSettings.layout) });
-        if (!force && signature === lastHudSignature && !pendingHudDelivery) return false;
+        if (!force && signature === lastHudSignature) return false;
+
+        const now = Date.now();
+        const relayWait = Math.max(0, obsRelayBlockedUntil - now);
+        const intervalWait = Math.max(0, OBS_HUD_REMOTE_MIN_INTERVAL - (now - lastObsRemotePublishAt));
+        const wait = Math.max(relayWait, intervalWait);
+        if (wait > 0) {
+            clearTimeout(hudRetryTimer);
+            hudRetryTimer = window.setTimeout(() => sendObsHudUpdate(true, attempt), wait + 150);
+            setObsStatus(relayWait > 0 ? 'RELAY EM RECUPERAÇÃO // HUD NA FILA' : 'HUD AGRUPADO // AGUARDANDO ENVIO', relayWait > 0 ? 'error' : 'idle');
+            return false;
+        }
+
         clearTimeout(hudRetryTimer); hudRetryTimer = null;
         const result = await sendObsEvent({ event: 'hud', title: 'HUD', subtitle: 'STATUS', rolls: [], chosen: 0, bonus: 0, total: 0, damage: null, hud }, force);
         if (result.remote) {
             lastHudSignature = signature;
-            pendingHudDelivery = { id: result.payload.id, signature, attempt, sentAt: Date.now() };
-            clearTimeout(hudAckTimer);
-            hudAckTimer = window.setTimeout(() => {
-                if (!pendingHudDelivery || pendingHudDelivery.id !== result.payload.id) return;
-                if (attempt < 1 && obsSettings.enabled && navigator.onLine !== false) {
-                    pendingHudDelivery = null;
-                    sendObsHudUpdate(true, attempt + 1);
-                } else {
-                    pendingHudDelivery = null;
-                    setObsStatus('HUD PUBLICADO // OBS NÃO CONFIRMOU', 'error');
-                }
-            }, 9000);
+            pendingHudDelivery = null;
+            clearTimeout(hudAckTimer); hudAckTimer = null;
             return true;
         }
-        lastHudSignature = '';
-        if (attempt < 2 && obsSettings.enabled && navigator.onLine !== false) {
-            hudRetryTimer = window.setTimeout(() => sendObsHudUpdate(true, attempt + 1), attempt === 0 ? 3500 : 10000);
+        if (result.local) lastHudSignature = signature;
+        if (obsSettings.enabled && navigator.onLine !== false) {
+            const retryDelay = result.rateLimited ? Math.max(OBS_RELAY_BACKOFF_MS, Number(result.retryAfter) || 0) : Math.min(30000, 5000 * (attempt + 1));
+            if (attempt < 3 || result.rateLimited) {
+                hudRetryTimer = window.setTimeout(() => sendObsHudUpdate(true, Math.min(attempt + 1, 3)), retryDelay + 250);
+            }
         }
         return false;
     }
