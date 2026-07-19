@@ -171,7 +171,7 @@
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.18.2';
+            const OVERLAY_VERSION = '2026.07.19.3-safe';
             const OBS_PROTOCOL_VERSION = 3;
             const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
@@ -188,17 +188,12 @@
             const receivedIds = new Set();
             const bootTime = Date.now();
             let active = false;
-            let eventSource = null;
             let relaySocket = null;
-            let relayPollTimer = null;
-            let relayReconnectTimer = null;
-            let relayWatchdogTimer = null;
-            let relayMode = 'none';
-            let relayFailureCount = 0;
-            let relayPollCycles = 0;
-            let relayPollBusy = false;
-            let lastRelayActivity = Date.now();
+            let reconnectTimer = null;
+            let reconnectAttempt = 0;
+            let recoveryDone = false;
             let broadcastChannel = null;
+            let currentPortrait = '';
             applyLayout('standard');
 
             function safe(value) {
@@ -228,6 +223,10 @@
                 if (selected !== 'standard') document.body.classList.add(`layout-${selected}`);
             }
 
+            function validPortrait(value) {
+                return typeof value === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value) && value.length <= 4000;
+            }
+
             function normalize(payload) {
                 if (!payload || typeof payload !== 'object') return null;
                 if (payload.channel && String(payload.channel) !== channel) return null;
@@ -237,65 +236,74 @@
                 if (protocol > OBS_PROTOCOL_VERSION) setConnection(`VERSÃO DO OVERLAY DESATUALIZADA // PROTOCOLO ${protocol}`, true);
                 const timestamp = Number(payload.timestamp) || Date.now();
                 const eventType = String(payload.event || 'roll');
-                if (eventType !== 'hud' && timestamp < bootTime - 2500) return null;
+                if (!['hud', 'portrait'].includes(eventType) && timestamp < bootTime - 2500) return null;
                 const id = String(payload.id || `${timestamp}-${Math.random()}`);
                 if (receivedIds.has(id)) return null;
                 receivedIds.add(id);
                 if (receivedIds.size > 150) receivedIds.delete(receivedIds.values().next().value);
+                let hud = null;
+                if (payload.hud && typeof payload.hud === 'object') {
+                    hud = { ...payload.hud };
+                    if (Object.prototype.hasOwnProperty.call(payload.hud, 'portrait')) {
+                        hud.portrait = validPortrait(payload.hud.portrait) ? payload.hud.portrait : '';
+                    } else delete hud.portrait;
+                }
                 return {
-                    id,
-                    protocol,
-                    appVersion: String(payload.appVersion || ''),
-                    timestamp,
+                    id, protocol, appVersion: String(payload.appVersion || ''), timestamp,
                     duration: Math.min(15000, Math.max(2000, Number(payload.duration) || defaultDuration)),
-                    event: eventType,
-                    character: String(payload.character || '').slice(0, 80),
+                    event: eventType, character: String(payload.character || '').slice(0, 80),
                     title: String(payload.title || 'ROLAGEM').slice(0, 120),
                     subtitle: String(payload.subtitle || 'DARK DASHBOARD').slice(0, 100),
                     message: String(payload.message || '').slice(0, 900),
                     rolls: Array.isArray(payload.rolls) ? payload.rolls.slice(0, 30).map(Number) : [],
-                    chosen: Number(payload.chosen) || 0,
-                    bonus: Number(payload.bonus) || 0,
+                    chosen: Number(payload.chosen) || 0, bonus: Number(payload.bonus) || 0,
                     total: Number(payload.total) || 0,
                     damage: payload.damage === null || payload.damage === undefined ? null : Math.max(0, Number(payload.damage) || 0),
-                    critical: Boolean(payload.critical),
-                    failure: Boolean(payload.failure),
-                    theme: String(payload.theme || 'default'),
-                    layout: String(payload.layout || 'standard'),
-                    accessKey: String(payload.accessKey || ''),
-                    hud: payload.hud && typeof payload.hud === 'object' ? {
-                        ...payload.hud,
-                        portrait: typeof payload.hud.portrait === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(payload.hud.portrait) && payload.hud.portrait.length <= 4000 ? payload.hud.portrait : ''
-                    } : null
+                    critical: Boolean(payload.critical), failure: Boolean(payload.failure),
+                    theme: String(payload.theme || 'default'), layout: String(payload.layout || 'standard'),
+                    portrait: validPortrait(payload.portrait) ? payload.portrait : (payload.portrait === '' ? '' : undefined),
+                    hud
                 };
             }
 
-
-
-            async function sendAck(event, ackType = 'hud') {
+            async function sendTestAck(event) {
                 const ack = {
                     version: 3, protocol: OBS_PROTOCOL_VERSION, overlayVersion: OVERLAY_VERSION,
-                    source: 'dark-obs-overlay', event: 'ack', ackType, ackFor: event.id,
+                    source: 'dark-obs-overlay', event: 'ack', ackType: 'test', ackFor: event.id,
                     id: `ack-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                     timestamp: Date.now(), channel, accessKey
                 };
-                try { broadcastChannel?.postMessage(ack); } catch (error) {}
-                try { localStorage.setItem('DarkObsLastAck', JSON.stringify(ack)); } catch (error) {}
                 try {
                     const controller = new AbortController();
                     const timeoutId = window.setTimeout(() => controller.abort(), 5000);
                     try {
                         await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
-                            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
                             body: JSON.stringify(ack), mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
                         });
                     } finally { window.clearTimeout(timeoutId); }
-                } catch (error) { console.warn('Confirmação remota do overlay indisponível.', error); }
+                } catch (error) { console.warn('Confirmação do teste indisponível.', error); }
             }
 
             function clampPercent(current, max) {
                 const maximum = Math.max(1, Number(max) || 1);
                 return Math.max(0, Math.min(100, ((Number(current) || 0) / maximum) * 100));
+            }
+
+            function applyCurrentPortrait() {
+                if (currentPortrait) {
+                    if (hudPortrait.src !== currentPortrait) hudPortrait.src = currentPortrait;
+                    persistentHud.classList.add('has-portrait');
+                } else {
+                    hudPortrait.removeAttribute('src');
+                    persistentHud.classList.remove('has-portrait');
+                }
+            }
+
+            function updatePortrait(event) {
+                if (event.portrait !== undefined) currentPortrait = event.portrait;
+                applyCurrentPortrait();
             }
 
             function updateHud(event) {
@@ -308,13 +316,8 @@
                 applyLayout(event.layout);
                 hudCharacter.textContent = event.character || 'DESCONHECIDO';
                 hudAfi.textContent = `AFI ${Number(hud.afi) || 1}`;
-                if (hud.portrait) {
-                    if (hudPortrait.src !== hud.portrait) hudPortrait.src = hud.portrait;
-                    persistentHud.classList.add('has-portrait');
-                } else {
-                    hudPortrait.removeAttribute('src');
-                    persistentHud.classList.remove('has-portrait');
-                }
+                if (Object.prototype.hasOwnProperty.call(hud, 'portrait')) currentPortrait = hud.portrait || '';
+                applyCurrentPortrait();
                 [['Vd','vd'], ['San','san'], ['Pe','pe']].forEach(([prefix, key]) => {
                     const stat = hud[key] || { current: 0, max: 1 };
                     document.getElementById(`hud${prefix}Fill`).style.width = `${clampPercent(stat.current, stat.max)}%`;
@@ -323,16 +326,19 @@
                 hudConditions.replaceChildren();
                 const conditions = Array.isArray(hud.conditions) ? hud.conditions.slice(0, 8) : [];
                 conditions.forEach(condition => {
-                    const tag = document.createElement('span'); tag.className = 'hud-condition'; tag.textContent = String(condition).slice(0, 40); hudConditions.appendChild(tag);
+                    const tag = document.createElement('span');
+                    tag.className = 'hud-condition';
+                    tag.textContent = String(condition).slice(0, 40);
+                    hudConditions.appendChild(tag);
                 });
                 persistentHud.classList.add('visible');
-                sendAck(event, 'hud');
             }
 
             function enqueue(payload, transport = 'local') {
                 if (payload?.remoteOnly && transport !== 'remote') return;
                 const event = normalize(payload);
                 if (!event) return;
+                if (event.event === 'portrait') { updatePortrait(event); return; }
                 if (event.event === 'hud') { updateHud(event); return; }
                 if (queue.length >= MAX_QUEUE_SIZE) queue.shift();
                 queue.push(event);
@@ -349,8 +355,12 @@
                     const card = document.createElement('section');
                     card.className = 'card';
                     card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div></div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
-                    stage.replaceChildren(card); requestAnimationFrame(() => card.classList.add('visible')); sendAck(event, 'banner');
-                    window.setTimeout(() => { card.classList.remove('visible'); card.classList.add('leaving'); window.setTimeout(() => { card.remove(); showNext(); }, 420); }, event.duration);
+                    stage.replaceChildren(card);
+                    requestAnimationFrame(() => card.classList.add('visible'));
+                    window.setTimeout(() => {
+                        card.classList.remove('visible'); card.classList.add('leaving');
+                        window.setTimeout(() => { card.remove(); showNext(); }, 420);
+                    }, event.duration);
                     return;
                 }
                 const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
@@ -361,17 +371,11 @@
                 card.innerHTML = `
                     <div class="scanlines"></div>
                     <div class="topline">
-                        <div>
-                            <div class="character">${safe(event.character)}</div>
-                            <div class="title">${safe(event.title)}</div>
-                        </div>
+                        <div><div class="character">${safe(event.character)}</div><div class="title">${safe(event.title)}</div></div>
                         <div class="badge">${safe(status)}</div>
                     </div>
                     <div class="content">
-                        <div>
-                            <div class="rolls">DADOS: ${safe(rolls)}</div>
-                            <div class="chosen">ESCOLHIDO: <strong>${event.chosen}</strong>${safe(bonus)}</div>
-                        </div>
+                        <div><div class="rolls">DADOS: ${safe(rolls)}</div><div class="chosen">ESCOLHIDO: <strong>${event.chosen}</strong>${safe(bonus)}</div></div>
                         <div class="result-wrap">
                             ${event.damage !== null ? `<div class="result-block damage"><div class="result-label">DANO</div><div class="result">${event.damage}</div></div>` : ''}
                             <div class="result-block"><div class="result-label">${safe(event.subtitle)}</div><div class="result">${event.total}</div></div>
@@ -379,23 +383,17 @@
                     </div>`;
                 stage.replaceChildren(card);
                 requestAnimationFrame(() => card.classList.add('visible'));
-                if (event.event === 'test') sendAck(event, 'test');
+                if (event.event === 'test') sendTestAck(event);
                 window.setTimeout(() => {
-                    card.classList.remove('visible');
-                    card.classList.add('leaving');
+                    card.classList.remove('visible'); card.classList.add('leaving');
                     window.setTimeout(() => { card.remove(); showNext(); }, 420);
                 }, event.duration);
-            }
-
-            function noteRelayActivity() {
-                lastRelayActivity = Date.now();
             }
 
             function extractRelayPayload(envelope) {
                 try {
                     const parsed = typeof envelope === 'string' ? JSON.parse(envelope) : envelope;
                     if (!parsed || typeof parsed !== 'object') return null;
-                    noteRelayActivity();
                     if (parsed.event === 'open' || parsed.event === 'keepalive') return null;
                     if (parsed.event !== 'message') return null;
                     const payload = JSON.parse(parsed.message);
@@ -409,172 +407,87 @@
                 if (payload) enqueue(payload, 'remote');
             }
 
-            function processRelayBatch(text) {
+            function processRecoveryBatch(text) {
                 const payloads = text.split(/\r?\n/).filter(Boolean).map(extractRelayPayload).filter(Boolean);
                 let latestHud = null;
+                let latestPortrait = null;
                 payloads.forEach(payload => {
-                    if (String(payload.event || '') === 'hud') {
-                        if (!latestHud || Number(payload.timestamp || 0) > Number(latestHud.timestamp || 0)) latestHud = payload;
-                    } else if (Number(payload.timestamp || 0) >= bootTime - 2500) enqueue(payload, 'remote');
+                    const type = String(payload.event || '');
+                    if (type === 'hud' && (!latestHud || Number(payload.timestamp || 0) > Number(latestHud.timestamp || 0))) latestHud = payload;
+                    if (type === 'portrait' && (!latestPortrait || Number(payload.timestamp || 0) > Number(latestPortrait.timestamp || 0))) latestPortrait = payload;
                 });
+                if (latestPortrait) enqueue(latestPortrait, 'remote');
                 if (latestHud) enqueue(latestHud, 'remote');
             }
 
-            async function pollRelay(since = '12h') {
-                if (relayPollBusy) return false;
-                relayPollBusy = true;
+            async function recoverPersistentStateOnce() {
+                if (recoveryDone) return;
+                recoveryDone = true;
                 const controller = new AbortController();
                 const timeoutId = window.setTimeout(() => controller.abort(), 9000);
                 try {
-                    const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=${encodeURIComponent(since)}&_=${Date.now()}`;
+                    const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=12h&_=${Date.now()}`;
                     const response = await fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal });
                     if (!response.ok) {
-                        if (response.status === 429) setConnection('LIMITE TEMPORÁRIO DO RELAY ATINGIDO', true);
+                        if (response.status === 429) setConnection('RELAY TEMPORARIAMENTE LIMITADO // HUD AO VIVO CONTINUA', true);
                         throw new Error(`HTTP ${response.status}`);
                     }
-                    const text = await response.text();
-                    noteRelayActivity(); processRelayBatch(text); return true;
+                    processRecoveryBatch(await response.text());
                 } catch (error) {
-                    console.warn('Polling do relay indisponível.', error); return false;
-                } finally { window.clearTimeout(timeoutId); relayPollBusy = false; }
+                    console.warn('Recuperação única do HUD indisponível.', error);
+                } finally { window.clearTimeout(timeoutId); }
             }
 
-            function clearRelayReconnect() {
-                if (relayReconnectTimer) window.clearTimeout(relayReconnectTimer);
-                relayReconnectTimer = null;
+            function closeRelaySocket() {
+                clearTimeout(reconnectTimer); reconnectTimer = null;
+                if (!relaySocket) return;
+                try {
+                    relaySocket.onopen = relaySocket.onmessage = relaySocket.onerror = relaySocket.onclose = null;
+                    relaySocket.close();
+                } catch (error) {}
+                relaySocket = null;
             }
 
-            function closeRelayTransport() {
-                clearRelayReconnect();
-                if (eventSource) {
-                    try { eventSource.onerror = null; eventSource.onmessage = null; eventSource.close(); } catch (error) {}
-                    eventSource = null;
-                }
-                if (relaySocket) {
-                    try {
-                        relaySocket.onopen = relaySocket.onmessage = relaySocket.onerror = relaySocket.onclose = null;
-                        relaySocket.close();
-                    } catch (error) {}
-                    relaySocket = null;
-                }
-                if (relayPollTimer) window.clearTimeout(relayPollTimer);
-                relayPollTimer = null;
-                relayMode = 'none';
-            }
-
-            function scheduleRelayReconnect(delay = 3000, mode = 'sse') {
-                clearRelayReconnect();
-                if (navigator.onLine === false) {
-                    setConnection('SEM INTERNET — AGUARDANDO RECONEXÃO', true);
-                    return;
-                }
-                relayReconnectTimer = window.setTimeout(() => {
-                    relayReconnectTimer = null;
-                    if (mode === 'websocket') startWebSocketTransport();
-                    else if (mode === 'polling') startPollingFallback();
-                    else startSseTransport();
+            function scheduleReconnect() {
+                if (navigator.onLine === false || reconnectTimer) return;
+                const base = Math.min(60000, 4000 * (2 ** Math.min(reconnectAttempt, 4)));
+                const delay = base + Math.floor(Math.random() * 1200);
+                reconnectAttempt += 1;
+                setConnection(`RECONECTANDO EM ${Math.ceil(delay / 1000)}s`, true);
+                reconnectTimer = window.setTimeout(() => {
+                    reconnectTimer = null;
+                    startRelaySocket();
                 }, delay);
             }
 
-            function startPollingFallback() {
-                closeRelayTransport();
-                relayMode = 'polling';
-                relayPollCycles = 0;
-                setConnection('MODO COMPATÍVEL // RECUPERANDO SINAL', true);
-
-                const runPoll = async () => {
-                    if (relayMode !== 'polling') return;
-                    const ok = await pollRelay(relayPollCycles === 0 ? '12h' : '90s');
-                    relayPollCycles += 1;
-                    if (ok && relayPollCycles === 1) setConnection('OVERLAY CONECTADO // POLLING', true);
-                    if (relayPollCycles >= 4) {
-                        // O polling é apenas emergência. Tenta restaurar o stream a cada ~2 minutos.
-                        scheduleRelayReconnect(1000, 'sse');
-                        return;
-                    }
-                    relayPollTimer = window.setTimeout(runPoll, ok ? 30000 : 45000);
-                };
-                runPoll();
-            }
-
-            function startWebSocketTransport() {
-                closeRelayTransport();
-                relayMode = 'websocket';
-                setConnection('RECONECTANDO OVERLAY...', true);
+            function startRelaySocket() {
+                if (navigator.onLine === false) return;
+                closeRelaySocket();
+                setConnection('CONECTANDO OVERLAY...', true);
                 try {
                     const socket = new WebSocket(`wss://ntfy.sh/${encodeURIComponent(channel)}/ws`);
                     relaySocket = socket;
-                    const openTimeout = window.setTimeout(() => {
-                        if (relaySocket === socket && socket.readyState !== WebSocket.OPEN) startPollingFallback();
-                    }, 8000);
                     socket.onopen = () => {
                         if (relaySocket !== socket) return;
-                        window.clearTimeout(openTimeout);
-                        noteRelayActivity();
-                        relayFailureCount = 0;
-                        setConnection('OVERLAY CONECTADO // WEBSOCKET', true);
-                        pollRelay('12h');
+                        reconnectAttempt = 0;
+                        setConnection('OVERLAY CONECTADO // SESSÃO SEGURA', true);
+                        recoverPersistentStateOnce();
                     };
                     socket.onmessage = event => parseRelayEnvelope(event.data);
-                    socket.onerror = () => {
-                        window.clearTimeout(openTimeout);
-                        if (relaySocket === socket) startPollingFallback();
-                    };
+                    socket.onerror = () => { if (relaySocket === socket) socket.close(); };
                     socket.onclose = () => {
-                        window.clearTimeout(openTimeout);
-                        if (relaySocket === socket) startPollingFallback();
+                        if (relaySocket !== socket) return;
+                        relaySocket = null;
+                        scheduleReconnect();
                     };
                 } catch (error) {
                     console.warn('WebSocket do relay indisponível.', error);
-                    startPollingFallback();
-                }
-            }
-
-            function startSseTransport() {
-                closeRelayTransport();
-                relayMode = 'sse';
-                setConnection('CONECTANDO OVERLAY...', true);
-                try {
-                    const source = new EventSource(`https://ntfy.sh/${encodeURIComponent(channel)}/sse`);
-                    eventSource = source;
-                    let opened = false;
-                    const openTimeout = window.setTimeout(() => {
-                        if (!opened && eventSource === source) {
-                            relayFailureCount += 1;
-                            startWebSocketTransport();
-                        }
-                    }, 9000);
-                    source.onopen = () => {
-                        if (eventSource !== source) return;
-                        opened = true;
-                        window.clearTimeout(openTimeout);
-                        noteRelayActivity();
-                        relayFailureCount = 0;
-                        setConnection('OVERLAY CONECTADO // SSE', true);
-                        // Recupera o HUD mais recente do cache do relay após recarregar/reconectar.
-                        pollRelay('12h');
-                    };
-                    source.addEventListener('keepalive', () => noteRelayActivity());
-                    source.addEventListener('open', () => noteRelayActivity());
-                    source.onmessage = event => parseRelayEnvelope(event.data);
-                    source.onerror = () => {
-                        window.clearTimeout(openTimeout);
-                        if (eventSource !== source) return;
-                        relayFailureCount += 1;
-                        try { source.close(); } catch (error) {}
-                        eventSource = null;
-                        if (relayFailureCount >= 2) scheduleRelayReconnect(2500, 'websocket');
-                        else scheduleRelayReconnect(2500, 'sse');
-                    };
-                } catch (error) {
-                    console.warn('SSE do relay indisponível.', error);
-                    relayFailureCount += 1;
-                    startWebSocketTransport();
+                    relaySocket = null;
+                    scheduleReconnect();
                 }
             }
 
             if (!accessKey) setConnection('CANAL LEGADO SEM CHAVE — RECOPIE A URL', true);
-
             if (!channel || channel.length < 16) {
                 setConnection('CANAL INVÁLIDO — COPIE A URL PELO DASHBOARD', true);
                 return;
@@ -586,45 +499,17 @@
                     broadcastChannel.addEventListener('message', event => enqueue(event.data, 'local'));
                 } catch (error) { console.warn(error); }
             }
-
             window.addEventListener('storage', event => {
                 if (event.key !== 'DarkObsLastEvent' || !event.newValue) return;
                 try { enqueue(JSON.parse(event.newValue), 'local'); } catch (error) { console.warn(error); }
             });
-
-            window.addEventListener('online', () => {
-                relayFailureCount = 0;
-                startSseTransport();
-            });
+            window.addEventListener('online', () => { reconnectAttempt = 0; startRelaySocket(); });
             window.addEventListener('offline', () => {
-                closeRelayTransport();
-                setConnection('SEM INTERNET — OVERLAY PAUSADO', true);
+                closeRelaySocket();
+                setConnection('SEM INTERNET — ÚLTIMO HUD PRESERVADO', true);
             });
-            window.addEventListener('pageshow', () => {
-                if (navigator.onLine === false) return;
-                if (relayMode === 'none') startSseTransport();
-                else pollRelay('12h');
-            });
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && navigator.onLine !== false) {
-                    if (Date.now() - lastRelayActivity > 60000 || relayMode === 'none') startSseTransport();
-                    else pollRelay('12h');
-                }
-            });
-            window.addEventListener('beforeunload', closeRelayTransport);
-
-            // O servidor envia keepalive normalmente a cada ~45 s. Se nenhum sinal chegar
-            // por mais de 110 s, a conexão do Chromium/OBS é considerada congelada e refeita.
-            relayWatchdogTimer = window.setInterval(() => {
-                if (navigator.onLine === false || relayMode === 'polling') return;
-                if (Date.now() - lastRelayActivity > 110000) {
-                    setConnection('CONEXÃO CONGELADA — RECONECTANDO', true);
-                    relayFailureCount += 1;
-                    startSseTransport();
-                }
-            }, 15000);
-
-            startSseTransport();
+            window.addEventListener('beforeunload', closeRelaySocket);
+            startRelaySocket();
         })();
     </script>
 </body>
