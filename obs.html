@@ -171,8 +171,8 @@
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.19.3';
-            const OBS_PROTOCOL_VERSION = 4;
+            const OVERLAY_VERSION = '2026.07.18.2';
+            const OBS_PROTOCOL_VERSION = 3;
             const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
             const accessKey = String(params.get('key') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
@@ -199,14 +199,6 @@
             let relayPollBusy = false;
             let lastRelayActivity = Date.now();
             let broadcastChannel = null;
-            let rtcPeerConnection = null;
-            let rtcDataChannel = null;
-            let rtcNegotiating = false;
-            let lastHelloAt = 0;
-            const RTC_CONFIG = { iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ] };
             applyLayout('standard');
 
             function safe(value) {
@@ -280,128 +272,25 @@
 
 
 
-
-            function waitForIceGathering(pc, timeout = 6500) {
-                if (!pc || pc.iceGatheringState === 'complete') return Promise.resolve();
-                return new Promise(resolve => {
-                    let done = false;
-                    const finish = () => {
-                        if (done) return;
-                        done = true;
-                        clearTimeout(timer);
-                        try { pc.removeEventListener('icegatheringstatechange', check); } catch (error) {}
-                        resolve();
-                    };
-                    const check = () => { if (pc.iceGatheringState === 'complete') finish(); };
-                    const timer = window.setTimeout(finish, timeout);
-                    pc.addEventListener('icegatheringstatechange', check);
-                });
-            }
-
-            async function publishSignal(signalType, description = null) {
-                if (navigator.onLine === false) return false;
-                const payload = {
-                    version: 4, protocol: OBS_PROTOCOL_VERSION, overlayVersion: OVERLAY_VERSION,
-                    source: 'dark-obs-overlay', event: 'signal', signalType,
-                    target: 'dashboard', channel, accessKey,
-                    id: `signal-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-                    timestamp: Date.now(), description
-                };
-                const controller = new AbortController();
-                const timeoutId = window.setTimeout(() => controller.abort(), 8000);
-                try {
-                    const response = await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
-                        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-                        body: JSON.stringify(payload), mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
-                    });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return true;
-                } catch (error) {
-                    console.warn('Sinalização direta indisponível.', error);
-                    return false;
-                } finally { window.clearTimeout(timeoutId); }
-            }
-
-            function bindRtcDataChannel(dataChannel) {
-                rtcDataChannel = dataChannel;
-                dataChannel.onopen = () => {
-                    rtcNegotiating = false;
-                    setConnection('CONEXÃO DIRETA ATIVA', true);
-                };
-                dataChannel.onmessage = event => {
-                    try { enqueue(JSON.parse(String(event.data || '')), 'direct'); }
-                    catch (error) { console.warn('Evento direto inválido.', error); }
-                };
-                dataChannel.onerror = error => console.warn('Canal direto apresentou erro.', error);
-                dataChannel.onclose = () => {
-                    if (rtcDataChannel === dataChannel) rtcDataChannel = null;
-                    setConnection('CONEXÃO DIRETA ENCERRADA // RECONECTANDO', true);
-                    window.setTimeout(announceOverlayReady, 2500);
-                };
-            }
-
-            function closeRtcPeer() {
-                try { rtcDataChannel?.close(); } catch (error) {}
-                try { rtcPeerConnection?.close(); } catch (error) {}
-                rtcDataChannel = null;
-                rtcPeerConnection = null;
-                rtcNegotiating = false;
-            }
-
-            async function handleSignal(payload) {
-                if (!payload || payload.event !== 'signal') return false;
-                if (String(payload.channel || '') !== channel || String(payload.accessKey || '') !== accessKey) return true;
-                if (payload.target && String(payload.target) !== 'overlay') return true;
-                if (String(payload.signalType || '') !== 'offer' || !payload.description) return true;
-                if (rtcNegotiating) return true;
-                rtcNegotiating = true;
-                closeRtcPeer();
-                rtcNegotiating = true;
-                try {
-                    const pc = new RTCPeerConnection(RTC_CONFIG);
-                    rtcPeerConnection = pc;
-                    pc.ondatachannel = event => bindRtcDataChannel(event.channel);
-                    pc.onconnectionstatechange = () => {
-                        if (rtcPeerConnection !== pc) return;
-                        if (pc.connectionState === 'connected') setConnection('CONEXÃO DIRETA ATIVA', true);
-                        if (['failed', 'disconnected', 'closed'].includes(pc.connectionState) && !rtcDataChannel) {
-                            rtcNegotiating = false;
-                            window.setTimeout(announceOverlayReady, 3000);
-                        }
-                    };
-                    await pc.setRemoteDescription(new RTCSessionDescription(payload.description));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    await waitForIceGathering(pc);
-                    if (rtcPeerConnection !== pc || !pc.localDescription) return true;
-                    const published = await publishSignal('answer', pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription);
-                    setConnection(published ? 'PAREANDO CONEXÃO DIRETA...' : 'PAREAMENTO DIRETO AGUARDANDO RELAY', true);
-                } catch (error) {
-                    console.warn('Falha ao responder pareamento direto.', error);
-                    closeRtcPeer();
-                }
-                return true;
-            }
-
-            async function announceOverlayReady() {
-                const now = Date.now();
-                if (now - lastHelloAt < 12000 || navigator.onLine === false) return false;
-                lastHelloAt = now;
-                return publishSignal('hello');
-            }
-
             async function sendAck(event, ackType = 'hud') {
                 const ack = {
-                    version: 4, protocol: OBS_PROTOCOL_VERSION, overlayVersion: OVERLAY_VERSION,
+                    version: 3, protocol: OBS_PROTOCOL_VERSION, overlayVersion: OVERLAY_VERSION,
                     source: 'dark-obs-overlay', event: 'ack', ackType, ackFor: event.id,
                     id: `ack-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                     timestamp: Date.now(), channel, accessKey
                 };
                 try { broadcastChannel?.postMessage(ack); } catch (error) {}
                 try { localStorage.setItem('DarkObsLastAck', JSON.stringify(ack)); } catch (error) {}
-                if (rtcDataChannel?.readyState === 'open') {
-                    try { rtcDataChannel.send(JSON.stringify(ack)); } catch (error) {}
-                }
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+                    try {
+                        await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+                            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                            body: JSON.stringify(ack), mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
+                        });
+                    } finally { window.clearTimeout(timeoutId); }
+                } catch (error) { console.warn('Confirmação remota do overlay indisponível.', error); }
             }
 
             function clampPercent(current, max) {
@@ -441,7 +330,7 @@
             }
 
             function enqueue(payload, transport = 'local') {
-                if (payload?.remoteOnly && !['remote', 'direct'].includes(transport)) return;
+                if (payload?.remoteOnly && transport !== 'remote') return;
                 const event = normalize(payload);
                 if (!event) return;
                 if (event.event === 'hud') { updateHud(event); return; }
@@ -511,7 +400,6 @@
                     if (parsed.event !== 'message') return null;
                     const payload = JSON.parse(parsed.message);
                     if (payload?.event === 'ack') return null;
-                    if (payload?.event === 'signal') { handleSignal(payload); return null; }
                     return payload;
                 } catch (error) { console.warn('Evento remoto inválido.', error); return null; }
             }
@@ -596,7 +484,7 @@
 
                 const runPoll = async () => {
                     if (relayMode !== 'polling') return;
-                    const ok = await pollRelay('90s');
+                    const ok = await pollRelay(relayPollCycles === 0 ? '12h' : '90s');
                     relayPollCycles += 1;
                     if (ok && relayPollCycles === 1) setConnection('OVERLAY CONECTADO // POLLING', true);
                     if (relayPollCycles >= 4) {
@@ -604,7 +492,7 @@
                         scheduleRelayReconnect(1000, 'sse');
                         return;
                     }
-                    relayPollTimer = window.setTimeout(runPoll, ok ? 60000 : 90000);
+                    relayPollTimer = window.setTimeout(runPoll, ok ? 30000 : 45000);
                 };
                 runPoll();
             }
@@ -625,7 +513,7 @@
                         noteRelayActivity();
                         relayFailureCount = 0;
                         setConnection('OVERLAY CONECTADO // WEBSOCKET', true);
-                        announceOverlayReady();
+                        pollRelay('12h');
                     };
                     socket.onmessage = event => parseRelayEnvelope(event.data);
                     socket.onerror = () => {
@@ -664,7 +552,7 @@
                         relayFailureCount = 0;
                         setConnection('OVERLAY CONECTADO // SSE', true);
                         // Recupera o HUD mais recente do cache do relay após recarregar/reconectar.
-                        announceOverlayReady();
+                        pollRelay('12h');
                     };
                     source.addEventListener('keepalive', () => noteRelayActivity());
                     source.addEventListener('open', () => noteRelayActivity());
@@ -707,7 +595,6 @@
             window.addEventListener('online', () => {
                 relayFailureCount = 0;
                 startSseTransport();
-                window.setTimeout(announceOverlayReady, 900);
             });
             window.addEventListener('offline', () => {
                 closeRelayTransport();
@@ -716,15 +603,15 @@
             window.addEventListener('pageshow', () => {
                 if (navigator.onLine === false) return;
                 if (relayMode === 'none') startSseTransport();
-                else announceOverlayReady();
+                else pollRelay('12h');
             });
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden && navigator.onLine !== false) {
                     if (Date.now() - lastRelayActivity > 60000 || relayMode === 'none') startSseTransport();
-                    else announceOverlayReady();
+                    else pollRelay('12h');
                 }
             });
-            window.addEventListener('beforeunload', () => { closeRelayTransport(); closeRtcPeer(); });
+            window.addEventListener('beforeunload', closeRelayTransport);
 
             // O servidor envia keepalive normalmente a cada ~45 s. Se nenhum sinal chegar
             // por mais de 110 s, a conexão do Chromium/OBS é considerada congelada e refeita.
