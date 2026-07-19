@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DARK DASHBOARD // TERMINAL</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Oswald:wght@400;700&family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
@@ -121,72 +120,31 @@
         body.theme-combat .blood-vignette { display: none !important; }
 
         /* --- COMBAT MODE THEME (CINEMÁTICO E ALTA VISIBILIDADE) --- */
-        /* O Combat Mode possui uma paleta própria, independente do tema normal da ficha. */
         body.theme-combat {
-            --bg-color: #020304;
-            --panel-bg: #07090b;
-            --text-main: #edf3f8;
-            --border-color: #26313a;
-            --glow: #dceaf5;
-            --dim-text: #7d8a95;
-            --alert-color: #8ecbff;
-            --gold-color: #ffffff;
-            --accent-green: #b8dfff;
-            --shadow-opacity: 0.88;
-            --menu-accent: #edf3f8;
-            --combat-rgb: 210, 230, 245;
-            --combat-panel-rgb: 18, 24, 30;
-            padding: 85px 5px 5px;
+            --bg-color: #030101; 
+            --panel-bg: #0a0202; 
+            --text-main: #ff7777; 
+            --border-color: #4a0505; 
+            --glow: #ff0000; 
+            --dim-text: #bb5555;
+            --alert-color: #ff2222; 
+            --gold-color: #ffffff; 
+            --accent-green: #ff3333;
+            --shadow-opacity: 0.9; 
+            --menu-accent: #ffffff;
+            padding: 85px 5px 5px; 
             overflow-y: auto;
             animation: combat-vignette 4s infinite alternate;
         }
-
-        /* PALETAS DO COMBAT MODE */
-        body.theme-combat.combat-carbon {
-            --bg-color: #020304; --panel-bg: #07090b; --text-main: #edf3f8;
-            --border-color: #26313a; --glow: #dceaf5; --dim-text: #7d8a95;
-            --alert-color: #8ecbff; --gold-color: #ffffff; --accent-green: #b8dfff;
-            --menu-accent: #edf3f8; --combat-rgb: 210, 230, 245; --combat-panel-rgb: 18, 24, 30;
-        }
-        body.theme-combat.combat-contencao {
-            --bg-color: #010713; --panel-bg: #03101f; --text-main: #d8f3ff;
-            --border-color: #123b59; --glow: #59c7ff; --dim-text: #6092ad;
-            --alert-color: #48d9ff; --gold-color: #c8f4ff; --accent-green: #00c8ff;
-            --menu-accent: #59c7ff; --combat-rgb: 59, 190, 255; --combat-panel-rgb: 3, 22, 40;
-        }
-        body.theme-combat.combat-architect {
-            --bg-color: #010703; --panel-bg: #031108; --text-main: #d9ffe4;
-            --border-color: #16452a; --glow: #5ef08c; --dim-text: #5e9a70;
-            --alert-color: #82ff9f; --gold-color: #d6ff8f; --accent-green: #00e676;
-            --menu-accent: #5ef08c; --combat-rgb: 55, 230, 105; --combat-panel-rgb: 3, 28, 13;
-        }
-        body.theme-combat.combat-ambar {
-            --bg-color: #080500; --panel-bg: #120b01; --text-main: #fff1c7;
-            --border-color: #5b3a0b; --glow: #ffc247; --dim-text: #a57b36;
-            --alert-color: #ffd36a; --gold-color: #fff0a6; --accent-green: #ffab28;
-            --menu-accent: #ffc247; --combat-rgb: 255, 177, 48; --combat-panel-rgb: 36, 21, 2;
-        }
-        body.theme-combat.combat-breu {
-            --bg-color: #050208; --panel-bg: #0d0613; --text-main: #f0e3ff;
-            --border-color: #39204c; --glow: #b875ff; --dim-text: #8964a3;
-            --alert-color: #d49cff; --gold-color: #f5dcff; --accent-green: #9d55ff;
-            --menu-accent: #b875ff; --combat-rgb: 174, 103, 255; --combat-panel-rgb: 25, 10, 37;
-        }
-        body.theme-combat.combat-sangue {
-            --bg-color: #030101; --panel-bg: #0a0202; --text-main: #ffb0b0;
-            --border-color: #4a0505; --glow: #ff3030; --dim-text: #bb6666;
-            --alert-color: #ff3535; --gold-color: #ffffff; --accent-green: #ff5555;
-            --menu-accent: #ffffff; --combat-rgb: 255, 35, 35; --combat-panel-rgb: 42, 3, 3;
-        }
         
         @keyframes combat-vignette {
-            0% { box-shadow: inset 0 0 50px rgba(var(--combat-rgb), 0.04); }
-            100% { box-shadow: inset 0 0 150px rgba(var(--combat-rgb), 0.22); }
+            0% { box-shadow: inset 0 0 50px rgba(255,0,0,0.05); }
+            100% { box-shadow: inset 0 0 150px rgba(255,0,0,0.3); }
         }
         
         @keyframes heartbeat-border {
             0%, 100% { border-color: var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-            10%, 30% { border-color: var(--alert-color); box-shadow: 0 0 20px rgba(var(--combat-rgb), 0.34); }
+            10%, 30% { border-color: var(--alert-color); box-shadow: 0 0 20px rgba(255,0,0,0.4); }
             20% { border-color: var(--border-color); }
         }
         
@@ -202,14 +160,14 @@
         body.theme-combat .init-row span,
         body.theme-combat .status-box label {
             color: #ffffff !important; 
-            text-shadow: 0 0 8px rgba(var(--combat-rgb), 0.72);
+            text-shadow: 0 0 8px rgba(255,0,0,0.8);
         }
         
         body.theme-combat .macro-btn { 
             background: #ffffff; color: #000; box-shadow: 0 0 10px #ffffff; border-color: #ffffff;
         }
         body.theme-combat .macro-btn:hover { 
-            background: var(--glow); color: var(--bg-color); box-shadow: 0 0 15px var(--glow); 
+            background: #ff0000; color: #ffffff; box-shadow: 0 0 15px #ff0000; 
         }
 
         body.theme-combat h1 { display: none !important; }
@@ -237,7 +195,7 @@
         body.theme-combat #panel-id input { font-size: 1.1rem; padding: 6px; height: 32px; }
         
         body.theme-combat #panel-vitals .panel-content { display: flex; flex-direction: column; gap: 8px; }
-        body.theme-combat #panel-vitals .status-box { padding: 10px; margin: 0; background: rgba(var(--combat-rgb), 0.025); border-color: rgba(var(--combat-rgb), 0.22);}
+        body.theme-combat #panel-vitals .status-box { padding: 10px; margin: 0; background: rgba(255,0,0,0.02); border-color: #330000;}
         body.theme-combat .status-inputs { margin-top: 5px; display: flex; justify-content: center; gap: 5px; align-items: center; }
         body.theme-combat .status-inputs input { font-size: 1.2rem; padding: 2px; width: 50px; height: 30px; }
         body.theme-combat .status-alert { font-size: 0.65rem; margin-top: 6px; line-height: 1.2; height: auto;}
@@ -278,138 +236,8 @@
         .combat-only-panel { display: none !important; }
         body.theme-combat .combat-only-panel { display: inline-block !important; width: 100%; }
 
-        .macro-item { background: rgba(var(--combat-rgb, 255, 40, 40), 0.05); border: 1px solid var(--border-color); padding: 8px 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 2px solid var(--alert-color); transition: 0.2s;}
-        .macro-item:hover { background: rgba(var(--combat-rgb, 255, 40, 40), 0.11); border-color: var(--alert-color); }
-
-        /* Seletor visual das paletas de combate */
-        .combat-theme-btn { position: relative; padding-left: 30px !important; }
-        .combat-theme-btn::before {
-            content: ""; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-            width: 10px; height: 10px; border: 1px solid currentColor; background: var(--combat-swatch, currentColor);
-            box-shadow: 0 0 8px var(--combat-swatch, currentColor);
-        }
-        #btn-combat-carbon { --combat-swatch: #dceaf5; }
-        #btn-combat-contencao { --combat-swatch: #59c7ff; }
-        #btn-combat-architect { --combat-swatch: #5ef08c; }
-        #btn-combat-ambar { --combat-swatch: #ffc247; }
-        #btn-combat-breu { --combat-swatch: #b875ff; }
-        #btn-combat-sangue { --combat-swatch: #ff3030; }
-        body.theme-combat .fixed-combat-btn {
-            background: rgba(var(--combat-rgb), 0.12); color: var(--glow); border-color: var(--glow);
-            box-shadow: 0 0 14px rgba(var(--combat-rgb), 0.26);
-        }
-        body.theme-combat .fixed-combat-btn:hover,
-        body.theme-combat .fixed-combat-btn.active {
-            background: var(--glow); color: var(--bg-color); border-color: var(--glow);
-            box-shadow: 0 0 18px rgba(var(--combat-rgb), 0.62);
-        }
-
-
-        /* =========================================================
-           PACOTE DE CUSTOMIZAÇÃO VISUAL
-           Paleta, densidade, presets e estilos de barras.
-           ========================================================= */
-        .custom-palette-grid {
-            display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr));
-            gap: 12px; width: 100%; margin-top: 10px;
-        }
-        .custom-color-field {
-            border: 1px solid var(--border-color); background: rgba(255,255,255,0.02);
-            padding: 10px; min-width: 0;
-        }
-        .custom-color-field label { margin-bottom: 8px; font-size: 0.68rem; }
-        .custom-color-field input[type="color"] {
-            appearance: none; -webkit-appearance: none; width: 100%; height: 34px;
-            border: 1px solid var(--border-color); background: transparent; padding: 2px; cursor: pointer;
-        }
-        .custom-color-field input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        .custom-color-field input[type="color"]::-webkit-color-swatch { border: none; }
-        .custom-color-field input[type="color"]::-moz-color-swatch { border: none; }
-        .appearance-summary {
-            color: var(--dim-text); border-left: 2px solid var(--menu-accent);
-            padding: 8px 12px; margin-top: 10px; font-size: .72rem; line-height: 1.45;
-        }
-
-        /* Densidade da interface */
-        body:not(.theme-combat).density-compact { padding-top: 62px; }
-        body:not(.theme-combat).density-compact .pages-wrapper { gap: 14px; }
-        body:not(.theme-combat).density-compact .panel { padding: 25px 18px 16px; margin-bottom: 14px; }
-        body:not(.theme-combat).density-compact .panel-title { font-size: .68rem; letter-spacing: 2px; }
-        body:not(.theme-combat).density-compact .status-box { padding: 14px 8px; }
-        body:not(.theme-combat).density-compact .status-inputs { margin-top: 8px; gap: 5px; }
-        body:not(.theme-combat).density-compact .status-inputs input { width: 62px; font-size: 20px; padding: 5px 2px; }
-        body:not(.theme-combat).density-compact .attr-row { padding: 6px 8px; margin-bottom: 7px; font-size: 1rem; }
-        body:not(.theme-combat).density-compact .skill-category { padding: 9px; margin-bottom: 14px; }
-        body:not(.theme-combat).density-compact .skill-row { padding: 3px; margin-bottom: 2px; }
-        body:not(.theme-combat).density-compact .ability-card,
-        body:not(.theme-combat).density-compact .inventory-item { padding: 8px 10px; margin-bottom: 7px; }
-        body:not(.theme-combat).density-compact textarea { min-height: 72px; }
-
-        body:not(.theme-combat).density-cinematic .container { max-width: 1450px; }
-        body:not(.theme-combat).density-cinematic .pages-wrapper { gap: 38px; }
-        body:not(.theme-combat).density-cinematic .panel { padding: 48px 38px 38px; margin-bottom: 38px; }
-        body:not(.theme-combat).density-cinematic .panel-title { font-size: .9rem; letter-spacing: 6px; padding: 4px 20px; }
-        body:not(.theme-combat).density-cinematic .status-box { padding: 35px 20px; }
-        body:not(.theme-combat).density-cinematic .status-inputs input { width: 96px; font-size: 31px; }
-        body:not(.theme-combat).density-cinematic .attr-row { padding: 14px 16px; margin-bottom: 18px; }
-        body:not(.theme-combat).density-cinematic .ability-card,
-        body:not(.theme-combat).density-cinematic .inventory-item { padding: 20px 24px; margin-bottom: 18px; }
-
-        /* Formatos das barras do HUD */
-        body.bar-style-pill .bar-bg, body.bar-style-pill .bar-bg-mini { border-radius: 999px; overflow: hidden; }
-        body.bar-style-pill .bar-fill, body.bar-style-pill .bar-fill-mini { border-radius: 999px; }
-
-        body.bar-style-segmented .bar-bg, body.bar-style-segmented .bar-bg-mini {
-            overflow: hidden; position: relative;
-            background-image: repeating-linear-gradient(90deg, transparent 0 9%, var(--bg-color) 9% 11%);
-        }
-        body.bar-style-segmented .bar-bg::after, body.bar-style-segmented .bar-bg-mini::after {
-            content: ""; position: absolute; inset: 0; pointer-events: none;
-            background: repeating-linear-gradient(90deg, transparent 0 9%, var(--bg-color) 9% 11%);
-        }
-
-        body.bar-style-tactical .bar-bg { height: 12px; transform: skewX(-18deg); border-width: 2px; }
-        body.bar-style-tactical .bar-fill { box-shadow: 0 0 12px currentColor; }
-        body.bar-style-tactical .bar-bg-mini { height: 6px; transform: skewX(-18deg); }
-
-        body.bar-style-minimal .bar-bg, body.bar-style-minimal .bar-bg-mini {
-            height: 2px; border: 0; background: var(--border-color); overflow: visible;
-        }
-        body.bar-style-minimal .bar-fill, body.bar-style-minimal .bar-fill-mini {
-            box-shadow: 0 0 8px var(--menu-accent); position: relative;
-        }
-        body.bar-style-minimal .bar-fill::after, body.bar-style-minimal .bar-fill-mini::after {
-            content: ""; position: absolute; right: -2px; top: 50%; width: 5px; height: 5px;
-            transform: translateY(-50%); background: inherit; box-shadow: 0 0 8px currentColor;
-        }
-
-        body.bar-style-radial .hud-container { max-width: 460px; display: grid; grid-template-columns: repeat(3, 1fr); }
-        body.bar-style-radial .hud-name, body.bar-style-radial .hud-nex { grid-column: 1 / -1; }
-        body.bar-style-radial .hud-bar { align-items: center; text-align: center; }
-        body.bar-style-radial .bar-bg {
-            width: 68px; height: 68px; border-radius: 50%; border: 1px solid var(--border-color);
-            background: conic-gradient(var(--bar-color, var(--menu-accent)) var(--bar-percent, 100%), #050505 0);
-            position: relative;
-        }
-        body.bar-style-radial .bar-bg::after {
-            content: attr(data-value); position: absolute; inset: 8px; border-radius: 50%;
-            display: grid; place-items: center; background: var(--panel-bg); color: var(--text-main);
-            font-size: .72rem; border: 1px solid var(--border-color);
-        }
-        body.bar-style-radial .bar-bg .bar-fill { display: none; }
-        body.bar-style-radial .portrait-hud { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; }
-        body.bar-style-radial .portrait-name { grid-column: 1 / -1; }
-        body.bar-style-radial .hud-bar-mini { display: flex; justify-content: center; }
-        body.bar-style-radial .bar-bg-mini {
-            width: 29px; height: 29px; border-radius: 50%; border: 1px solid var(--border-color);
-            background: conic-gradient(var(--bar-color, var(--menu-accent)) var(--bar-percent, 100%), #050505 0);
-        }
-        body.bar-style-radial .bar-bg-mini .bar-fill-mini { display: none; }
-
-        @media (max-width: 800px) {
-            .custom-palette-grid { grid-template-columns: repeat(2, minmax(110px, 1fr)); }
-            body:not(.theme-combat).density-cinematic .panel { padding: 38px 20px 24px; }
-        }
+        .macro-item { background: rgba(255,0,0,0.05); border: 1px solid var(--border-color); padding: 8px 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 2px solid var(--alert-color); transition: 0.2s;}
+        .macro-item:hover { background: rgba(255,0,0,0.1); border-color: var(--alert-color); }
 
         /* --- THEME IMPRESSÃO (PDF VETORIZADO NATIVO BRANCO) --- */
         @media print {
@@ -486,8 +314,13 @@
         .bar-fill { height: 100%; transition: width 0.5s ease; background: var(--menu-accent); }
         .hud-nex { font-size: 1.2rem; color: var(--dim-text); margin-top: 10px; letter-spacing: 3px; border-top: 1px dashed var(--border-color); padding-top: 15px;}
         .hud-nex span { color: var(--menu-accent); text-shadow: 0 0 5px var(--glow); font-size: 1.8rem; font-weight: bold;}
-        .menu-right-nav { flex: 1.5; display: flex; flex-direction: column; justify-content: center; padding-left: 80px; position: relative; }
-        .menu-list { display: flex; flex-direction: column; gap: 20px; position: relative; z-index: 2; }
+        .menu-right-nav { flex: 1.5; min-width: 0; height: 100vh; display: flex; flex-direction: column; justify-content: flex-start; padding: 40px 60px 40px 80px; position: relative; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--border-color) transparent; }
+        .menu-right-nav::-webkit-scrollbar { width: 6px; }
+        .menu-right-nav::-webkit-scrollbar-track { background: transparent; }
+        .menu-right-nav::-webkit-scrollbar-thumb { background: var(--border-color); }
+        .menu-list { display: flex; flex-direction: column; gap: 20px; width: 100%; min-width: 0; flex-shrink: 0; position: relative; z-index: 2; }
+        #mainMenuList { margin: auto 0; }
+        #optionsMenuList { margin: 0; padding-bottom: 20px; }
         .menu-item { display: flex; align-items: center; font-size: 2.2rem; color: var(--dim-text); text-transform: uppercase; cursor: pointer; transition: all 0.3s ease; width: fit-content; letter-spacing: 4px; }
         .menu-item:hover { color: var(--menu-accent); transform: translateX(20px); text-shadow: 0 0 10px rgba(255,255,255,0.2); }
         .menu-icon { width: 40px; height: 40px; border: 2px solid var(--border-color); margin-right: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; background: transparent; color: var(--dim-text); }
@@ -501,89 +334,31 @@
         .sys-btn { background: rgba(0,0,0,0.3); color: var(--dim-text); border: 1px solid var(--border-color); padding: 8px 15px; font-family: inherit; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 1px; border-radius: 2px; }
         .sys-btn:hover:not(:disabled) { color: var(--bg-color); border-color: var(--menu-accent); background: var(--menu-accent); box-shadow: 0 0 10px var(--glow); }
         .sys-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); font-weight: bold; }
+        .obs-config-grid { display: grid; grid-template-columns: minmax(180px, 0.8fr) minmax(0, 2fr); gap: 10px; align-items: end; width: 100%; max-width: 900px; }
 
-
-        /* --- MENU: ÁREA ROLÁVEL E INDICADOR DE CONTINUIDADE --- */
-        body.menu-open { overflow: hidden !important; }
-        .game-menu-overlay { overflow: hidden; }
-        .menu-left-art { min-width: 300px; }
-        .menu-right-nav {
-            min-width: 0; min-height: 0; height: 100vh;
-            justify-content: flex-start;
-            padding: clamp(42px, 7vh, 82px) clamp(28px, 5vw, 82px) 24px clamp(34px, 6vw, 80px);
-            overflow: hidden;
+        @media (max-height: 820px) {
+            .menu-right-nav { padding-top: 25px; padding-bottom: 25px; }
+            .menu-list { gap: 14px; }
+            .options-group { margin-bottom: 18px; }
+            .menu-item { font-size: 1.9rem; }
         }
-        .menu-list {
-            width: 100%; height: 100%; min-height: 0;
-            overflow-x: hidden; overflow-y: auto;
-            overscroll-behavior: contain;
-            scrollbar-width: thin;
-            scrollbar-color: var(--menu-accent) rgba(255,255,255,0.04);
-            padding: 10px 22px 110px 4px;
-            scroll-behavior: smooth;
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
-            mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+        @media (max-width: 1100px) {
+            .menu-left-art { flex: 0 0 34%; padding: 35px 25px; }
+            .menu-right-nav { flex: 1; padding: 35px 30px 35px 45px; }
+            .menu-item { font-size: 1.7rem; letter-spacing: 3px; }
+            .obs-config-grid { grid-template-columns: 1fr; }
         }
-        #mainMenuList { justify-content: center; padding-bottom: 72px; }
-        #optionsMenuList { justify-content: flex-start; }
-        .menu-list::-webkit-scrollbar { width: 7px; }
-        .menu-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.025); border-left: 1px solid var(--border-color); }
-        .menu-list::-webkit-scrollbar-thumb {
-            background: var(--menu-accent); border: 2px solid var(--panel-bg); border-radius: 6px;
-            box-shadow: 0 0 8px var(--glow);
-        }
-        .menu-list::-webkit-scrollbar-thumb:hover { background: var(--glow); }
-        .menu-scroll-indicator {
-            position: absolute; z-index: 40; left: 0; right: 0; bottom: 0;
-            height: 108px; border: 0; padding: 44px 24px 16px;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px;
-            background: linear-gradient(to bottom, transparent 0%, rgba(5,5,5,0.56) 38%, rgba(5,5,5,0.96) 82%);
-            color: var(--menu-accent); font-family: inherit; letter-spacing: 3px; font-size: .69rem;
-            text-transform: uppercase; cursor: pointer;
-            opacity: 0; visibility: hidden; pointer-events: none;
-            transition: opacity .25s ease, visibility .25s ease;
-            text-shadow: 0 0 8px var(--glow);
-        }
-        .menu-scroll-indicator::before {
-            content: ""; position: absolute; inset: 22px 0 0;
-            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, #000 58%);
-            mask-image: linear-gradient(to bottom, transparent, #000 58%);
-            pointer-events: none;
-        }
-        .menu-scroll-indicator > * { position: relative; z-index: 1; }
-        .menu-scroll-indicator.visible { opacity: 1; visibility: visible; pointer-events: auto; }
-        .menu-scroll-arrow { font-size: 1.45rem; line-height: .9; animation: menuScrollHint 1.25s ease-in-out infinite; }
-        @keyframes menuScrollHint { 0%,100% { transform: translateY(-2px); opacity: .45; } 50% { transform: translateY(5px); opacity: 1; } }
-        .menu-close-button {
-            position: absolute; z-index: 60; top: 18px; right: 22px;
-            width: 38px; height: 38px; display: grid; place-items: center;
-            background: rgba(0,0,0,.5); border: 1px solid var(--border-color); color: var(--dim-text);
-            font: 1.4rem/1 inherit; cursor: pointer; transition: .2s ease;
-        }
-        .menu-close-button:hover, .menu-close-button:focus-visible {
-            color: var(--bg-color); background: var(--menu-accent); border-color: var(--menu-accent);
-            box-shadow: 0 0 14px var(--glow); outline: none;
-        }
-
-        @media (max-width: 980px) {
-            .game-menu-overlay { display: block; }
+        @media (max-width: 760px) {
+            .game-menu-overlay { display: block; overflow: hidden; }
             .menu-left-art { display: none; }
-            .menu-right-nav { width: 100%; height: 100vh; padding: 58px 22px 10px; }
-            .menu-list { padding-right: 10px; padding-bottom: 116px; }
-            .menu-item { font-size: clamp(1.2rem, 5.2vw, 1.8rem); letter-spacing: 2px; }
-            .menu-item[style*="font-size"] { font-size: clamp(1.05rem, 4.4vw, 1.45rem) !important; }
-            .menu-icon { width: 34px; height: 34px; min-width: 34px; margin-right: 12px; }
+            .menu-right-nav { width: 100%; height: 100vh; padding: 25px 18px 35px; }
+            .menu-item { width: 100%; font-size: 1.25rem; letter-spacing: 2px; }
+            .menu-icon { flex: 0 0 34px; width: 34px; height: 34px; margin-right: 12px; }
+            .menu-item:hover, .menu-item.highlight:hover { transform: translateX(5px); }
+            .menu-divider { width: 100%; }
             .options-row { gap: 8px; }
-            .sys-btn { padding: 9px 11px; }
-            .custom-palette-grid { grid-template-columns: repeat(2, minmax(105px, 1fr)); }
-        }
-
-        @media (max-height: 650px) and (min-width: 981px) {
-            .menu-left-art { padding: 28px; }
-            .hud-container { gap: 10px; }
-            .menu-right-nav { padding-top: 34px; }
-            .menu-item { font-size: 1.55rem; }
+            .sys-btn { padding: 7px 10px; font-size: 0.75rem; }
+            .obs-config-grid { grid-template-columns: minmax(0, 1fr); }
         }
 
         /* OVERLAYS E TELAS FLUTUANTES */
@@ -694,6 +469,10 @@
         .box.filled { background: var(--text-main); border-color: var(--text-main); box-shadow: 0 0 8px rgba(255,255,255,0.2); }
         #attributes .boxes .box:nth-child(5) { border-color: var(--gold-color); }
         #attributes .boxes .box:nth-child(5).filled { background: var(--gold-color); box-shadow: 0 0 10px var(--gold-color); border-color: var(--gold-color);}
+        #attributes .boxes .box:nth-child(6) { border-color: var(--accent-green); }
+        #attributes .boxes .box:nth-child(6).filled { background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); border-color: var(--accent-green);}
+        #attributes .boxes .box:nth-child(7) { border-color: #a855f7; }
+        #attributes .boxes .box:nth-child(7).filled { background: #a855f7; box-shadow: 0 0 10px #a855f7; border-color: #a855f7;}
         .circle { border-radius: 50%; width: 18px; height: 18px; }
         .rollable-attr { cursor: pointer; transition: 0.2s; border-bottom: 1px dashed transparent; font-weight: bold; letter-spacing: 1px;}
         .rollable-attr:hover { color: var(--gold-color); border-bottom: 1px dashed var(--gold-color); }
@@ -790,6 +569,36 @@
         .glitch-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px); z-index: 10001; pointer-events: none; opacity: 0; mix-blend-mode: overlay; }
         @keyframes combat-glitch { 0% { opacity: 0; filter: invert(0) hue-rotate(0deg); } 10% { opacity: 0.5; filter: invert(1) hue-rotate(90deg); } 20% { opacity: 0.2; filter: invert(0) hue-rotate(0deg); } 30% { opacity: 0.8; filter: invert(1) hue-rotate(180deg); } 40% { opacity: 0; filter: invert(0) hue-rotate(0deg); } 100% { opacity: 0; } }
         .trigger-glitch { animation: combat-glitch 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+
+        /* --- PERFIS, HISTÓRICO E INDICADOR DE SALVAMENTO --- */
+        .save-status-indicator {
+            position: fixed; left: 20px; bottom: 20px; z-index: 10000;
+            min-width: 150px; padding: 8px 12px; border: 1px solid var(--border-color);
+            background: color-mix(in srgb, var(--panel-bg) 92%, transparent);
+            color: var(--dim-text); font-size: 0.68rem; letter-spacing: 2px;
+            text-transform: uppercase; pointer-events: none; backdrop-filter: blur(6px);
+            transition: color .2s, border-color .2s, opacity .2s;
+        }
+        .save-status-indicator[data-state="dirty"], .save-status-indicator[data-state="saving"] { color: var(--gold-color); border-color: var(--gold-color); }
+        .save-status-indicator[data-state="saved"] { color: var(--accent-green); border-color: var(--accent-green); }
+        .save-status-indicator[data-state="error"] { color: var(--alert-color); border-color: var(--alert-color); }
+        .profile-controls { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto auto; gap: 8px; align-items: center; }
+        .profile-controls select { min-width: 0; font-size: .8rem; padding: 7px 5px; }
+        .history-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+        .history-list { max-height: 155px; overflow-y: auto; border: 1px solid var(--border-color); background: rgba(0,0,0,.18); }
+        .history-entry { padding: 7px 9px; border-bottom: 1px dashed var(--border-color); display: grid; grid-template-columns: 70px 1fr; gap: 10px; font-size: .68rem; }
+        .history-entry:last-child { border-bottom: none; }
+        .history-time { color: var(--dim-text); }
+        .history-label { color: var(--text-main); overflow-wrap: anywhere; }
+        .history-empty { padding: 12px; color: var(--dim-text); font-size: .68rem; letter-spacing: 1px; text-align: center; }
+        #profileStatusText, #historyStatusText { margin-top: 7px; color: var(--dim-text); font-size: .66rem; letter-spacing: 1px; }
+        @media (max-width: 760px) {
+            .profile-controls { grid-template-columns: 1fr 1fr; }
+            .profile-controls select { grid-column: 1 / -1; }
+            .save-status-indicator { left: 10px; bottom: 10px; min-width: 0; max-width: calc(100vw - 80px); }
+        }
+
     </style>
 </head>
 <body>
@@ -839,6 +648,26 @@
         <div class="menu-list" id="optionsMenuList" style="display: none;">
             <div class="menu-item highlight" onclick="toggleMenuOptions()" style="font-size: 1.8rem;"><div class="menu-icon" style="width: 35px; height: 35px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg></div><span>RETORNAR AO MENU</span></div>
             <div class="menu-divider"></div>
+
+            <div class="options-group">
+                <span class="options-label">PERFIS DE PERSONAGEM</span>
+                <div class="profile-controls">
+                    <select id="profileSelect" onchange="switchCharacterProfile(this.value)" aria-label="Perfil ativo"></select>
+                    <button class="sys-btn" onclick="createCharacterProfile()">NOVO</button>
+                    <button class="sys-btn" onclick="renameCharacterProfile()">RENOMEAR</button>
+                    <button class="sys-btn" onclick="deleteCharacterProfile()" style="color:var(--alert-color); border-color:var(--alert-color);">EXCLUIR</button>
+                </div>
+                <div id="profileStatusText">[ PERFIL ATIVO: -- ]</div>
+            </div>
+            <div class="options-group">
+                <span class="options-label">HISTÓRICO E DESFAZER</span>
+                <div class="history-toolbar">
+                    <button id="btnUndoHistory" class="sys-btn" onclick="undoLastAction()">DESFAZER ÚLTIMA AÇÃO</button>
+                    <button class="sys-btn" onclick="clearActionHistory()">LIMPAR HISTÓRICO</button>
+                    <span id="historyStatusText">[ 0 AÇÕES ]</span>
+                </div>
+                <div id="historyList" class="history-list"><div class="history-empty">NENHUMA ALTERAÇÃO REGISTRADA</div></div>
+            </div>
             <div class="options-group">
                 <span class="options-label">TEMA DO SISTEMA</span>
                 <div class="options-row">
@@ -849,36 +678,6 @@
                     <button id="btn-theme-ordem" class="sys-btn" onclick="setTheme('ordem', this)">ORDEM SECRETA</button>
                     <button id="btn-theme-contencao" class="sys-btn" onclick="setTheme('contencao', this)">CONTENÇÃO</button>
                     <button id="btn-theme-neon" class="sys-btn" onclick="setTheme('neon', this)">NEON</button>
-                    <button id="btn-theme-custom" class="sys-btn" onclick="activateCustomPalette(this)">PERSONALIZADO</button>
-                </div>
-            </div>
-            <div class="options-group" id="customPaletteGroup">
-                <span class="options-label">CRIADOR DE PALETA PERSONALIZADA</span>
-                <div class="custom-palette-grid">
-                    <div class="custom-color-field"><label>FUNDO</label><input type="color" id="customColorBg" value="#050505"></div>
-                    <div class="custom-color-field"><label>PAINÉIS</label><input type="color" id="customColorPanel" value="#0a0a0a"></div>
-                    <div class="custom-color-field"><label>TEXTO</label><input type="color" id="customColorText" value="#e0e0e0"></div>
-                    <div class="custom-color-field"><label>BORDAS</label><input type="color" id="customColorBorder" value="#303030"></div>
-                    <div class="custom-color-field"><label>BRILHO</label><input type="color" id="customColorGlow" value="#ffffff"></div>
-                    <div class="custom-color-field"><label>ALERTA</label><input type="color" id="customColorAlert" value="#ff3344"></div>
-                    <div class="custom-color-field"><label>DESTAQUE</label><input type="color" id="customColorAccent" value="#33cc88"></div>
-                    <div class="custom-color-field"><label>SECUNDÁRIA</label><input type="color" id="customColorGold" value="#eebb00"></div>
-                </div>
-                <div class="options-row" style="margin-top:12px;">
-                    <button class="sys-btn" onclick="applyCustomPaletteFromInputs(true)">APLICAR PALETA</button>
-                    <button class="sys-btn" onclick="loadCurrentThemeIntoPalette()">CAPTURAR TEMA ATUAL</button>
-                    <button class="sys-btn" onclick="resetCustomPalette()">RESTAURAR CORES</button>
-                </div>
-            </div>
-            <div class="options-group">
-                <span class="options-label">PALETA DO COMBAT MODE</span>
-                <div class="options-row">
-                    <button id="btn-combat-carbon" class="sys-btn combat-theme-btn active" onclick="setCombatTheme('carbon', this)">CARBONO</button>
-                    <button id="btn-combat-contencao" class="sys-btn combat-theme-btn" onclick="setCombatTheme('contencao', this)">CONTENÇÃO</button>
-                    <button id="btn-combat-architect" class="sys-btn combat-theme-btn" onclick="setCombatTheme('architect', this)">ARQUITETO</button>
-                    <button id="btn-combat-ambar" class="sys-btn combat-theme-btn" onclick="setCombatTheme('ambar', this)">ÂMBAR</button>
-                    <button id="btn-combat-breu" class="sys-btn combat-theme-btn" onclick="setCombatTheme('breu', this)">BREU VIOLETA</button>
-                    <button id="btn-combat-sangue" class="sys-btn combat-theme-btn" onclick="setCombatTheme('sangue', this)">SANGUE (CLÁSSICO)</button>
                 </div>
             </div>
             <div class="options-group">
@@ -902,14 +701,6 @@
                 </div>
             </div>
             <div class="options-group">
-                <span class="options-label">DENSIDADE DA INTERFACE</span>
-                <div class="options-row">
-                    <button id="btn-density-compact" class="sys-btn density-btn" onclick="setDensity('compact', this)">COMPACTA</button>
-                    <button id="btn-density-balanced" class="sys-btn density-btn active" onclick="setDensity('balanced', this)">EQUILIBRADA</button>
-                    <button id="btn-density-cinematic" class="sys-btn density-btn" onclick="setDensity('cinematic', this)">CINEMATOGRÁFICA</button>
-                </div>
-            </div>
-            <div class="options-group">
                 <span class="options-label">PLANO DE FUNDO (WALLPAPER)</span>
                 <div class="options-row">
                     <input type="file" id="bgUploadInput" style="display: none;" accept="image/*" onchange="loadCustomBackground(event)">
@@ -925,58 +716,66 @@
                 </div>
             </div>
             <div class="options-group">
-                <span class="options-label">PRESETS DE LAYOUT</span>
-                <div class="options-row">
-                    <button id="btn-preset-session" class="sys-btn preset-btn" onclick="applyLayoutPreset('session', this)">SESSÃO</button>
-                    <button id="btn-preset-investigation" class="sys-btn preset-btn" onclick="applyLayoutPreset('investigation', this)">INVESTIGAÇÃO</button>
-                    <button id="btn-preset-combat" class="sys-btn preset-btn" onclick="applyLayoutPreset('combat', this)">COMBATE</button>
-                    <button id="btn-preset-mobile" class="sys-btn preset-btn" onclick="applyLayoutPreset('mobile', this)">CELULAR</button>
-                    <button id="btn-preset-broadcast" class="sys-btn preset-btn" onclick="applyLayoutPreset('broadcast', this)">TRANSMISSÃO</button>
-                    <button id="btn-preset-custom" class="sys-btn preset-btn active" onclick="applyLayoutPreset('custom', this)">PERSONALIZADO</button>
-                </div>
-            </div>
-            <div class="options-group">
-                <span class="options-label">FORMATO DAS BARRAS DO HUD</span>
-                <div class="options-row">
-                    <button id="btn-bar-linear" class="sys-btn bar-style-btn active" onclick="setBarStyle('linear', this)">LINEAR</button>
-                    <button id="btn-bar-pill" class="sys-btn bar-style-btn" onclick="setBarStyle('pill', this)">CÁPSULA</button>
-                    <button id="btn-bar-segmented" class="sys-btn bar-style-btn" onclick="setBarStyle('segmented', this)">SEGMENTADA</button>
-                    <button id="btn-bar-tactical" class="sys-btn bar-style-btn" onclick="setBarStyle('tactical', this)">TÁTICA</button>
-                    <button id="btn-bar-minimal" class="sys-btn bar-style-btn" onclick="setBarStyle('minimal', this)">MINIMALISTA</button>
-                    <button id="btn-bar-radial" class="sys-btn bar-style-btn" onclick="setBarStyle('radial', this)">RADIAL</button>
-                </div>
-            </div>
-            <div class="options-group">
                 <span class="options-label">EFEITOS VISUAIS</span>
                 <div class="options-row">
                     <button id="btn-vignette-toggle" class="sys-btn active" onclick="toggleVignette(this)">SANGRAMENTO: LIGADO</button>
                 </div>
             </div>
             <div class="options-group">
+                <span class="options-label">INTEGRAÇÃO OBS // OVERLAY DE ROLAGENS</span>
+                <div class="options-row" style="margin-bottom: 10px;">
+                    <button id="btn-obs-toggle" class="sys-btn" onclick="toggleObsIntegration(this)">OBS: DESLIGADO</button>
+                    <button class="sys-btn" onclick="regenerateObsChannel()">GERAR NOVO CANAL</button>
+                    <button class="sys-btn" onclick="copyObsOverlayUrl()">COPIAR URL DO OVERLAY</button>
+                    <button class="sys-btn" onclick="testObsOverlay()">TESTAR OVERLAY</button>
+                    <button class="sys-btn" onclick="syncObsHudNow()">SINCRONIZAR HUD</button>
+                </div>
+                <div class="obs-config-grid">
+                    <div>
+                        <label for="obsChannelInput">CANAL PRIVADO</label>
+                        <input type="text" id="obsChannelInput" autocomplete="off" spellcheck="false" onchange="updateObsChannel(this.value)" style="font-size:0.78rem; padding:7px 5px;">
+                    </div>
+                    <div>
+                        <label for="obsOverlayUrl">URL PARA A FONTE DE NAVEGADOR</label>
+                        <input type="text" id="obsOverlayUrl" readonly onclick="this.select()" style="font-size:0.72rem; padding:7px 5px; color:var(--dim-text);">
+                    </div>
+                </div>
+                <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-top:10px; color:var(--dim-text); font-size:0.72rem; letter-spacing:1px;">
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsShowName" checked onchange="updateObsPreferences()" style="width:auto;"> MOSTRAR NOME</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudEnabled" checked onchange="updateObsPreferences()" style="width:auto;"> HUD PERMANENTE</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudConditions" checked onchange="updateObsPreferences()" style="width:auto;"> CONDIÇÕES NO HUD</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;"><input type="checkbox" id="obsHudPortrait" checked onchange="updateObsPreferences()" style="width:auto;"> RETRATO NO HUD</label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0;"><span>LAYOUT</span><select id="obsOverlayLayout" onchange="updateObsPreferences()" style="width:auto; min-width:165px; padding:5px 7px; font-size:0.72rem;">
+                        <option value="standard">PADRÃO</option>
+                        <option value="compact">COMPACTO</option>
+                        <option value="lowerthird">LOWER THIRD</option>
+                        <option value="sidebar">LATERAL</option>
+                        <option value="topbar">SUPERIOR CENTRAL</option>
+                        <option value="mirrored">ESPELHADO</option>
+                    </select></label>
+                    <label style="display:flex; align-items:center; gap:7px; margin:0;"><span>DURAÇÃO</span><input type="number" id="obsDuration" min="2" max="15" step="1" value="6" onchange="updateObsPreferences()" style="width:60px; padding:4px; text-align:center;"><span>SEG.</span></label>
+                    <span id="obsStatusText">[ AGUARDANDO CONFIGURAÇÃO ]</span>
+                </div>
+                <div style="margin-top:8px; color:var(--dim-text); font-size:0.66rem; line-height:1.4; max-width:850px;">O canal funciona como uma chave. Rolagens, HUD de status e uma miniatura comprimida do retrato são transmitidos; não compartilhe a URL publicamente.</div>
+            </div>
+            <div class="options-group">
                 <span class="options-label">DADOS E ARQUIVOS</span>
                 <div class="options-row">
                     <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importarFicha(event)">
-                    <input type="file" id="importAppearanceFile" style="display: none;" accept=".json" onchange="importAppearance(event)">
                     <button class="sys-btn" onclick="document.getElementById('importFile').click()">IMPORTAR</button>
                     <button class="sys-btn" onclick="exportarFicha()">EXPORTAR</button>
-                    <button class="sys-btn" onclick="document.getElementById('importAppearanceFile').click()">IMPORTAR APARÊNCIA</button>
-                    <button class="sys-btn" onclick="exportAppearance()">EXPORTAR APARÊNCIA</button>
                     <button class="sys-btn" id="btnExportarPdf" onclick="exportarParaPDF()">GERAR PDF</button>
                     <button class="sys-btn" onclick="resetarFicha()" style="color: var(--alert-color); border-color: var(--alert-color);">RESETAR FICHA</button>
                 </div>
             </div>
         </div>
-        <button type="button" id="menuScrollIndicator" class="menu-scroll-indicator" onclick="scrollActiveMenu()" aria-label="Rolar para ver mais opções">
-            <span>Role para ver mais</span>
-            <span class="menu-scroll-arrow" aria-hidden="true">⌄</span>
-        </button>
-        <button type="button" class="menu-close-button" onclick="toggleMenu()" aria-label="Fechar menu">×</button>
     </div>
 </div>
 
 <button id="muteBtn" class="mute-btn" onclick="toggleMute()" title="Ativar/Desativar Som">
     <svg id="iconVol" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
 </button>
+<div id="saveStatusIndicator" class="save-status-indicator" data-state="saved" role="status" aria-live="polite">SALVO</div>
 
 <div class="container" id="mainContainer">
     <h1 class="page-header">DARK DASHBOARD</h1>
@@ -1114,7 +913,9 @@
                         <input type="number" id="macroSkill" placeholder="PERÍCIA (+X)" style="flex:1; min-width: 80px; font-size: 0.85rem;">
                         <input type="text" id="macroCrit" placeholder="CRÍTICO (Ex: x2, +1d8)" style="flex:1; min-width: 100px; font-size: 0.85rem;">
                         <input type="text" id="macroDmg" placeholder="DANO (Ex: 1d8+2)" style="flex:1; min-width: 100px; font-size: 0.85rem;">
-                        <button class="sys-btn" style="color: var(--alert-color); border-color: var(--alert-color);" onclick="adicionarMacro()">+ ADD</button>
+                        <input type="number" id="macroPeCost" placeholder="CUSTO PE" min="0" step="1" style="flex:0.7; min-width: 85px; font-size: 0.85rem;">
+                        <button id="macroSubmitBtn" class="sys-btn" style="color: var(--alert-color); border-color: var(--alert-color);" onclick="adicionarMacro()">+ ADD</button>
+                        <button id="macroCancelBtn" class="sys-btn" style="display:none; color: var(--dim-text); border-color: var(--dim-text);" onclick="cancelarEdicaoMacro()">CANCELAR</button>
                     </div>
                     <div id="macroList" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Macros renderizadas aqui -->
@@ -1257,31 +1058,63 @@
 
     let isMuted = false;
     let isCombatMode = false;
-    let combatTheme = 'carbon';
     let isVignetteEnabled = true;
-    let uiDensity = 'balanced';
-    let barStyle = 'linear';
-    let layoutPreset = 'custom';
-    let customPaletteEnabled = false;
-    let customPalette = {
-        bg: '#050505', panel: '#0a0a0a', text: '#e0e0e0', border: '#303030',
-        glow: '#ffffff', alert: '#ff3344', accent: '#33cc88', gold: '#eebb00'
-    };
     let timeoutAutoSave;
     let currentRollData = { attr: '', numDice: 1 };
     let initList = [];
     let activeTurnIndex = -1;
     let combatMacros = [];
+    let editingMacroId = null;
+    let obsSettings = { enabled: false, channel: '', accessKey: '', duration: 6000, showName: true, hudEnabled: true, hudConditions: true, hudPortrait: true, layout: 'standard' };
+    let obsBroadcastChannel = null;
+    let obsPortraitThumbnail = '';
+    let obsPortraitSource = '';
+    let hudUpdateTimer = null;
+    let hudHeartbeatTimer = null;
+    let obsLifecycleListenersBound = false;
+    let lastHudSignature = '';
+    let pendingHudDelivery = null;
+    let hudAckTimer = null;
+    let hudRetryTimer = null;
+    let obsAckEventSource = null;
+    let obsAckReconnectTimer = null;
+    let lastObsAckAt = 0;
+    let saveStatusTimer = null;
+    let isSecondaryTab = false;
+    let profileLockTimer = null;
+    let storageWarningShown = false;
+    let isApplyingHistory = false;
+    let activeProfileId = '';
+    let profilesIndex = null;
 
+    const APP_VERSION = '2026.07.18.2';
+    const OBS_PROTOCOL_VERSION = 3;
+    const MAX_OBS_PAYLOAD_BYTES = 3600;
+    const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
+    const MAX_HISTORY_BYTES = 1500000;
+    const MAX_RESOURCE_VALUE = 999999;
+    const SAVE_COMMIT_KEY = 'DARK_SaveCommit';
+    const PROFILE_LOCK_PREFIX = 'DARK_ProfileLock_';
+    const PROFILE_LOCK_TTL = 15000;
+    const TAB_INSTANCE_ID = `tab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
     const STORAGE_KEY = 'FichaDarkSave';
-    const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon', 'theme-custom']);
+    const PROFILE_INDEX_KEY = 'DARK_CharacterProfiles';
+    const PROFILE_DATA_PREFIX = 'DARK_CharacterProfile_';
+    const PROFILE_HISTORY_PREFIX = 'DARK_CharacterHistory_';
+    const GLOBAL_SETTINGS_KEY = 'DARK_GlobalSettings';
+    const MAX_HISTORY_ENTRIES = 30;
+    const OBS_RELAY_BASE = 'https://ntfy.sh';
+    const OBS_LOCAL_EVENT_KEY = 'DarkObsLastEvent';
+    const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon']);
     const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
     const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
     const ALLOWED_SHAPES = new Set(['default', 'round', 'angular']);
-    const ALLOWED_COMBAT_THEMES = new Set(['carbon', 'contencao', 'architect', 'ambar', 'breu', 'sangue']);
-    const ALLOWED_DENSITIES = new Set(['compact', 'balanced', 'cinematic']);
-    const ALLOWED_BAR_STYLES = new Set(['linear', 'pill', 'segmented', 'tactical', 'minimal', 'radial']);
-    const ALLOWED_LAYOUT_PRESETS = new Set(['session', 'investigation', 'combat', 'mobile', 'broadcast', 'custom']);
+    const ALLOWED_OBS_LAYOUTS = new Set(['standard', 'compact', 'lowerthird', 'sidebar', 'topbar', 'mirrored']);
+    const OBS_CONTROL_IDS = new Set([
+        'obsChannelInput', 'obsOverlayUrl', 'obsShowName', 'obsHudEnabled',
+        'obsHudConditions', 'obsHudPortrait', 'obsOverlayLayout', 'obsDuration'
+    ]);
+    const NON_PROFILE_CONTROL_IDS = new Set([...OBS_CONTROL_IDS, 'profileSelect']);
 
     function escapeHTML(value) {
         return String(value ?? '')
@@ -1290,6 +1123,37 @@
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    }
+
+    function stripObsFromProfileData(data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
+        let clean;
+        try { clean = JSON.parse(JSON.stringify(data)); }
+        catch (error) { console.warn('Não foi possível higienizar o perfil.', error); return data; }
+        delete clean.obs;
+        if (clean.dataMap && typeof clean.dataMap === 'object' && !Array.isArray(clean.dataMap)) {
+            NON_PROFILE_CONTROL_IDS.forEach(id => delete clean.dataMap[id]);
+        }
+        return clean;
+    }
+
+    function cleanObsDataFromAllProfiles(index) {
+        if (!index || !Array.isArray(index.profiles)) return;
+        index.profiles.forEach(profile => {
+            const key = profileDataKey(profile.id);
+            const raw = safeReadJson(key, null);
+            if (!raw) return;
+            const clean = stripObsFromProfileData(raw);
+            if (JSON.stringify(raw) !== JSON.stringify(clean)) safeWriteJson(key, clean);
+        });
+        const mirror = readStoredSave();
+        if (mirror) {
+            const cleanMirror = stripObsFromProfileData(mirror);
+            if (JSON.stringify(mirror) !== JSON.stringify(cleanMirror)) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanMirror)); }
+                catch (error) { console.warn('Não foi possível migrar o espelho do perfil.', error); }
+            }
+        }
     }
 
     function readStoredSaveRaw() {
@@ -1314,7 +1178,7 @@
 
     function writeStoredSave(data) {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stripObsFromProfileData(data)));
             return true;
         } catch (error) {
             console.error('Falha ao salvar os dados localmente.', error);
@@ -1333,7 +1197,365 @@
     function isOverlayActive(id) {
         return document.getElementById(id)?.classList.contains('active') ?? false;
     }
-    
+
+    // INTEGRAÇÃO OBS // HUD, rolagens, confirmação e recuperação de conexão.
+    function generateRandomToken(prefix, byteCount = 16) {
+        const bytes = new Uint8Array(byteCount);
+        if (window.crypto?.getRandomValues) window.crypto.getRandomValues(bytes);
+        else for (let index = 0; index < bytes.length; index++) bytes[index] = Math.floor(Math.random() * 256);
+        return `${prefix}${Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    function generateObsChannel() { return generateRandomToken('dark-obs-', 16); }
+    function generateObsAccessKey() { return generateRandomToken('key-', 12); }
+
+    function sanitizeObsChannel(value) {
+        return String(value ?? '').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    }
+
+    function sanitizeObsAccessKey(value) {
+        return String(value ?? '').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    }
+
+    function sanitizeObsLayout(value) {
+        const layout = String(value ?? '').trim().toLowerCase();
+        return ALLOWED_OBS_LAYOUTS.has(layout) ? layout : 'standard';
+    }
+
+    function ensureObsChannel() {
+        obsSettings.channel = sanitizeObsChannel(obsSettings.channel);
+        if (obsSettings.channel.length < 16) obsSettings.channel = generateObsChannel();
+        return obsSettings.channel;
+    }
+
+    function ensureObsAccessKey() {
+        obsSettings.accessKey = sanitizeObsAccessKey(obsSettings.accessKey);
+        if (obsSettings.accessKey.length < 12) obsSettings.accessKey = generateObsAccessKey();
+        return obsSettings.accessKey;
+    }
+
+    function getCurrentThemeName() {
+        if (isCombatMode || document.body.classList.contains('theme-combat')) return 'combat';
+        const themeClass = Array.from(document.body.classList).find(className => className.startsWith('theme-'));
+        return themeClass ? themeClass.replace('theme-', '') : 'default';
+    }
+
+    function getObsOverlayUrl() {
+        const channel = ensureObsChannel();
+        const accessKey = ensureObsAccessKey();
+        let overlayUrl;
+        try { overlayUrl = new URL('obs.html', window.location.href); }
+        catch (error) { return `obs.html?channel=${encodeURIComponent(channel)}&key=${encodeURIComponent(accessKey)}&duration=${Math.round(obsSettings.duration / 1000)}&v=${encodeURIComponent(APP_VERSION)}`; }
+        overlayUrl.searchParams.set('channel', channel);
+        overlayUrl.searchParams.set('key', accessKey);
+        overlayUrl.searchParams.set('duration', String(Math.round(obsSettings.duration / 1000)));
+        overlayUrl.searchParams.set('v', APP_VERSION);
+        return overlayUrl.href;
+    }
+
+    function setObsStatus(message, state = 'idle') {
+        const status = document.getElementById('obsStatusText');
+        if (!status) return;
+        status.textContent = `[ ${String(message || '').toUpperCase()} ]`;
+        status.style.color = state === 'ok' ? 'var(--accent-green)' : state === 'error' ? 'var(--alert-color)' : 'var(--dim-text)';
+    }
+
+    function syncObsControls() {
+        ensureObsChannel(); ensureObsAccessKey();
+        const toggle = document.getElementById('btn-obs-toggle');
+        if (toggle) {
+            toggle.textContent = obsSettings.enabled ? 'OBS: LIGADO' : 'OBS: DESLIGADO';
+            toggle.classList.toggle('active', obsSettings.enabled);
+        }
+        const channelInput = document.getElementById('obsChannelInput');
+        if (channelInput && channelInput.value !== obsSettings.channel) channelInput.value = obsSettings.channel;
+        const urlInput = document.getElementById('obsOverlayUrl');
+        if (urlInput) urlInput.value = getObsOverlayUrl();
+        const nameInput = document.getElementById('obsShowName');
+        if (nameInput) nameInput.checked = obsSettings.showName;
+        const hudInput = document.getElementById('obsHudEnabled');
+        if (hudInput) hudInput.checked = obsSettings.hudEnabled;
+        const conditionsInput = document.getElementById('obsHudConditions');
+        if (conditionsInput) conditionsInput.checked = obsSettings.hudConditions;
+        const portraitInput = document.getElementById('obsHudPortrait');
+        if (portraitInput) portraitInput.checked = obsSettings.hudPortrait;
+        const layoutInput = document.getElementById('obsOverlayLayout');
+        if (layoutInput) layoutInput.value = sanitizeObsLayout(obsSettings.layout);
+        const durationInput = document.getElementById('obsDuration');
+        if (durationInput) durationInput.value = String(Math.round(obsSettings.duration / 1000));
+        setObsStatus(obsSettings.enabled ? 'TRANSMISSÃO ATIVA' : 'TRANSMISSÃO DESATIVADA', obsSettings.enabled ? 'ok' : 'idle');
+    }
+
+    function parseObsRelayPayload(raw) {
+        try {
+            const envelope = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (!envelope || typeof envelope !== 'object') return null;
+            if (envelope.event === 'message' && typeof envelope.message === 'string') return JSON.parse(envelope.message);
+            if (envelope.event && envelope.event !== 'message') return null;
+            return envelope;
+        } catch (error) { return null; }
+    }
+
+    function handleObsAckPayload(payload) {
+        if (!payload || payload.event !== 'ack') return;
+        if (String(payload.channel || '') !== ensureObsChannel()) return;
+        if (String(payload.accessKey || '') !== ensureObsAccessKey()) return;
+        const ackFor = String(payload.ackFor || '');
+        const protocol = Number(payload.protocol) || 0;
+        const overlayVersion = String(payload.overlayVersion || 'DESCONHECIDA');
+        lastObsAckAt = Date.now();
+        if (protocol !== OBS_PROTOCOL_VERSION) {
+            setObsStatus(`VERSÕES INCOMPATÍVEIS // SITE ${OBS_PROTOCOL_VERSION} · OBS ${protocol || '?'}`, 'error');
+            return;
+        }
+        if (pendingHudDelivery && pendingHudDelivery.id === ackFor) {
+            clearTimeout(hudAckTimer); hudAckTimer = null;
+            pendingHudDelivery = null;
+            setObsStatus(`HUD CONFIRMADO NO OBS // ${overlayVersion}`, 'ok');
+            return;
+        }
+        if (payload.ackType === 'test') setObsStatus(`TESTE CONFIRMADO NO OBS // ${overlayVersion}`, 'ok');
+    }
+
+    function closeObsAckListener() {
+        if (obsAckEventSource) {
+            try { obsAckEventSource.close(); } catch (error) {}
+            obsAckEventSource = null;
+        }
+        clearTimeout(obsAckReconnectTimer); obsAckReconnectTimer = null;
+    }
+
+    function startObsAckListener() {
+        closeObsAckListener();
+        if (!obsSettings.enabled || navigator.onLine === false) return;
+        try {
+            const source = new EventSource(`${OBS_RELAY_BASE}/${encodeURIComponent(ensureObsChannel())}/sse`);
+            obsAckEventSource = source;
+            source.onmessage = event => {
+                const payload = parseObsRelayPayload(event.data);
+                if (payload) handleObsAckPayload(payload);
+            };
+            source.onerror = () => {
+                if (obsAckEventSource !== source) return;
+                try { source.close(); } catch (error) {}
+                obsAckEventSource = null;
+                clearTimeout(obsAckReconnectTimer);
+                obsAckReconnectTimer = window.setTimeout(startObsAckListener, 5000);
+            };
+        } catch (error) {
+            console.warn('Confirmação do OBS indisponível.', error);
+            obsAckReconnectTimer = window.setTimeout(startObsAckListener, 7000);
+        }
+    }
+
+    function initObsIntegration() {
+        ensureObsChannel(); ensureObsAccessKey();
+        if ('BroadcastChannel' in window) {
+            try {
+                obsBroadcastChannel?.close();
+                obsBroadcastChannel = new BroadcastChannel(`dark-obs-${obsSettings.channel}`);
+                obsBroadcastChannel.addEventListener('message', event => handleObsAckPayload(event.data));
+            } catch (error) {
+                console.warn('BroadcastChannel indisponível para o overlay OBS.', error);
+                obsBroadcastChannel = null;
+            }
+        }
+        clearInterval(hudHeartbeatTimer); hudHeartbeatTimer = null;
+        if (!obsLifecycleListenersBound) {
+            obsLifecycleListenersBound = true;
+            const resyncObsHud = () => {
+                if (obsSettings.enabled && !isSecondaryTab) window.setTimeout(() => sendObsHudUpdate(true), 250);
+            };
+            window.addEventListener('online', () => { startObsAckListener(); resyncObsHud(); });
+            window.addEventListener('pageshow', resyncObsHud);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) resyncObsHud(); });
+        }
+        if (obsSettings.enabled) startObsAckListener(); else closeObsAckListener();
+        syncObsControls();
+        if (obsSettings.enabled && !isSecondaryTab) window.setTimeout(() => sendObsHudUpdate(true), 900);
+    }
+
+    function toggleObsIntegration(button) {
+        obsSettings.enabled = !obsSettings.enabled;
+        syncObsControls();
+        writeGlobalObsSettings();
+        playSfx('click');
+        setSaveStatus('saved', obsSettings.enabled ? 'OBS ATIVADO' : 'OBS DESATIVADO');
+        if (obsSettings.enabled) {
+            startObsAckListener();
+            testObsOverlay();
+        } else closeObsAckListener();
+    }
+
+    function updateObsChannel(value) {
+        const previous = ensureObsChannel();
+        const sanitized = sanitizeObsChannel(value);
+        const next = sanitized.length >= 16 ? sanitized : generateObsChannel();
+        if (next === previous) { syncObsControls(); return; }
+        obsSettings.channel = next;
+        obsSettings.accessKey = generateObsAccessKey();
+        lastHudSignature = '';
+        writeGlobalObsSettings();
+        initObsIntegration();
+        setObsStatus('CANAL OBS ATUALIZADO // COPIE A NOVA URL', 'ok');
+        setSaveStatus('saved', 'CANAL OBS SALVO');
+        if (obsSettings.enabled) window.setTimeout(() => sendObsHudUpdate(true), 250);
+    }
+
+    function regenerateObsChannel() {
+        abrirModalCustom('GERAR NOVO CANAL OBS?\nA URL anterior deixará de receber atualizações neste navegador.', false, true, function(confirm) {
+            if (!confirm) return;
+            try { obsBroadcastChannel?.close(); } catch (error) {}
+            obsBroadcastChannel = null;
+            obsSettings.channel = generateObsChannel();
+            obsSettings.accessKey = generateObsAccessKey();
+            lastHudSignature = '';
+            writeGlobalObsSettings();
+            initObsIntegration();
+            setObsStatus('NOVO CANAL GERADO — COPIE A NOVA URL', 'ok');
+            setSaveStatus('saved', 'NOVO CANAL OBS GERADO');
+            playSfx('box');
+            if (obsSettings.enabled) window.setTimeout(() => sendObsHudUpdate(true), 300);
+        });
+    }
+
+    function updateObsPreferences() {
+        const durationSeconds = Number.parseInt(document.getElementById('obsDuration')?.value, 10);
+        obsSettings.duration = Math.min(15000, Math.max(2000, Number.isFinite(durationSeconds) ? durationSeconds * 1000 : 6000));
+        obsSettings.showName = document.getElementById('obsShowName')?.checked !== false;
+        obsSettings.hudEnabled = document.getElementById('obsHudEnabled')?.checked !== false;
+        obsSettings.hudConditions = document.getElementById('obsHudConditions')?.checked !== false;
+        obsSettings.hudPortrait = document.getElementById('obsHudPortrait')?.checked !== false;
+        obsSettings.layout = sanitizeObsLayout(document.getElementById('obsOverlayLayout')?.value);
+        if (obsSettings.hudPortrait) refreshObsPortraitThumbnail();
+        syncObsControls();
+        writeGlobalObsSettings();
+        setSaveStatus('saved', 'PREFERÊNCIAS OBS SALVAS');
+        sendObsHudUpdate(true);
+    }
+
+    async function copyObsOverlayUrl() {
+        const url = getObsOverlayUrl();
+        const input = document.getElementById('obsOverlayUrl');
+        if (input) input.value = url;
+        try {
+            if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url);
+            else { input?.focus(); input?.select(); document.execCommand('copy'); }
+            setObsStatus('URL PROTEGIDA COPIADA', 'ok');
+            playSfx('box');
+        } catch (error) {
+            console.warn('Não foi possível copiar a URL automaticamente.', error);
+            input?.focus(); input?.select(); setObsStatus('SELECIONE E COPIE A URL', 'error');
+        }
+    }
+
+    function buildObsPayload(data) {
+        const characterName = document.getElementById('charNameInput')?.value?.trim() || 'DESCONHECIDO';
+        return {
+            version: 3,
+            protocol: OBS_PROTOCOL_VERSION,
+            appVersion: APP_VERSION,
+            source: 'dark-dashboard',
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+            timestamp: Date.now(),
+            duration: obsSettings.duration,
+            character: obsSettings.showName ? characterName.slice(0, 80) : '',
+            theme: getCurrentThemeName(),
+            layout: sanitizeObsLayout(obsSettings.layout),
+            channel: ensureObsChannel(),
+            accessKey: ensureObsAccessKey(),
+            profileId: activeProfileId || '',
+            ...data
+        };
+    }
+
+    function utf8ByteLength(value) {
+        try { return new TextEncoder().encode(String(value)).length; }
+        catch (error) { return unescape(encodeURIComponent(String(value))).length; }
+    }
+
+    function prepareObsPayload(data) {
+        const payload = buildObsPayload(data);
+        const trimmed = [];
+        const serialize = () => JSON.stringify(payload);
+        let serialized = serialize();
+        if (utf8ByteLength(serialized) > MAX_OBS_PAYLOAD_BYTES && payload.hud?.portrait) {
+            payload.hud = { ...payload.hud, portrait: '' }; trimmed.push('RETRATO'); serialized = serialize();
+        }
+        if (utf8ByteLength(serialized) > MAX_OBS_PAYLOAD_BYTES && Array.isArray(payload.hud?.conditions)) {
+            payload.hud = { ...payload.hud, conditions: payload.hud.conditions.slice(0, 4) }; trimmed.push('CONDIÇÕES'); serialized = serialize();
+        }
+        if (utf8ByteLength(serialized) > MAX_OBS_PAYLOAD_BYTES && Array.isArray(payload.hud?.conditions)) {
+            payload.hud = { ...payload.hud, conditions: [] }; serialized = serialize();
+        }
+        if (utf8ByteLength(serialized) > MAX_OBS_PAYLOAD_BYTES) {
+            payload.character = String(payload.character || '').slice(0, 40);
+            payload.title = String(payload.title || '').slice(0, 70);
+            payload.subtitle = String(payload.subtitle || '').slice(0, 55);
+            trimmed.push('TEXTOS'); serialized = serialize();
+        }
+        const bytes = utf8ByteLength(serialized);
+        if (bytes > MAX_OBS_PAYLOAD_BYTES) throw new Error(`Pacote OBS excede ${MAX_OBS_PAYLOAD_BYTES} bytes.`);
+        return { payload, serialized, bytes, trimmed };
+    }
+
+    async function sendObsEvent(data, force = false) {
+        if (!force && !obsSettings.enabled) return { remote: false, local: false, skipped: true };
+        if (isSecondaryTab && data?.event !== 'test') {
+            setObsStatus('OBS PAUSADO — OUTRA ABA CONTROLA O PERFIL', 'error');
+            return { remote: false, local: false, skipped: true };
+        }
+        const channel = ensureObsChannel();
+        let prepared;
+        try { prepared = prepareObsPayload(data); }
+        catch (error) {
+            console.error(error); setObsStatus('PACOTE DO OVERLAY MUITO GRANDE', 'error');
+            return { remote: false, local: false, error };
+        }
+        const { payload, serialized, bytes, trimmed } = prepared;
+        let deliveredLocally = false;
+        try { obsBroadcastChannel?.postMessage(payload); deliveredLocally = Boolean(obsBroadcastChannel); }
+        catch (error) { console.warn('Falha no canal local do overlay.', error); }
+        try { localStorage.setItem(OBS_LOCAL_EVENT_KEY, serialized); deliveredLocally = true; }
+        catch (error) { console.warn('Falha ao registrar evento local do overlay.', error); }
+
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 7000);
+        try {
+            const response = await fetch(`${OBS_RELAY_BASE}/${encodeURIComponent(channel)}`, {
+                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: serialized,
+                mode: 'cors', cache: 'no-store', credentials: 'omit', keepalive: bytes < 64000, signal: controller.signal
+            });
+            if (!response.ok) { const relayError = new Error(`HTTP ${response.status}`); relayError.status = response.status; throw relayError; }
+            const label = payload.event === 'hud' ? 'HUD PUBLICADO // AGUARDANDO OBS' : payload.remoteOnly ? 'TESTE REMOTO PUBLICADO' : 'RESULTADO PUBLICADO';
+            setObsStatus(trimmed.length ? `${label} // SEM ${trimmed.join(' E ')}` : label, 'ok');
+            return { remote: true, local: deliveredLocally, payload, bytes, trimmed };
+        } catch (error) {
+            console.warn('Relay remoto do OBS indisponível; tentativa local mantida.', error);
+            if (error?.status === 429) setObsStatus('LIMITE TEMPORÁRIO DO RELAY ATINGIDO', 'error');
+            else if (payload.remoteOnly) setObsStatus('TESTE REMOTO NÃO CHEGOU AO RELAY', 'error');
+            else setObsStatus(deliveredLocally ? 'SOMENTE ENTREGA LOCAL // OBS REMOTO NÃO CONFIRMADO' : 'FALHA NA TRANSMISSÃO', 'error');
+            return { remote: false, local: deliveredLocally, payload, bytes, trimmed, error };
+        } finally { window.clearTimeout(timeoutId); }
+    }
+
+    async function testObsOverlay() {
+        const result = await sendObsEvent({
+            event: 'test', title: 'CONEXÃO ESTABELECIDA', subtitle: 'DARK DASHBOARD // OBS',
+            rolls: [7, 13, 20], chosen: 20, bonus: 5, total: 25, critical: true,
+            failure: false, damage: null, remoteOnly: true
+        }, true);
+        if (result.remote) window.setTimeout(() => sendObsHudUpdate(true), 350);
+        playSfx('alert');
+    }
+
+    function syncObsHudNow() {
+        lastHudSignature = '';
+        clearTimeout(hudRetryTimer); hudRetryTimer = null;
+        sendObsHudUpdate(true);
+        playSfx('box');
+    }
+
     // Variáveis do Quadro Canvas (Pan e Zoom)
     let boardNodes = [];
     let boardLinks = [];
@@ -1359,10 +1581,601 @@
         tecnico: [ { afi: 1, nome: "Analista (Subclasse)", desc: "+5 em Tecnologia.\nHackear vira ação completa.", sub: "analista" }, { afi: 1, nome: "Diplomata (Subclasse)", desc: "+5 em Persuasão.", sub: "diplomata" }, { afi: 5, nome: "Inventário Otimizado", desc: "Carga Normal + (FOR + INT)." }, { afi: 10, nome: "Artista Marcial", desc: "Ataques desarmados: 1d6 dano." }, { afi: 10, nome: "Contatos", desc: "1 vez por missão. Solicita favores narrativos." }, { afi: 15, nome: "Discurso Motivador", desc: "Custo: 4 PE.\nAliados recebem +1d20 em perícias por 3 rodadas." }, { afi: 15, nome: "Letalidade de Disparo", desc: "+1d6 dano com armas de fogo." }, { afi: 15, nome: "Treinamento I", desc: "Aprimoramento de perícias." }, { afi: 20, nome: "Aumento de Atributo", desc: "Melhora atributos base." }, { afi: 20, nome: "Artista Marcial II", desc: "Dano desarmado: 1d8." }, { afi: 25, nome: "Diplomata II (Subclasse)", desc: "+7 Persuasão.", sub: "diplomata" }, { afi: 25, nome: "Hacker II (Subclasse)", desc: "+7 Tecnologia.", sub: "analista" }, { afi: 30, nome: "Treinamento II", desc: "Aprimoramento de perícias." }, { afi: 30, nome: "Atirador de Elite", desc: "Após acertar: pode furtivamente reposicionar e disparar novamente." }, { afi: 35, nome: "Discurso Motivador II", desc: "Custo: 2 PE.\nDura a cena inteira." }, { afi: 40, nome: "Improvisar", desc: "Cria equipamentos temporários." }, { afi: 40, nome: "Aumento de Atributo II", desc: "Melhora atributos base." }, { afi: 45, nome: "Resgate", desc: "Movimento livre para ajudar aliados." }, { afi: 45, nome: "Conhecimento Aplicado", desc: "Custo: 2 PE.\nTroca atributo da perícia para INT." }, { afi: 50, nome: "Preparado para Tudo", desc: "Custo: 3 PE por categoria.\nProduz item que estava 'guardado'." }, { afi: 50, nome: "Tiro Certeiro", desc: "+5 em ataques com arma de fogo." }, { afi: 55, nome: "Reanimação", desc: "Custo: 12 PE.\nRessuscita personagem morto na mesma cena." }, { afi: 60, nome: "Aumento de Atributo III", desc: "Melhora atributos base." }, { afi: 65, nome: "Disparo Impactante", desc: "Permite usar manobras com armas de fogo." }, { afi: 70, nome: "Equipe de Trauma", desc: "Remove condição negativa de aliado." }, { afi: 75, nome: "Na Trilha Certa", desc: "Acumula bônus em testes investigativos." }, { afi: 80, nome: "Jackpot!", desc: "Crítico com arma de fogo pode causar dano máximo.\nCusto: 10 PE." }, { afi: 85, nome: "Truque de Mestre", desc: "Custo: 5 PE.\nCopia uma habilidade utilizada por um aliado durante a cena." } ]
     };
 
+
+    function safeReadJson(key, fallback = null) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+            console.error(`Falha ao ler ${key}.`, error);
+            return fallback;
+        }
+    }
+
+    let storageRecoveryInProgress = false;
+    function pruneStorageForRecovery() {
+        if (storageRecoveryInProgress) return;
+        storageRecoveryInProgress = true;
+        try {
+            const historyKeys = [];
+            for (let index = 0; index < localStorage.length; index++) {
+                const key = localStorage.key(index);
+                if (key?.startsWith(PROFILE_HISTORY_PREFIX)) historyKeys.push(key);
+            }
+            historyKeys.forEach(key => {
+                try {
+                    const history = JSON.parse(localStorage.getItem(key) || '[]');
+                    localStorage.setItem(key, JSON.stringify(Array.isArray(history) ? history.slice(0, 5) : []));
+                } catch (error) { try { localStorage.removeItem(key); } catch (ignored) {} }
+            });
+            localStorage.removeItem(OBS_LOCAL_EVENT_KEY);
+            localStorage.removeItem('DarkObsLastAck');
+        } finally { storageRecoveryInProgress = false; }
+    }
+
+    function safeWriteJson(key, value) {
+        const serialized = JSON.stringify(value);
+        try {
+            localStorage.setItem(key, serialized);
+            return true;
+        } catch (error) {
+            const quota = error?.name === 'QuotaExceededError' || error?.name === 'NS_ERROR_DOM_QUOTA_REACHED' || error?.code === 22;
+            if (quota && !storageRecoveryInProgress) {
+                pruneStorageForRecovery();
+                try { localStorage.setItem(key, serialized); return true; }
+                catch (retryError) { error = retryError; }
+            }
+            console.error(`Falha ao gravar ${key}.`, error);
+            try { setSaveStatus('error', quota ? 'ARMAZENAMENTO CHEIO — EXPORTE UM BACKUP' : 'ERRO AO SALVAR'); } catch (ignored) {}
+            return false;
+        }
+    }
+
+    function safeRemoveKey(key) {
+        try { localStorage.removeItem(key); return true; }
+        catch (error) { console.error(`Falha ao remover ${key}.`, error); return false; }
+    }
+
+
+    function estimateLocalStorageBytes() {
+        let total = 0;
+        try {
+            for (let index = 0; index < localStorage.length; index++) {
+                const key = localStorage.key(index) || '';
+                const value = localStorage.getItem(key) || '';
+                total += utf8ByteLength(key) + utf8ByteLength(value);
+            }
+        } catch (error) { return 0; }
+        return total;
+    }
+
+    function checkStorageHealth() {
+        const used = estimateLocalStorageBytes();
+        if (used > 4 * 1024 * 1024 && !storageWarningShown) {
+            storageWarningShown = true;
+            setSaveStatus('error', 'ARMAZENAMENTO QUASE CHEIO — EXPORTE UM BACKUP');
+        }
+        return used;
+    }
+
+    function trimHistoryToBudget(history) {
+        const trimmed = Array.isArray(history) ? history.slice(0, MAX_HISTORY_ENTRIES) : [];
+        while (trimmed.length > 1 && utf8ByteLength(JSON.stringify(trimmed)) > MAX_HISTORY_BYTES) trimmed.pop();
+        return trimmed;
+    }
+
+    function getProfileLockKey(id = activeProfileId) { return `${PROFILE_LOCK_PREFIX}${id || 'unknown'}`; }
+
+    function releaseProfileTabLock() {
+        clearInterval(profileLockTimer); profileLockTimer = null;
+        if (!activeProfileId) return;
+        const current = safeReadJson(getProfileLockKey(), null);
+        if (current?.tabId === TAB_INSTANCE_ID) safeRemoveKey(getProfileLockKey());
+    }
+
+    function writeProfileTabLease() {
+        if (!activeProfileId || isSecondaryTab) return;
+        safeWriteJson(getProfileLockKey(), { tabId: TAB_INSTANCE_ID, timestamp: Date.now(), profileId: activeProfileId });
+    }
+
+    function acquireProfileTabLock(force = false) {
+        if (!activeProfileId) return true;
+        const lock = safeReadJson(getProfileLockKey(), null);
+        const occupied = lock?.tabId && lock.tabId !== TAB_INSTANCE_ID && Date.now() - Number(lock.timestamp || 0) < PROFILE_LOCK_TTL;
+        if (occupied && !force) {
+            isSecondaryTab = true;
+            setSaveStatus('error', 'OUTRA ABA ESTÁ CONTROLANDO ESTE PERFIL');
+            setObsStatus('OBS PAUSADO NESTA ABA', 'error');
+            window.setTimeout(() => abrirModalCustom('OUTRA ABA ESTÁ CONTROLANDO ESTE PERFIL.\n\nAssumir o controle nesta aba? A outra aba deixará de salvar e transmitir.', false, true, function(confirm) {
+                if (confirm) acquireProfileTabLock(true);
+            }), 300);
+            return false;
+        }
+        isSecondaryTab = false;
+        safeWriteJson(getProfileLockKey(), { tabId: TAB_INSTANCE_ID, timestamp: Date.now(), profileId: activeProfileId });
+        clearInterval(profileLockTimer);
+        profileLockTimer = window.setInterval(writeProfileTabLease, 5000);
+        return true;
+    }
+
+    function recoverInterruptedSave() {
+        const marker = safeReadJson(SAVE_COMMIT_KEY, null);
+        if (!marker?.profileId) return;
+        const profileData = safeReadJson(profileDataKey(marker.profileId), null);
+        if (profileData) {
+            writeStoredSave(profileData);
+            const index = normalizeProfileIndex(safeReadJson(PROFILE_INDEX_KEY, null));
+            if (index && index.profiles.some(profile => profile.id === marker.profileId)) {
+                index.activeId = marker.profileId;
+                safeWriteJson(PROFILE_INDEX_KEY, index);
+            }
+            if (marker.globalSettings) safeWriteJson(GLOBAL_SETTINGS_KEY, marker.globalSettings);
+        }
+        safeRemoveKey(SAVE_COMMIT_KEY);
+    }
+
+    function commitSaveBundle(data) {
+        if (!activeProfileId || !profilesIndex) return false;
+        const cleanData = stripObsFromProfileData(data);
+        const updatedIndex = JSON.parse(JSON.stringify(profilesIndex));
+        const profile = updatedIndex.profiles.find(item => item.id === activeProfileId);
+        if (profile) profile.updatedAt = Date.now();
+        const globalSettings = { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } };
+        const marker = { version: 1, profileId: activeProfileId, timestamp: Date.now(), globalSettings };
+        if (!safeWriteJson(SAVE_COMMIT_KEY, marker)) return false;
+        const profileOk = safeWriteJson(profileDataKey(activeProfileId), cleanData);
+        if (!profileOk) return false;
+        const mirrorOk = writeStoredSave(cleanData);
+        const indexOk = safeWriteJson(PROFILE_INDEX_KEY, updatedIndex);
+        const globalOk = safeWriteJson(GLOBAL_SETTINGS_KEY, globalSettings);
+        if (mirrorOk && indexOk && globalOk) {
+            profilesIndex = updatedIndex;
+            safeRemoveKey(SAVE_COMMIT_KEY);
+            checkStorageHealth();
+            return true;
+        }
+        return false;
+    }
+
+    function setSaveStatus(state, message = '') {
+        const indicator = document.getElementById('saveStatusIndicator');
+        if (!indicator) return;
+        const labels = { dirty: 'ALTERAÇÕES PENDENTES', saving: 'SALVANDO...', saved: 'SALVO', error: 'ERRO AO SALVAR' };
+        indicator.dataset.state = state;
+        indicator.textContent = message || labels[state] || String(state).toUpperCase();
+        clearTimeout(saveStatusTimer);
+        if (state === 'saved') {
+            saveStatusTimer = window.setTimeout(() => {
+                const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                indicator.textContent = `SALVO ÀS ${time}`;
+            }, 700);
+        }
+    }
+
+    function generateProfileId() {
+        if (window.crypto?.getRandomValues) {
+            const values = new Uint32Array(3); window.crypto.getRandomValues(values);
+            return `profile_${Array.from(values, value => value.toString(36)).join('')}`;
+        }
+        return `profile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    function normalizeProfileIndex(index) {
+        if (!index || typeof index !== 'object' || !Array.isArray(index.profiles)) return null;
+        const profiles = index.profiles
+            .filter(profile => profile && typeof profile.id === 'string')
+            .map(profile => ({
+                id: profile.id,
+                name: String(profile.name || 'PERSONAGEM').slice(0, 60),
+                createdAt: Number(profile.createdAt) || Date.now(),
+                updatedAt: Number(profile.updatedAt) || Date.now()
+            }));
+        if (!profiles.length) return null;
+        const activeId = profiles.some(profile => profile.id === index.activeId) ? index.activeId : profiles[0].id;
+        return { version: 1, activeId, profiles };
+    }
+
+    function profileDataKey(id) { return `${PROFILE_DATA_PREFIX}${id}`; }
+    function profileHistoryKey(id = activeProfileId) { return `${PROFILE_HISTORY_PREFIX}${id}`; }
+
+    function getProfileNameFromSave(data, fallback = 'PERSONAGEM 1') {
+        const name = data?.dataMap?.charNameInput;
+        return String(name || fallback).trim().slice(0, 60) || fallback;
+    }
+
+    function loadGlobalObsSettings(fallback = null) {
+        const stored = safeReadJson(GLOBAL_SETTINGS_KEY, null);
+        const source = stored?.obs && typeof stored.obs === 'object' ? stored.obs : fallback;
+        if (source && typeof source === 'object') {
+            obsSettings.enabled = Boolean(source.enabled);
+            obsSettings.channel = sanitizeObsChannel(source.channel);
+            obsSettings.accessKey = sanitizeObsAccessKey(source.accessKey);
+            const duration = Number.parseInt(source.duration, 10);
+            obsSettings.duration = Number.isFinite(duration) ? Math.min(15000, Math.max(2000, duration)) : 6000;
+            obsSettings.showName = source.showName !== false;
+            obsSettings.hudEnabled = source.hudEnabled !== false;
+            obsSettings.hudConditions = source.hudConditions !== false;
+            obsSettings.hudPortrait = source.hudPortrait !== false;
+            obsSettings.layout = sanitizeObsLayout(source.layout);
+        }
+        ensureObsChannel(); ensureObsAccessKey();
+        writeGlobalObsSettings();
+    }
+
+    function writeGlobalObsSettings() {
+        return safeWriteJson(GLOBAL_SETTINGS_KEY, { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } });
+    }
+
+    function initializeCharacterProfiles() {
+        let index = normalizeProfileIndex(safeReadJson(PROFILE_INDEX_KEY, null));
+        if (!index) {
+            const legacy = readStoredSave();
+            const legacyObs = legacy?.obs && typeof legacy.obs === 'object' ? legacy.obs : null;
+            const id = generateProfileId();
+            const now = Date.now();
+            index = {
+                version: 1,
+                activeId: id,
+                profiles: [{ id, name: getProfileNameFromSave(legacy), createdAt: now, updatedAt: now }]
+            };
+            if (legacy) safeWriteJson(profileDataKey(id), stripObsFromProfileData(legacy));
+            safeWriteJson(PROFILE_INDEX_KEY, index);
+            loadGlobalObsSettings(legacyObs);
+        } else {
+            const currentData = safeReadJson(profileDataKey(index.activeId), null) || readStoredSave();
+            const legacyObs = currentData?.obs && typeof currentData.obs === 'object' ? currentData.obs : null;
+            if (currentData && !safeReadJson(profileDataKey(index.activeId), null)) {
+                safeWriteJson(profileDataKey(index.activeId), stripObsFromProfileData(currentData));
+            }
+            loadGlobalObsSettings(legacyObs);
+        }
+        profilesIndex = index;
+        activeProfileId = index.activeId;
+        cleanObsDataFromAllProfiles(index);
+        renderProfileControls();
+        loadActionHistory();
+        return index;
+    }
+
+    function readActiveProfileData() {
+        if (!activeProfileId) return null;
+        return stripObsFromProfileData(safeReadJson(profileDataKey(activeProfileId), null));
+    }
+
+    function writeActiveProfileData(data) {
+        if (!activeProfileId || !profilesIndex) return false;
+        const ok = safeWriteJson(profileDataKey(activeProfileId), stripObsFromProfileData(data));
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        if (profile) profile.updatedAt = Date.now();
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        return ok;
+    }
+
+    function renderProfileControls() {
+        const select = document.getElementById('profileSelect');
+        if (!select || !profilesIndex) return;
+        select.replaceChildren();
+        profilesIndex.profiles.forEach(profile => {
+            const option = document.createElement('option');
+            option.value = profile.id;
+            option.textContent = profile.name;
+            option.selected = profile.id === activeProfileId;
+            select.appendChild(option);
+        });
+        const active = profilesIndex.profiles.find(profile => profile.id === activeProfileId);
+        const status = document.getElementById('profileStatusText');
+        if (status) status.textContent = `[ PERFIL ATIVO: ${active?.name || '--'} // ${profilesIndex.profiles.length} PERFIL(IS) ]`;
+    }
+
+    function createBlankProfileData(name) {
+        const current = typeof collectCurrentData === 'function' ? collectCurrentData() : {};
+        return {
+            version: 5,
+            dataMap: { charNameInput: String(name || 'NOVO PERSONAGEM').slice(0, 60) },
+            safeBoxes: { FOR: 1, DES: 1, VIG: 1, INT: 1, SAB: 1, APA: 1, AFI: 0, INSP: 0 },
+            theme: current.theme || 'theme-default', fontType: current.fontType || 'mono', shape: current.shape || 'default',
+            customBg: '', layout: current.layout || 'colunas', muted: Boolean(current.muted), vignette: current.vignette !== false,
+            items: [], combatMode: false, portrait: '',
+            panelState: current.panelState || null,
+            board: { notes: [], links: [], logs: [] }, initiative: { list: [], turn: -1 }, macros: []
+        };
+    }
+
+    function createCharacterProfile() {
+        abrirModalCustom('NOVO PERFIL // Digite o nome do personagem.', true, true, function(value) {
+            if (value === false) return;
+            const name = String(value || '').trim().slice(0, 60);
+            if (!name) { abrirModalCustom('ERRO // O perfil precisa de um nome.', false, false, function(){}); return; }
+            salvarLocalData({ skipHistory: true });
+            const id = generateProfileId();
+            const now = Date.now();
+            profilesIndex.profiles.push({ id, name, createdAt: now, updatedAt: now });
+            profilesIndex.activeId = id;
+            activeProfileId = id;
+            const data = createBlankProfileData(name);
+            safeWriteJson(profileDataKey(id), data);
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            writeStoredSave(data);
+            releaseProfileTabLock();
+            location.reload();
+        });
+    }
+
+    function switchCharacterProfile(id) {
+        if (!profilesIndex || id === activeProfileId || !profilesIndex.profiles.some(profile => profile.id === id)) return;
+        salvarLocalData({ skipHistory: true });
+        profilesIndex.activeId = id;
+        activeProfileId = id;
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        const data = stripObsFromProfileData(readActiveProfileData() || createBlankProfileData(profilesIndex.profiles.find(profile => profile.id === id)?.name));
+        safeWriteJson(profileDataKey(id), data);
+        writeStoredSave(data);
+        releaseProfileTabLock();
+        location.reload();
+    }
+
+    function renameCharacterProfile() {
+        const profile = profilesIndex?.profiles.find(item => item.id === activeProfileId);
+        if (!profile) return;
+        abrirModalCustom(`RENOMEAR PERFIL // Nome atual: ${profile.name}`, true, true, function(value) {
+            if (value === false) return;
+            const name = String(value || '').trim().slice(0, 60);
+            if (!name) return;
+            profile.name = name;
+            profile.updatedAt = Date.now();
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            renderProfileControls();
+            setSaveStatus('saved', 'PERFIL RENOMEADO');
+        });
+    }
+
+    function deleteCharacterProfile() {
+        if (!profilesIndex || profilesIndex.profiles.length <= 1) {
+            abrirModalCustom('SISTEMA // É necessário manter pelo menos um perfil.', false, false, function(){}); return;
+        }
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        abrirModalCustom(`EXCLUIR PERFIL // ${profile?.name || 'PERSONAGEM'}?\nEsta ação remove somente este perfil.`, false, true, function(confirm) {
+            if (!confirm) return;
+            const removedId = activeProfileId;
+            profilesIndex.profiles = profilesIndex.profiles.filter(item => item.id !== removedId);
+            activeProfileId = profilesIndex.profiles[0].id;
+            profilesIndex.activeId = activeProfileId;
+            safeRemoveKey(profileDataKey(removedId));
+            safeRemoveKey(profileHistoryKey(removedId));
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            const data = stripObsFromProfileData(readActiveProfileData() || createBlankProfileData(profilesIndex.profiles[0].name));
+            writeStoredSave(data);
+            releaseProfileTabLock();
+            location.reload();
+        });
+    }
+
+    function compactHistorySnapshot(data) {
+        const snapshot = JSON.parse(JSON.stringify(data || {}));
+        delete snapshot.portrait;
+        delete snapshot.customBg;
+        delete snapshot.obs;
+        snapshot.combatMode = false;
+        return snapshot;
+    }
+
+    function comparableSave(data) {
+        const copy = compactHistorySnapshot(data);
+        delete copy.panelState;
+        return JSON.stringify(copy);
+    }
+
+    function describeSaveChange(previous, next) {
+        const p = previous?.dataMap || {}, n = next?.dataMap || {};
+        const fields = [
+            ['vd_atual', 'VD'], ['san_atual', 'SAN'], ['pe_atual', 'PE'],
+            ['vd_max', 'VD MÁX.'], ['san_max', 'SAN MÁX.'], ['pe_max', 'PE MÁX.']
+        ];
+        for (const [id, label] of fields) {
+            if (String(p[id] ?? '') !== String(n[id] ?? '')) return `${label}: ${p[id] ?? '--'} → ${n[id] ?? '--'}`;
+        }
+        if (JSON.stringify(previous?.safeBoxes) !== JSON.stringify(next?.safeBoxes)) return 'ATRIBUTOS ATUALIZADOS';
+        if (JSON.stringify(previous?.macros) !== JSON.stringify(next?.macros)) return 'MACROS ATUALIZADAS';
+        if (JSON.stringify(previous?.items) !== JSON.stringify(next?.items)) return 'INVENTÁRIO ATUALIZADO';
+        if (JSON.stringify(previous?.initiative) !== JSON.stringify(next?.initiative)) return 'INICIATIVA ATUALIZADA';
+        if (JSON.stringify(previous?.board) !== JSON.stringify(next?.board)) return 'INVESTIGAÇÃO ATUALIZADA';
+        const changedInput = Object.keys({ ...p, ...n }).find(key => String(p[key] ?? '') !== String(n[key] ?? ''));
+        if (changedInput) return `CAMPO ATUALIZADO: ${changedInput.replaceAll('_', ' ').toUpperCase()}`;
+        return 'FICHA ATUALIZADA';
+    }
+
+    function loadActionHistory() {
+        const history = safeReadJson(profileHistoryKey(), []);
+        renderActionHistory(Array.isArray(history) ? history : []);
+        return Array.isArray(history) ? history : [];
+    }
+
+    function recordActionHistory(previous, next, explicitLabel = '') {
+        if (isApplyingHistory || !previous || comparableSave(previous) === comparableSave(next)) return;
+        const history = loadActionHistory();
+        history.unshift({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            timestamp: Date.now(),
+            label: explicitLabel || describeSaveChange(previous, next),
+            snapshot: compactHistorySnapshot(previous)
+        });
+        const trimmed = trimHistoryToBudget(history);
+        safeWriteJson(profileHistoryKey(), trimmed);
+        renderActionHistory(trimmed);
+    }
+
+    function renderActionHistory(history = null) {
+        if (!Array.isArray(history)) history = safeReadJson(profileHistoryKey(), []);
+        if (!Array.isArray(history)) history = [];
+        const list = document.getElementById('historyList');
+        const status = document.getElementById('historyStatusText');
+        const undo = document.getElementById('btnUndoHistory');
+        if (status) status.textContent = `[ ${history.length} AÇÃO(ÕES) // MÁX. ${MAX_HISTORY_ENTRIES} ]`;
+        if (undo) undo.disabled = history.length === 0;
+        if (!list) return;
+        list.replaceChildren();
+        if (!history.length) {
+            const empty = document.createElement('div'); empty.className = 'history-empty'; empty.textContent = 'NENHUMA ALTERAÇÃO REGISTRADA'; list.appendChild(empty); return;
+        }
+        history.slice(0, 10).forEach(entry => {
+            const row = document.createElement('div'); row.className = 'history-entry';
+            const time = document.createElement('span'); time.className = 'history-time';
+            time.textContent = new Date(entry.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const label = document.createElement('span'); label.className = 'history-label'; label.textContent = String(entry.label || 'FICHA ATUALIZADA');
+            row.append(time, label); list.appendChild(row);
+        });
+    }
+
+    function undoLastAction() {
+        const history = loadActionHistory();
+        const entry = history.shift();
+        if (!entry?.snapshot) return;
+        const current = collectCurrentData();
+        const restored = {
+            ...entry.snapshot,
+            version: Math.max(5, Number(entry.snapshot.version) || 0),
+            portrait: current.portrait || '', customBg: current.customBg || ''
+        };
+        isApplyingHistory = true;
+        try {
+            processAndLoadDataMap(restored);
+            writeStoredSave(restored);
+            writeActiveProfileData(restored);
+            safeWriteJson(profileHistoryKey(), history);
+            renderActionHistory(history);
+            setSaveStatus('saved', 'AÇÃO DESFEITA');
+            scheduleObsHudUpdate(true);
+        } finally { isApplyingHistory = false; }
+    }
+
+    function clearActionHistory() {
+        abrirModalCustom('SISTEMA // Limpar o histórico deste perfil?', false, true, function(confirm) {
+            if (!confirm) return;
+            safeWriteJson(profileHistoryKey(), []);
+            renderActionHistory([]);
+            setSaveStatus('saved', 'HISTÓRICO LIMPO');
+        });
+    }
+
+    function clearObsPortraitThumbnail() {
+        const changed = Boolean(obsPortraitThumbnail || obsPortraitSource);
+        obsPortraitThumbnail = '';
+        obsPortraitSource = '';
+        if (changed) scheduleObsHudUpdate(true);
+    }
+
+    function createObsPortraitThumbnail(image) {
+        if (!image || !image.naturalWidth || !image.naturalHeight) return '';
+        const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
+        const sourceX = Math.max(0, (image.naturalWidth - sourceSize) / 2);
+        const sourceY = Math.max(0, (image.naturalHeight - sourceSize) / 2);
+        const attempts = [
+            { size: 72, quality: 0.52 },
+            { size: 64, quality: 0.44 },
+            { size: 56, quality: 0.36 },
+            { size: 48, quality: 0.30 }
+        ];
+        let smallest = '';
+        for (const attempt of attempts) {
+            const canvas = document.createElement('canvas');
+            canvas.width = attempt.size;
+            canvas.height = attempt.size;
+            const context = canvas.getContext('2d', { alpha: false });
+            if (!context) continue;
+            context.fillStyle = '#050505';
+            context.fillRect(0, 0, attempt.size, attempt.size);
+            context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, attempt.size, attempt.size);
+            let dataUrl = canvas.toDataURL('image/webp', attempt.quality);
+            if (!dataUrl.startsWith('data:image/webp')) dataUrl = canvas.toDataURL('image/jpeg', attempt.quality);
+            if (!smallest || dataUrl.length < smallest.length) smallest = dataUrl;
+            if (dataUrl.length <= 2800) return dataUrl;
+        }
+        return smallest.length <= 3600 ? smallest : '';
+    }
+
+    function refreshObsPortraitThumbnail() {
+        const image = document.getElementById('portraitImg');
+        const source = image?.style.display === 'block' ? String(image.currentSrc || image.src || '') : '';
+        if (!obsSettings.hudPortrait || !source) {
+            clearObsPortraitThumbnail();
+            return;
+        }
+        if (source === obsPortraitSource && obsPortraitThumbnail) return;
+        const generate = () => {
+            const latestSource = image?.style.display === 'block' ? String(image.currentSrc || image.src || '') : '';
+            if (!latestSource || latestSource !== source) return;
+            const thumbnail = createObsPortraitThumbnail(image);
+            const changed = thumbnail !== obsPortraitThumbnail || latestSource !== obsPortraitSource;
+            obsPortraitThumbnail = thumbnail;
+            obsPortraitSource = latestSource;
+            if (changed) scheduleObsHudUpdate(true);
+        };
+        if (image.complete && image.naturalWidth) generate();
+        else image.addEventListener('load', generate, { once: true });
+    }
+
+    function getObsHudState() {
+        const numberValue = (id, fallback = 0) => { const value = Number.parseInt(document.getElementById(id)?.value, 10); return Number.isFinite(value) ? Math.max(0, Math.min(MAX_RESOURCE_VALUE, value)) : fallback; };
+        const conditions = obsSettings.hudConditions
+            ? Array.from(document.querySelectorAll('.cond-item input[type="checkbox"]:checked')).map(input => {
+                const container = input.closest('.cond-item');
+                return container?.querySelector('.cond-label')?.textContent?.trim() || input.id.replace(/^cond_/, '').replaceAll('_', ' ').toUpperCase();
+            }).slice(0, 8)
+            : [];
+        return {
+            enabled: Boolean(obsSettings.hudEnabled),
+            vd: { current: numberValue('vd_atual'), max: Math.max(1, numberValue('vd_max', 1)) },
+            san: { current: numberValue('san_atual'), max: Math.max(1, numberValue('san_max', 1)) },
+            pe: { current: numberValue('pe_atual'), max: Math.max(1, numberValue('pe_max', 1)) },
+            afi: numberValue('afi_val', 1),
+            portrait: obsSettings.hudPortrait ? obsPortraitThumbnail : '',
+            conditions
+        };
+    }
+
+    function scheduleObsHudUpdate(immediate = false) {
+        clearTimeout(hudUpdateTimer);
+        hudUpdateTimer = window.setTimeout(() => sendObsHudUpdate(false), immediate ? 0 : 650);
+    }
+
+    async function sendObsHudUpdate(force = false, attempt = 0) {
+        if ((!obsSettings.enabled && !force) || isSecondaryTab) return false;
+        refreshObsPortraitThumbnail();
+        const hud = getObsHudState();
+        const signature = JSON.stringify({ hud, name: document.getElementById('charNameInput')?.value || '', theme: getCurrentThemeName(), layout: sanitizeObsLayout(obsSettings.layout) });
+        if (!force && signature === lastHudSignature && !pendingHudDelivery) return false;
+        clearTimeout(hudRetryTimer); hudRetryTimer = null;
+        const result = await sendObsEvent({ event: 'hud', title: 'HUD', subtitle: 'STATUS', rolls: [], chosen: 0, bonus: 0, total: 0, damage: null, hud }, force);
+        if (result.remote) {
+            lastHudSignature = signature;
+            pendingHudDelivery = { id: result.payload.id, signature, attempt, sentAt: Date.now() };
+            clearTimeout(hudAckTimer);
+            hudAckTimer = window.setTimeout(() => {
+                if (!pendingHudDelivery || pendingHudDelivery.id !== result.payload.id) return;
+                if (attempt < 1 && obsSettings.enabled && navigator.onLine !== false) {
+                    pendingHudDelivery = null;
+                    sendObsHudUpdate(true, attempt + 1);
+                } else {
+                    pendingHudDelivery = null;
+                    setObsStatus('HUD PUBLICADO // OBS NÃO CONFIRMOU', 'error');
+                }
+            }, 9000);
+            return true;
+        }
+        lastHudSignature = '';
+        if (attempt < 2 && obsSettings.enabled && navigator.onLine !== false) {
+            hudRetryTimer = window.setTimeout(() => sendObsHudUpdate(true, attempt + 1), attempt === 0 ? 3500 : 10000);
+        }
+        return false;
+    }
+
+
     // 2. FUNÇÕES DE INICIALIZAÇÃO E HOTBAR DE COMBATE
     function autoSalvarOtimizado() {
+        setSaveStatus('dirty');
         clearTimeout(timeoutAutoSave);
-        timeoutAutoSave = setTimeout(() => { salvarLocalData(); }, 800); 
+        timeoutAutoSave = setTimeout(() => { salvarLocalData(); }, 800);
+        scheduleObsHudUpdate();
     }
 
     function fillBoxesSafe(container, count, forceFirst=false) {
@@ -1484,66 +2297,174 @@
     }
 
     function windowInitSetup() {
-        // Gera o DOM dos atributos ANTES de carregar os dados
-        const attrsList = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA']; 
+        const attrsList = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'];
         const attrContainer = document.getElementById('attributes');
         if (attrContainer && attrContainer.children.length === 0) {
             attrsList.forEach(attr => {
                 let row = document.createElement('div'); row.className = 'attr-row';
                 let label = document.createElement('span'); label.innerText = attr; label.className = 'rollable-attr'; label.title = 'Clique para rolar o atributo'; label.onclick = () => abrirRolador(attr);
                 let boxesDiv = document.createElement('div'); boxesDiv.className = 'boxes'; boxesDiv.id = 'attr-' + attr;
-                for(let i=1; i<=5; i++) { 
-                    let box = document.createElement('div'); box.className = i === 1 ? 'box filled' : 'box'; 
-                    box.onclick = () => { fillAttributes(boxesDiv, i); atualizarCalculos(); autoSalvarOtimizado(); }; 
-                    boxesDiv.appendChild(box); 
+                for(let i=1; i<=7; i++) {
+                    let box = document.createElement('div'); box.className = i === 1 ? 'box filled' : 'box';
+                    box.onclick = () => { fillAttributes(boxesDiv, i); atualizarCalculos(); autoSalvarOtimizado(); };
+                    boxesDiv.appendChild(box);
                 }
                 row.appendChild(label); row.appendChild(boxesDiv); attrContainer.appendChild(row);
             });
         }
 
-        carregarLocalData(); 
+        recoverInterruptedSave();
+        initializeCharacterProfiles();
+        acquireProfileTabLock();
+        carregarLocalData();
+        initObsIntegration();
         initParticles();
-        
-        // Ativa listeners de mudança e cores
-        document.querySelectorAll('.skill-val').forEach(el => { 
-            el.addEventListener('change', function() { atualizarCoresPericias(); playSfx('box'); autoSalvarOtimizado(); }); 
-            el.addEventListener('mousedown', function() { playSfx('click'); }); 
+        renderProfileControls();
+        loadActionHistory();
+
+        document.querySelectorAll('.skill-val').forEach(el => {
+            el.addEventListener('change', function() { atualizarCoresPericias(); playSfx('box'); autoSalvarOtimizado(); });
+            el.addEventListener('mousedown', function() { playSfx('click'); });
         });
-        
+
         let afiInput = document.getElementById('afi_val');
         if (afiInput) afiInput.addEventListener('change', () => { playSfx('box'); atualizarCalculos(); autoSalvarOtimizado(); });
-        
+
         atualizarCalculos();
         atualizarCoresPericias();
+        if (!isSecondaryTab) setSaveStatus('saved');
+        scheduleObsHudUpdate(true);
     }
     window.addEventListener('load', windowInitSetup, { once: true });
+    window.addEventListener('beforeunload', releaseProfileTabLock);
+    window.addEventListener('storage', event => {
+        if (!activeProfileId || event.key !== getProfileLockKey()) return;
+        const lock = safeReadJson(getProfileLockKey(), null);
+        if (lock?.tabId && lock.tabId !== TAB_INSTANCE_ID && Date.now() - Number(lock.timestamp || 0) < PROFILE_LOCK_TTL) {
+            isSecondaryTab = true; clearInterval(profileLockTimer); profileLockTimer = null;
+            setSaveStatus('error', 'CONTROLE TRANSFERIDO PARA OUTRA ABA');
+            setObsStatus('OBS PAUSADO NESTA ABA', 'error');
+        }
+    });
 
     // MACROS E COMBATE RÁPIDO
+    function limparFormularioMacro() {
+        const nameInput = document.getElementById('macroName');
+        const attrInput = document.getElementById('macroAttr');
+        const skillInput = document.getElementById('macroSkill');
+        const critInput = document.getElementById('macroCrit');
+        const damageInput = document.getElementById('macroDmg');
+        const peCostInput = document.getElementById('macroPeCost');
+        const submitButton = document.getElementById('macroSubmitBtn');
+        const cancelButton = document.getElementById('macroCancelBtn');
+
+        if (nameInput) nameInput.value = '';
+        if (attrInput) attrInput.value = 'FOR';
+        if (skillInput) skillInput.value = '';
+        if (critInput) critInput.value = '';
+        if (damageInput) damageInput.value = '';
+        if (peCostInput) peCostInput.value = '';
+        if (submitButton) {
+            submitButton.textContent = '+ ADD';
+            submitButton.style.color = 'var(--alert-color)';
+            submitButton.style.borderColor = 'var(--alert-color)';
+        }
+        if (cancelButton) cancelButton.style.display = 'none';
+        editingMacroId = null;
+    }
+
     function adicionarMacro() {
         playSfx('box');
-        let nome = document.getElementById('macroName').value.trim();
-        let attr = document.getElementById('macroAttr').value;
-        let skill = parseInt(document.getElementById('macroSkill').value) || 0;
-        let crit = document.getElementById('macroCrit').value.trim();
-        let dmg = document.getElementById('macroDmg').value.trim();
-        
-        if(!nome || !dmg) { abrirModalCustom("ERRO // Preencha o Nome e o Dano da arma/ação.", false, false, function(){}); return; }
-        
-        let id = 'macro_' + Date.now();
-        combatMacros.push({ id, nome, attr, skill, crit, dmg });
-        
-        document.getElementById('macroName').value = '';
-        document.getElementById('macroSkill').value = '';
-        document.getElementById('macroCrit').value = '';
-        document.getElementById('macroDmg').value = '';
-        
+        const nameInput = document.getElementById('macroName');
+        const attrInput = document.getElementById('macroAttr');
+        const skillInput = document.getElementById('macroSkill');
+        const critInput = document.getElementById('macroCrit');
+        const damageInput = document.getElementById('macroDmg');
+        const peCostInput = document.getElementById('macroPeCost');
+        if (!nameInput || !attrInput || !skillInput || !critInput || !damageInput || !peCostInput) return;
+
+        const nome = nameInput.value.trim();
+        const attr = attrInput.value;
+        const skill = Number.parseInt(skillInput.value, 10) || 0;
+        const crit = critInput.value.trim();
+        const dmg = damageInput.value.trim();
+        const peCost = Math.max(0, Number.parseInt(peCostInput.value, 10) || 0);
+
+        if (!nome || !dmg) {
+            abrirModalCustom('ERRO // Preencha o Nome e o Dano da arma/ação.', false, false, function(){});
+            return;
+        }
+
+        if (editingMacroId) {
+            const macroIndex = combatMacros.findIndex(macro => macro.id === editingMacroId);
+            if (macroIndex === -1) {
+                limparFormularioMacro();
+                renderMacros();
+                return;
+            }
+            combatMacros[macroIndex] = {
+                ...combatMacros[macroIndex],
+                nome,
+                attr,
+                skill,
+                crit,
+                dmg,
+                peCost
+            };
+        } else {
+            const id = 'macro_' + Date.now();
+            combatMacros.push({ id, nome, attr, skill, crit, dmg, peCost });
+        }
+
+        limparFormularioMacro();
         renderMacros();
         salvarLocalData();
     }
 
+    function iniciarEdicaoMacro(id) {
+        const macro = combatMacros.find(item => item.id === id);
+        if (!macro) return;
+
+        playSfx('click');
+        editingMacroId = id;
+
+        const nameInput = document.getElementById('macroName');
+        const attrInput = document.getElementById('macroAttr');
+        const skillInput = document.getElementById('macroSkill');
+        const critInput = document.getElementById('macroCrit');
+        const damageInput = document.getElementById('macroDmg');
+        const peCostInput = document.getElementById('macroPeCost');
+        const submitButton = document.getElementById('macroSubmitBtn');
+        const cancelButton = document.getElementById('macroCancelBtn');
+
+        if (nameInput) nameInput.value = String(macro.nome ?? '');
+        if (attrInput) attrInput.value = ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'].includes(macro.attr) ? macro.attr : 'FOR';
+        if (skillInput) skillInput.value = Number.parseInt(macro.skill, 10) || 0;
+        if (critInput) critInput.value = String(macro.crit ?? '');
+        if (damageInput) damageInput.value = String(macro.dmg ?? '');
+        if (peCostInput) peCostInput.value = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
+        if (submitButton) {
+            submitButton.textContent = 'SALVAR';
+            submitButton.style.color = 'var(--accent-green)';
+            submitButton.style.borderColor = 'var(--accent-green)';
+        }
+        if (cancelButton) cancelButton.style.display = '';
+
+        const panel = document.getElementById('panel-combat-macros');
+        if (panel?.classList.contains('collapsed')) panel.classList.remove('collapsed');
+        nameInput?.focus();
+        panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelarEdicaoMacro() {
+        if (editingMacroId) playSfx('click');
+        limparFormularioMacro();
+    }
+
     function removerMacro(id) {
         playSfx('click');
-        combatMacros = combatMacros.filter(m => m.id !== id);
+        combatMacros = combatMacros.filter(macro => macro.id !== id);
+        if (editingMacroId === id) limparFormularioMacro();
         renderMacros();
         salvarLocalData();
     }
@@ -1556,6 +2477,10 @@
         combatMacros.forEach(macro => {
             const item = document.createElement('div');
             item.className = 'macro-item';
+            if (macro.id === editingMacroId) {
+                item.style.borderColor = 'var(--accent-green)';
+                item.style.boxShadow = '0 0 10px rgba(51, 204, 85, 0.18)';
+            }
 
             const info = document.createElement('div');
             const name = document.createElement('span');
@@ -1564,17 +2489,24 @@
 
             const details = document.createElement('span');
             details.style.cssText = 'font-size:0.8rem; color:var(--dim-text);';
-            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} ]`;
+            const macroPeCost = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
+            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} | PE: ${macroPeCost} ]`;
 
             info.append(name, details);
 
             const actions = document.createElement('div');
-            actions.style.cssText = 'display:flex; gap:10px;';
+            actions.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;';
 
             const attackButton = document.createElement('button');
             attackButton.className = 'macro-btn';
             attackButton.textContent = 'ATACAR';
             attackButton.addEventListener('click', () => rolarMacro(macro.id));
+
+            const editButton = document.createElement('button');
+            editButton.className = 'sys-btn';
+            editButton.style.cssText = 'padding:2px 7px; font-size:0.7rem; color:var(--accent-green); border-color:var(--accent-green);';
+            editButton.textContent = 'EDITAR';
+            editButton.addEventListener('click', () => iniciarEdicaoMacro(macro.id));
 
             const removeButton = document.createElement('button');
             removeButton.className = 'sys-btn';
@@ -1582,7 +2514,7 @@
             removeButton.textContent = 'X';
             removeButton.addEventListener('click', () => removerMacro(macro.id));
 
-            actions.append(attackButton, removeButton);
+            actions.append(attackButton, editButton, removeButton);
             item.append(info, actions);
             list.appendChild(item);
         });
@@ -1592,7 +2524,27 @@
         const macro = combatMacros.find(item => item.id === id);
         if (!macro) return;
 
+        const resultArea = document.getElementById('diceResultArea');
+        const modal = document.getElementById('diceModal');
+        const currentPeInput = document.getElementById('pe_atual');
+        if (!resultArea || !modal || !currentPeInput) return;
+
         const activeConds = getActiveConditions();
+        const basePeCost = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
+        const effectivePeCost = basePeCost > 0 && activeConds.cond_alquebrado ? basePeCost + 1 : basePeCost;
+        const currentPe = Math.max(0, Number.parseInt(currentPeInput.value, 10) || 0);
+        if (effectivePeCost > currentPe) {
+            abrirModalCustom(`PE INSUFICIENTE // A macro exige ${effectivePeCost} PE, mas você possui ${currentPe}.`, false, false, function(){});
+            return;
+        }
+
+        const remainingPe = currentPe - effectivePeCost;
+        if (effectivePeCost > 0) {
+            currentPeInput.value = String(remainingPe);
+            atualizarCalculos();
+            salvarLocalData();
+        }
+
         const effectiveAttributes = getEffectiveAttributes();
         const effectiveAttribute = Number(effectiveAttributes[macro.attr]) || 0;
         let penalty = 0;
@@ -1689,14 +2641,13 @@
             <div style="font-size:2rem; font-weight:bold; color:var(--alert-color); text-shadow:0 0 10px rgba(255,0,0,0.5);">${Math.max(0, damageTotal)}</div>
             <div style="color:var(--dim-text); font-size:0.75rem;">${damageDetail}</div>
         </div>`;
+        const peText = effectivePeCost > 0
+            ? `<div style="margin-top:15px; padding-top:10px; border-top:1px dashed var(--border-color); color:var(--accent-green); font-size:0.8rem; letter-spacing:2px;">PE GASTO [ ${effectivePeCost} ] // RESTANTE [ ${remainingPe} ]${activeConds.cond_alquebrado ? ' // ALQUEBRADO +1' : ''}</div>`
+            : '';
         const finalResult = `<div class="dice-result-box" style="text-align:center; border-color:var(--alert-color); padding-top:15px;">
             <div style="font-size:1rem; font-weight:bold; color:var(--text-main); margin-bottom:15px; letter-spacing:2px;">MACRO // ${escapeHTML(macro.nome).toUpperCase()}</div>
-            ${criticalText}${failureText}${attackText}${damageText}
+            ${criticalText}${failureText}${attackText}${damageText}${peText}
         </div>`;
-
-        const resultArea = document.getElementById('diceResultArea');
-        const modal = document.getElementById('diceModal');
-        if (!resultArea || !modal) return;
         resultArea.style.display = 'block';
         resultArea.innerHTML = '<div class="dice-result-box dice-suspense-container"><div class="rolling-dice-anim" style="font-size:4rem;">🎲</div><div class="dice-suspense-value" id="macroSuspenseValue">--</div><div style="color:var(--dim-text); margin-top:15px; letter-spacing:2px;">CALCULANDO IMPACTO TÁTICO...</div></div>';
 
@@ -1717,6 +2668,22 @@
             if (!document.body.contains(resultArea)) return;
             playSfx('alert');
             resultArea.innerHTML = finalResult;
+            sendObsEvent({
+                event: 'macro',
+                title: `MACRO // ${macro.nome}`,
+                subtitle: `ATAQUE ${macro.attr}`,
+                rolls: d20Rolls,
+                chosen: chosenD20,
+                bonus: skillBonus,
+                total: hitTotal,
+                critical: isCritical,
+                failure: isFailure,
+                damage: Math.max(0, damageTotal),
+                damageRolls,
+                damageDetail,
+                peCost: effectivePeCost,
+                peRemaining: remainingPe
+            });
         }, 1500);
     }
 
@@ -1831,9 +2798,9 @@
         if (isOverlayActive('initiativeBoard')) closeOverlay('initiativeBoard');
     });
 
-    document.addEventListener('input', function(e) { if(e.target.matches('input, textarea, select')) autoSalvarOtimizado(); });
-    document.addEventListener('change', function(e) { if(e.target.matches('input, textarea, select')) autoSalvarOtimizado(); });
-    window.addEventListener('beforeunload', function() { salvarLocalData(); });
+    document.addEventListener('input', function(e) { if(e.target.matches('input, textarea, select')) { autoSalvarOtimizado(); scheduleObsHudUpdate(); } });
+    document.addEventListener('change', function(e) { if(e.target.matches('input, textarea, select')) { autoSalvarOtimizado(); scheduleObsHudUpdate(); } });
+    window.addEventListener('beforeunload', function() { salvarLocalData({ skipHistory: true }); });
 
     // DRAG AND DROP PANELS
     let draggedPanel = null;
@@ -1843,7 +2810,7 @@
         handle.addEventListener('mousedown', () => panel.setAttribute('draggable', 'true'));
         handle.addEventListener('mouseup', () => panel.setAttribute('draggable', 'false'));
         panel.addEventListener('dragstart', function(e) { draggedPanel = this; setTimeout(() => this.classList.add('dragging'), 0); playSfx('click'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', this.id); });
-        panel.addEventListener('dragend', function() { this.classList.remove('dragging'); this.setAttribute('draggable', 'false'); draggedPanel = null; layoutPreset = 'custom'; updatePresetButtons(); salvarLocalData(); playSfx('box'); });
+        panel.addEventListener('dragend', function() { this.classList.remove('dragging'); this.setAttribute('draggable', 'false'); draggedPanel = null; salvarLocalData(); playSfx('box'); });
         panel.addEventListener('dragover', function(e) { e.preventDefault(); if (!draggedPanel || this === draggedPanel) return; if (this.parentElement !== draggedPanel.parentElement) return; const rect = this.getBoundingClientRect(); const offset = e.clientY - rect.top; if (offset > rect.height / 2) { this.parentNode.insertBefore(draggedPanel, this.nextSibling); } else { this.parentNode.insertBefore(draggedPanel, this); } });
     });
 
@@ -1900,86 +2867,23 @@
                 const canvas = document.createElement('canvas'); const MAX_SIZE = 400; let width = img.width; let height = img.height;
                 if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
                 canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-                document.getElementById('portraitImg').src = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('portraitImg').style.display = 'block'; document.getElementById('portraitPlaceholder').style.display = 'none';
+                const portrait = document.getElementById('portraitImg');
+                portrait.src = canvas.toDataURL('image/jpeg', 0.7); portrait.style.display = 'block'; document.getElementById('portraitPlaceholder').style.display = 'none';
+                portrait.addEventListener('load', refreshObsPortraitThumbnail, { once: true });
                 autoSalvarOtimizado();
             }; img.src = e.target.result;
         }; reader.readAsDataURL(file);
     }
 
-    function getActiveMenuList() {
-        const options = document.getElementById('optionsMenuList');
-        const main = document.getElementById('mainMenuList');
-        if (options && getComputedStyle(options).display !== 'none') return options;
-        return main;
-    }
-
-    function updateMenuScrollIndicator() {
-        const menu = document.getElementById('gameMenuOverlay');
-        const indicator = document.getElementById('menuScrollIndicator');
-        const list = getActiveMenuList();
-        if (!menu || !indicator || !list || !menu.classList.contains('active')) {
-            if (indicator) indicator.classList.remove('visible');
-            return;
-        }
-        const hasOverflow = list.scrollHeight > list.clientHeight + 6;
-        const hasMoreBelow = list.scrollTop + list.clientHeight < list.scrollHeight - 10;
-        indicator.classList.toggle('visible', hasOverflow && hasMoreBelow);
-    }
-
-    function scrollActiveMenu() {
-        const list = getActiveMenuList();
-        if (!list) return;
-        list.scrollBy({ top: Math.max(240, list.clientHeight * 0.68), behavior: 'smooth' });
-    }
-
-    function bindMenuScrollUX() {
-        ['mainMenuList', 'optionsMenuList'].forEach(id => {
-            const list = document.getElementById(id);
-            if (list && !list.dataset.scrollUxBound) {
-                list.addEventListener('scroll', updateMenuScrollIndicator, { passive: true });
-                list.dataset.scrollUxBound = '1';
-            }
-        });
-        window.addEventListener('resize', updateMenuScrollIndicator, { passive: true });
-        document.addEventListener('keydown', event => {
-            const menu = document.getElementById('gameMenuOverlay');
-            if (!menu || !menu.classList.contains('active')) return;
-            if (event.key === 'Escape') { toggleMenu(); return; }
-            if (event.key === 'PageDown') { event.preventDefault(); scrollActiveMenu(); }
-        });
-    }
-
     function toggleMenu() {
-        const menu = document.getElementById('gameMenuOverlay');
-        menu.classList.toggle('active');
-        const isOpen = menu.classList.contains('active');
-        document.body.classList.toggle('menu-open', isOpen);
-        if(isOpen) {
-            updateMenuHUD(); playSfx('glitch');
-            const main = document.getElementById('mainMenuList');
-            const options = document.getElementById('optionsMenuList');
-            main.style.display = 'flex'; options.style.display = 'none';
-            main.scrollTop = 0; options.scrollTop = 0;
-            requestAnimationFrame(() => requestAnimationFrame(updateMenuScrollIndicator));
-        } else {
-            playSfx('click');
-            updateMenuScrollIndicator();
-        }
+        const menu = document.getElementById('gameMenuOverlay'); menu.classList.toggle('active');
+        if(menu.classList.contains('active')) { updateMenuHUD(); playSfx('glitch'); document.getElementById('mainMenuList').style.display = 'flex'; document.getElementById('optionsMenuList').style.display = 'none'; } else { playSfx('click'); }
     }
 
     function toggleMenuOptions() {
-        playSfx('box');
-        const mainList = document.getElementById('mainMenuList');
-        const optsList = document.getElementById('optionsMenuList');
-        if (mainList.style.display === 'none') {
-            mainList.style.display = 'flex'; optsList.style.display = 'none'; mainList.scrollTop = 0;
-        } else {
-            mainList.style.display = 'none'; optsList.style.display = 'flex'; optsList.scrollTop = 0;
-        }
-        requestAnimationFrame(() => requestAnimationFrame(updateMenuScrollIndicator));
+        playSfx('box'); const mainList = document.getElementById('mainMenuList'); const optsList = document.getElementById('optionsMenuList');
+        if (mainList.style.display === 'none') { mainList.style.display = 'flex'; optsList.style.display = 'none'; } else { mainList.style.display = 'none'; optsList.style.display = 'flex'; }
     }
-
-    document.addEventListener('DOMContentLoaded', bindMenuScrollUX);
 
     function closeOverlay(id) {
         const overlay = document.getElementById(id);
@@ -2017,9 +2921,8 @@
         let pe_atual = parseInt(document.getElementById('pe_atual').value) || 0; let pe_max = parseInt(document.getElementById('pe_max').value) || 1;
         let pctVd = Math.max(0, Math.min(100, (vd_atual / vd_max) * 100)); let pctSan = Math.max(0, Math.min(100, (san_atual / san_max) * 100)); let pctPe = Math.max(0, Math.min(100, (pe_atual / pe_max) * 100));
         let vdBar = document.getElementById('menuHudVd'); let sanBar = document.getElementById('menuHudSan');
-        setBarVisual(vdBar, pctVd, (pctVd <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)');
-        setBarVisual(sanBar, pctSan, (pctSan <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)');
-        setBarVisual(document.getElementById('menuHudPe'), pctPe, 'var(--menu-accent)');
+        vdBar.style.width = pctVd + '%'; vdBar.style.background = (pctVd <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)';
+        sanBar.style.width = pctSan + '%'; sanBar.style.background = (pctSan <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)'; document.getElementById('menuHudPe').style.width = pctPe + '%';
     }
 
     function updatePortraitHUD() {
@@ -2029,9 +2932,9 @@
         let pe_atual = parseInt(document.getElementById('pe_atual').value) || 0; let pe_max = parseInt(document.getElementById('pe_max').value) || 1;
         let pctVd = Math.max(0, Math.min(100, (vd_atual / vd_max) * 100)); let pctSan = Math.max(0, Math.min(100, (san_atual / san_max) * 100)); let pctPe = Math.max(0, Math.min(100, (pe_atual / pe_max) * 100));
         let vdBar = document.getElementById('portVdBar'); let sanBar = document.getElementById('portSanBar');
-        setBarVisual(vdBar, pctVd, (pctVd <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)');
-        setBarVisual(sanBar, pctSan, (pctSan <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)');
-        setBarVisual(document.getElementById('portPeBar'), pctPe, 'var(--menu-accent)');
+        vdBar.style.width = pctVd + '%'; vdBar.style.background = (pctVd <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)';
+        sanBar.style.width = pctSan + '%'; sanBar.style.background = (pctSan <= 50) ? 'var(--alert-color)' : 'var(--menu-accent)';
+        document.getElementById('portPeBar').style.width = pctPe + '%'; document.getElementById('portPeBar').style.background = 'var(--menu-accent)';
     }
 
     // 5. RADAR TÁTICO
@@ -2406,351 +3309,10 @@
     window.addEventListener('resize', drawBoardLines);
 
     // 7. SISTEMAS DE TEMA E RENDERIZACAO GERAIS
-    function sanitizeHexColor(value, fallback) {
-        return /^#[0-9a-fA-F]{6}$/.test(String(value || '')) ? String(value).toLowerCase() : fallback;
-    }
-
-    function syncCustomPaletteInputs() {
-        const map = {
-            customColorBg: 'bg', customColorPanel: 'panel', customColorText: 'text',
-            customColorBorder: 'border', customColorGlow: 'glow', customColorAlert: 'alert',
-            customColorAccent: 'accent', customColorGold: 'gold'
-        };
-        Object.entries(map).forEach(([id, key]) => {
-            const input = document.getElementById(id);
-            if (input) input.value = customPalette[key];
-        });
-    }
-
-    function updateCustomPaletteStyle() {
-        let style = document.getElementById('darkCustomPaletteStyle');
-        if (!style) {
-            style = document.createElement('style');
-            style.id = 'darkCustomPaletteStyle';
-            document.head.appendChild(style);
-        }
-        style.textContent = `body.theme-custom {
-            --bg-color: ${customPalette.bg}; --panel-bg: ${customPalette.panel};
-            --text-main: ${customPalette.text}; --border-color: ${customPalette.border};
-            --glow: ${customPalette.glow}; --dim-text: color-mix(in srgb, ${customPalette.text} 46%, ${customPalette.bg});
-            --alert-color: ${customPalette.alert}; --gold-color: ${customPalette.gold};
-            --accent-green: ${customPalette.accent}; --menu-accent: ${customPalette.glow};
-        }`;
-    }
-
-    function readPaletteInputs() {
-        const defaults = { bg:'#050505', panel:'#0a0a0a', text:'#e0e0e0', border:'#303030', glow:'#ffffff', alert:'#ff3344', accent:'#33cc88', gold:'#eebb00' };
-        return {
-            bg: sanitizeHexColor(document.getElementById('customColorBg')?.value, defaults.bg),
-            panel: sanitizeHexColor(document.getElementById('customColorPanel')?.value, defaults.panel),
-            text: sanitizeHexColor(document.getElementById('customColorText')?.value, defaults.text),
-            border: sanitizeHexColor(document.getElementById('customColorBorder')?.value, defaults.border),
-            glow: sanitizeHexColor(document.getElementById('customColorGlow')?.value, defaults.glow),
-            alert: sanitizeHexColor(document.getElementById('customColorAlert')?.value, defaults.alert),
-            accent: sanitizeHexColor(document.getElementById('customColorAccent')?.value, defaults.accent),
-            gold: sanitizeHexColor(document.getElementById('customColorGold')?.value, defaults.gold)
-        };
-    }
-
-    function applyCustomPaletteFromInputs(shouldSave = true) {
-        if (isCombatMode) return;
-        customPalette = readPaletteInputs();
-        customPaletteEnabled = true;
-        updateCustomPaletteStyle();
-        setTheme('custom', document.getElementById('btn-theme-custom'));
-        if (shouldSave) salvarLocalData();
-    }
-
-    function activateCustomPalette(btnElement) {
-        if (isCombatMode) return;
-        customPaletteEnabled = true;
-        updateCustomPaletteStyle();
-        setTheme('custom', btnElement || document.getElementById('btn-theme-custom'));
-    }
-
-    function loadCurrentThemeIntoPalette() {
-        if (isCombatMode) return;
-        const computed = getComputedStyle(document.body);
-        const normalize = (color, fallback) => {
-            const probe = document.createElement('canvas').getContext('2d');
-            try { probe.fillStyle = color; const normalized = probe.fillStyle; return normalized.startsWith('#') && normalized.length === 7 ? normalized : fallback; }
-            catch { return fallback; }
-        };
-        customPalette = {
-            bg: normalize(computed.getPropertyValue('--bg-color').trim(), '#050505'),
-            panel: normalize(computed.getPropertyValue('--panel-bg').trim(), '#0a0a0a'),
-            text: normalize(computed.getPropertyValue('--text-main').trim(), '#e0e0e0'),
-            border: normalize(computed.getPropertyValue('--border-color').trim(), '#303030'),
-            glow: normalize(computed.getPropertyValue('--glow').trim(), '#ffffff'),
-            alert: normalize(computed.getPropertyValue('--alert-color').trim(), '#ff3344'),
-            accent: normalize(computed.getPropertyValue('--accent-green').trim(), '#33cc88'),
-            gold: normalize(computed.getPropertyValue('--gold-color').trim(), '#eebb00')
-        };
-        syncCustomPaletteInputs();
-        updateCustomPaletteStyle();
-        playSfx('click');
-    }
-
-    function resetCustomPalette() {
-        customPalette = { bg:'#050505', panel:'#0a0a0a', text:'#e0e0e0', border:'#303030', glow:'#ffffff', alert:'#ff3344', accent:'#33cc88', gold:'#eebb00' };
-        syncCustomPaletteInputs();
-        updateCustomPaletteStyle();
-        if (document.body.classList.contains('theme-custom')) applyCustomPaletteFromInputs(true);
-        else salvarLocalData();
-        playSfx('click');
-    }
-
-    function updateDensityButtons() {
-        document.querySelectorAll('.density-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-density-${uiDensity}`)?.classList.add('active');
-    }
-
-    function setDensity(density, btnElement, shouldSave = true) {
-        if (btnElement) { layoutPreset = 'custom'; updatePresetButtons(); }
-        uiDensity = ALLOWED_DENSITIES.has(density) ? density : 'balanced';
-        document.body.classList.remove('density-compact', 'density-cinematic');
-        if (uiDensity !== 'balanced') document.body.classList.add(`density-${uiDensity}`);
-        updateDensityButtons();
-        if (btnElement) playSfx('click');
-        if (shouldSave) salvarLocalData();
-    }
-
-    function updateBarStyleButtons() {
-        document.querySelectorAll('.bar-style-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-bar-${barStyle}`)?.classList.add('active');
-    }
-
-    function setBarStyle(style, btnElement, shouldSave = true) {
-        barStyle = ALLOWED_BAR_STYLES.has(style) ? style : 'linear';
-        Array.from(document.body.classList).filter(c => c.startsWith('bar-style-')).forEach(c => document.body.classList.remove(c));
-        if (barStyle !== 'linear') document.body.classList.add(`bar-style-${barStyle}`);
-        updateBarStyleButtons();
-        updateMenuHUD(); updatePortraitHUD();
-        if (btnElement) playSfx('click');
-        if (shouldSave) salvarLocalData();
-    }
-
-    function setBarVisual(fillElement, percentage, color) {
-        if (!fillElement) return;
-        const pct = Math.max(0, Math.min(100, Number(percentage) || 0));
-        fillElement.style.width = pct + '%';
-        fillElement.style.background = color;
-        const track = fillElement.parentElement;
-        if (track) {
-            track.style.setProperty('--bar-percent', pct + '%');
-            track.style.setProperty('--bar-color', color);
-            track.dataset.value = Math.round(pct) + '%';
-        }
-    }
-
-    function updatePresetButtons() {
-        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-preset-${layoutPreset}`)?.classList.add('active');
-    }
-
-    function setPanelCollapsed(panel, collapsed) {
-        if (!panel?.classList?.contains('panel')) return;
-        panel.classList.toggle('collapsed', collapsed);
-        const content = panel.querySelector('.panel-content');
-        if (content) content.style.display = collapsed ? 'none' : '';
-        const btn = panel.querySelector('.minimize-btn');
-        if (btn) btn.innerText = collapsed ? '+' : '_';
-    }
-
-    function movePresetPanels(order1, order2) {
-        const pag1 = document.getElementById('pag1');
-        const pag2 = document.getElementById('pag2');
-        if (!pag1 || !pag2) return;
-        order1.forEach(id => { const el = document.getElementById(id); if (el) pag1.appendChild(el); });
-        order2.forEach(id => { const el = document.getElementById(id); if (el) pag2.appendChild(el); });
-    }
-
-    function applyLayoutPreset(preset, btnElement, shouldSave = true) {
-        layoutPreset = ALLOWED_LAYOUT_PRESETS.has(preset) ? preset : 'custom';
-        updatePresetButtons();
-        if (btnElement) playSfx('click');
-        if (layoutPreset === 'custom') { if (shouldSave) salvarLocalData(); return; }
-
-        const allPanels = Array.from(document.querySelectorAll('.panel'));
-        allPanels.forEach(panel => setPanelCollapsed(panel, false));
-
-        const arrangements = {
-            session: {
-                layout: 'colunas', density: 'balanced', collapsed: ['panel-background'],
-                p1: ['panel-id','panel-vitals','panel-attr-specials','panel-abilities','panel-skills'],
-                p2: ['panel-inventory','panel-combat-macros','panel-conditions','panel-background','panel-initiative']
-            },
-            investigation: {
-                layout: 'paginas', density: 'cinematic', collapsed: ['panel-combat-macros'],
-                p1: ['panel-id','panel-vitals','panel-attr-specials','panel-skills','panel-background'],
-                p2: ['panel-inventory','panel-conditions','panel-abilities','panel-combat-macros','panel-initiative']
-            },
-            mobile: {
-                layout: 'paginas', density: 'compact', collapsed: ['panel-background','panel-skills'],
-                p1: ['panel-id','panel-vitals','panel-attr-specials','panel-abilities'],
-                p2: ['panel-combat-macros','panel-inventory','panel-conditions','panel-skills','panel-background','panel-initiative']
-            },
-            broadcast: {
-                layout: 'colunas', density: 'cinematic', collapsed: ['panel-background','panel-skills'],
-                p1: ['panel-id','panel-vitals','panel-attr-specials','panel-abilities'],
-                p2: ['panel-combat-macros','panel-initiative','panel-conditions','panel-inventory','panel-skills','panel-background']
-            }
-        };
-
-        if (layoutPreset === 'combat') {
-            setDensity('compact', null, false);
-            if (!isCombatMode) toggleCombatMode(document.getElementById('btn-combat-mode'));
-            if (shouldSave) setTimeout(salvarLocalData, 220);
-            return;
-        }
-
-        if (isCombatMode) {
-            const targetPreset = layoutPreset;
-            toggleCombatMode(document.getElementById('btn-combat-mode'));
-            setTimeout(() => applyLayoutPreset(targetPreset, null, shouldSave), 220);
-            return;
-        }
-        const config = arrangements[layoutPreset];
-        if (!config) return;
-        document.body.classList.toggle('layout-pages', config.layout === 'paginas');
-        document.querySelectorAll('[id^="btn-layout-"]').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-layout-${config.layout}`)?.classList.add('active');
-        setDensity(config.density, null, false);
-        movePresetPanels(config.p1, config.p2);
-        config.collapsed.forEach(id => setPanelCollapsed(document.getElementById(id), true));
-        if (shouldSave) salvarLocalData();
-    }
-
-    function collectAppearanceData() {
-        const currentTheme = isCombatMode
-            ? (document.body.getAttribute('data-prev-theme') || 'theme-default')
-            : (Array.from(document.body.classList).find(c => c.startsWith('theme-') && c !== 'theme-combat') || 'theme-default');
-        const background = document.getElementById('customBgContainer');
-        return {
-            kind: 'DARK_APPEARANCE', version: 1,
-            theme: currentTheme, customPaletteEnabled, customPalette: { ...customPalette },
-            fontType: document.querySelector('[id^="btn-font-"].active')?.id.replace('btn-font-', '') || 'mono',
-            shape: document.querySelector('[id^="btn-shape-"].active')?.id.replace('btn-shape-', '') || 'default',
-            layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas',
-            density: uiDensity, barStyle, layoutPreset, combatTheme,
-            vignette: isVignetteEnabled, customBg: background?.dataset.b64 || '',
-            panelState: {
-                pag1: Array.from(document.getElementById('pag1')?.children || []).filter(e => e.classList.contains('panel') || e.id === 'panel-attr-specials').map(e => e.id),
-                pag2: Array.from(document.getElementById('pag2')?.children || []).filter(e => e.classList.contains('panel')).map(e => e.id),
-                collapsed: Array.from(document.querySelectorAll('.panel.collapsed')).map(e => e.id)
-            }
-        };
-    }
-
-    function exportAppearance() {
-        playSfx('click');
-        const data = collectAppearanceData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `DARK_Aparencia_${(document.getElementById('charNameInput')?.value || 'Personalizada').replace(/[^a-zA-Z0-9À-ÿ_-]+/g, '_')}.json`;
-        document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
-    }
-
-    function applyAppearanceData(data, shouldSave = true) {
-        if (!data || data.kind !== 'DARK_APPEARANCE') throw new TypeError('Arquivo de aparência inválido.');
-        if (data.customPalette && typeof data.customPalette === 'object') {
-            const defaults = customPalette;
-            customPalette = Object.fromEntries(Object.keys(defaults).map(key => [key, sanitizeHexColor(data.customPalette[key], defaults[key])]));
-            customPaletteEnabled = Boolean(data.customPaletteEnabled);
-            syncCustomPaletteInputs(); updateCustomPaletteStyle();
-        }
-        const theme = ALLOWED_THEMES.has(data.theme) ? data.theme : 'theme-default';
-        document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
-        if (theme && theme !== 'theme-default') document.body.classList.add(theme);
-        document.querySelectorAll('[id^="btn-theme-"]').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-theme-${theme.replace('theme-', '') || 'default'}`)?.classList.add('active');
-
-        const font = ALLOWED_FONTS.has(data.fontType) ? data.fontType : 'mono';
-        document.body.classList.remove(...Array.from(ALLOWED_FONTS, value => `font-${value}`));
-        if (font !== 'mono') document.body.classList.add(`font-${font}`);
-        document.querySelectorAll('[id^="btn-font-"]').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-font-${font}`)?.classList.add('active');
-
-        const shape = ALLOWED_SHAPES.has(data.shape) ? data.shape : 'default';
-        document.body.classList.remove('shape-round','shape-angular');
-        if (shape !== 'default') document.body.classList.add(`shape-${shape}`);
-        document.querySelectorAll('[id^="btn-shape-"]').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-shape-${shape}`)?.classList.add('active');
-
-        document.body.classList.toggle('layout-pages', data.layout === 'paginas');
-        document.querySelectorAll('[id^="btn-layout-"]').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-layout-${data.layout === 'paginas' ? 'paginas' : 'colunas'}`)?.classList.add('active');
-
-        setDensity(data.density, null, false);
-        setBarStyle(data.barStyle, null, false);
-        layoutPreset = ALLOWED_LAYOUT_PRESETS.has(data.layoutPreset) ? data.layoutPreset : 'custom';
-        updatePresetButtons();
-        combatTheme = ALLOWED_COMBAT_THEMES.has(data.combatTheme) ? data.combatTheme : 'carbon';
-        updateCombatThemeButtons(); applyCombatThemeClass();
-        isVignetteEnabled = data.vignette !== false;
-        const vignetteButton = document.getElementById('btn-vignette-toggle');
-        if (vignetteButton) {
-            vignetteButton.innerText = isVignetteEnabled ? 'SANGRAMENTO: LIGADO' : 'SANGRAMENTO: DESLIGADO';
-            vignetteButton.classList.toggle('active', isVignetteEnabled);
-        }
-        if (!isVignetteEnabled) document.getElementById('bloodVignette')?.classList.remove('active');
-
-        if (typeof data.customBg === 'string') {
-            const importedBackground = data.customBg.startsWith('data:image/') ? data.customBg : '';
-            const bg = document.getElementById('customBgContainer');
-            if (bg) {
-                if (importedBackground) bg.dataset.b64 = importedBackground;
-                else delete bg.dataset.b64;
-                bg.style.backgroundImage = importedBackground ? `url("${importedBackground}")` : 'none';
-                bg.style.display = importedBackground ? 'block' : 'none';
-            }
-        }
-
-        if (data.panelState && typeof data.panelState === 'object') {
-            const pag1 = document.getElementById('pag1'), pag2 = document.getElementById('pag2');
-            (Array.isArray(data.panelState.pag1) ? data.panelState.pag1 : []).forEach(id => { const el = document.getElementById(id); if (el && pag1) pag1.appendChild(el); });
-            (Array.isArray(data.panelState.pag2) ? data.panelState.pag2 : []).forEach(id => { const el = document.getElementById(id); if (el && pag2) pag2.appendChild(el); });
-            document.querySelectorAll('.panel').forEach(panel => setPanelCollapsed(panel, false));
-            (Array.isArray(data.panelState.collapsed) ? data.panelState.collapsed : []).forEach(id => setPanelCollapsed(document.getElementById(id), true));
-        }
-        atualizarCoresPericias(); updateMenuHUD(); updatePortraitHUD();
-        if (shouldSave) salvarLocalData();
-    }
-
-    function importAppearance(event) {
-        playSfx('click');
-        if (isCombatMode) {
-            event.target.value = '';
-            abrirModalCustom('SAIA DO COMBAT MODE // A aparência deve ser importada na ficha normal.', false, false, function(){});
-            return;
-        }
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            try {
-                applyAppearanceData(JSON.parse(e.target.result), true);
-                abrirModalCustom('APARÊNCIA IMPORTADA // Os dados do personagem foram preservados.', false, false, function(){});
-            } catch (error) {
-                console.error(error);
-                abrirModalCustom('ERRO // Este arquivo não contém uma aparência DARK válida.', false, false, function(){});
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    }
-
     function setTheme(themeName, btnElement) {
-        if(isCombatMode) return;
-        playSfx('click');
-        document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
+        if(isCombatMode) return; playSfx('click'); document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
         if (themeName !== 'default') document.body.classList.add('theme-' + themeName);
-        customPaletteEnabled = themeName === 'custom';
-        if (customPaletteEnabled) updateCustomPaletteStyle();
-        document.querySelectorAll('[id^="btn-theme-"]').forEach(btn => btn.classList.remove('active'));
-        (btnElement || document.getElementById(`btn-theme-${themeName}`))?.classList.add('active');
+        const group = btnElement.parentElement; group.querySelectorAll('.sys-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active');
         
         // Reaplica a fonte se estiver ativa
         let activeFontBtn = document.querySelector('[id^="btn-font-"].active');
@@ -2762,9 +3324,7 @@
         atualizarCoresPericias(); salvarLocalData();
     }
     function setLayout(layoutName, btnElement) {
-        if(isCombatMode) return;
-        layoutPreset = 'custom'; updatePresetButtons();
-        playSfx('click'); if (layoutName === 'paginas') document.body.classList.add('layout-pages'); else document.body.classList.remove('layout-pages');
+        if(isCombatMode) return; playSfx('click'); if (layoutName === 'paginas') document.body.classList.add('layout-pages'); else document.body.classList.remove('layout-pages');
         const group = btnElement.parentElement; group.querySelectorAll('.sys-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active');
         repararDistribuicaoColunas(); salvarLocalData();
     }
@@ -2778,7 +3338,6 @@
         } 
     }
     function toggleMinimize(btn) {
-        layoutPreset = 'custom'; updatePresetButtons();
         const panel = btn.closest('.panel');
         const content = panel?.querySelector('.panel-content');
         if (!panel || !content) return;
@@ -2789,38 +3348,6 @@
         salvarLocalData();
     }
     
-    function updateCombatThemeButtons() {
-        document.querySelectorAll('.combat-theme-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-combat-${combatTheme}`)?.classList.add('active');
-    }
-
-    function applyCombatThemeClass() {
-        Array.from(document.body.classList)
-            .filter(className => className.startsWith('combat-'))
-            .forEach(className => document.body.classList.remove(className));
-        if (isCombatMode) document.body.classList.add(`combat-${combatTheme}`);
-
-        const combatButton = document.getElementById('btn-combat-mode');
-        if (combatButton) {
-            const labels = {
-                carbon: 'CARBONO', contencao: 'CONTENÇÃO', architect: 'ARQUITETO',
-                ambar: 'ÂMBAR', breu: 'BREU', sangue: 'SANGUE'
-            };
-            combatButton.innerText = isCombatMode
-                ? `[ COMBATE: ${labels[combatTheme] || 'CARBONO'} ]`
-                : '[ COMBAT MODE ]';
-        }
-    }
-
-    function setCombatTheme(theme, btnElement) {
-        if (!ALLOWED_COMBAT_THEMES.has(theme)) theme = 'carbon';
-        combatTheme = theme;
-        updateCombatThemeButtons();
-        applyCombatThemeClass();
-        playSfx('click');
-        salvarLocalData();
-    }
-
     function toggleCombatMode(btnElement) {
         if (!btnElement) return;
         playSfx('glitch');
@@ -2846,17 +3373,12 @@
                     .trim();
                 document.body.classList.add('theme-combat');
                 btnElement.classList.add('active');
-                applyCombatThemeClass();
                 filtrarPericiasCombate();
 
                 const menu = document.getElementById('gameMenuOverlay');
                 if (menu?.classList.contains('active')) toggleMenu();
             } else {
                 document.body.classList.remove('theme-combat');
-                Array.from(document.body.classList)
-                    .filter(className => className.startsWith('combat-'))
-                    .forEach(className => document.body.classList.remove(className));
-                applyCombatThemeClass();
                 const previousTheme = document.body.getAttribute('data-prev-theme');
                 if (previousTheme) document.body.classList.add(...previousTheme.split(/\s+/).filter(Boolean));
                 btnElement.classList.remove('active');
@@ -2927,6 +3449,18 @@
             let chosenDie = isDisadvantage ? Math.min(...rolls) : Math.max(...rolls); let total = chosenDie + bonus; let rollsText = rolls.join(' | ');
             let bonusLine = bonus > 0 ? `<div style="margin-top: 10px; color: var(--text-main);">BÔNUS DE PERÍCIA (${skillName}): +${bonus}</div>` : ''; let disadvText = isDisadvantage ? `<div style="margin-top: 5px; color: var(--alert-color); font-size: 0.8rem;">(DESVANTAGEM APLICADA: MENOR RESULTADO)</div>` : '';
             resultArea.innerHTML = `<div class="dice-result-box"><div class="dice-array">DADOS ROLADOS: [ ${rollsText} ]</div><div>DADO ESCOLHIDO: <span class="dice-highest">${chosenDie}</span></div>${disadvText}${bonusLine}<div class="dice-total">RESULTADO FINAL: ${total}</div></div>`;
+            sendObsEvent({
+                event: 'roll',
+                title: bonus > 0 ? `${currentRollData.attr} // ${skillName}` : currentRollData.attr,
+                subtitle: isDisadvantage ? 'ROLAGEM COM DESVANTAGEM' : (bonus > 0 ? 'TESTE DE PERÍCIA' : 'TESTE DE ATRIBUTO'),
+                rolls,
+                chosen: chosenDie,
+                bonus,
+                total,
+                critical: chosenDie === 20,
+                failure: chosenDie === 1,
+                damage: null
+            });
             playSfx('alert'); btnRoll.disabled = false; btnRoll.innerHTML = '[ NOVA ROLAGEM ]';
         }, 1200);
     }
@@ -2947,9 +3481,24 @@
     }
     
     function definirBonus(stat) {
-        playSfx('click'); let nomes = { vd: 'VIDA MÁXIMA', san: 'SANIDADE MÁXIMA', pe: 'ENERGIA MÁXIMA', def: 'DEFESA' }; let valorAtual = parseInt(document.getElementById('bonus_' + stat).value) || 0;
-        abrirModalCustom(`SYS.MOD // DEFINIR MODIFICADOR PARA [ ${nomes[stat]} ]\nInsira um valor numérico adicional (positivo ou negativo).\nAtual: ${valorAtual}`, true, true, function(resposta) {
-            if (resposta !== false && resposta !== "") { let val = parseInt(resposta); if(!isNaN(val)) { document.getElementById('bonus_' + stat).value = val; atualizarCalculos(); salvarLocalData(); } }
+        playSfx('click');
+        const nomes = { vd: 'VIDA MÁXIMA', san: 'SANIDADE MÁXIMA', pe: 'ENERGIA MÁXIMA', def: 'DEFESA' };
+        const valorAtual = parseInt(document.getElementById('bonus_' + stat).value) || 0;
+        abrirModalCustom(`SYS.MOD // DEFINIR MODIFICADOR PARA [ ${nomes[stat]} ]
+Insira um valor numérico adicional (positivo ou negativo).
+Limite seguro: -100000 a 100000.
+Atual: ${valorAtual}`, true, true, function(resposta) {
+            if (resposta === false || resposta === '') return;
+            const val = clampInteger(resposta, -100000, 100000, 0);
+            const apply = () => {
+                document.getElementById('bonus_' + stat).value = val;
+                atualizarCalculos();
+                salvarLocalData();
+            };
+            if (Math.abs(val) > 10000) {
+                abrirModalCustom(`VALOR EXTREMO: ${val}
+Confirmar este modificador?`, false, true, function(confirm) { if (confirm) apply(); });
+            } else apply();
         });
     }
     
@@ -3026,6 +3575,7 @@
         let san_atual_val = parseInt(document.getElementById('san_atual').value) || 0; let san_max_val = parseInt(document.getElementById('san_max').value) || 1; let sanStatusText = ""; let btnInstavel = document.getElementById('btnEfeitoInstavel');
         if (san_atual_val <= 0) { sanStatusText = "INSANO (Permanente)"; if(btnInstavel) btnInstavel.style.display = 'none'; } else if (san_atual_val <= Math.floor(san_max_val / 2)) { sanStatusText = "INSTÁVEL"; if(btnInstavel) btnInstavel.style.display = 'inline-block'; } else { if(btnInstavel) btnInstavel.style.display = 'none'; }
         let sanDisplay = document.getElementById('san_status_display'); if(sanDisplay) { sanDisplay.innerText = sanStatusText; sanDisplay.style.color = (san_atual_val <= Math.floor(san_max_val/2)) ? "var(--alert-color)" : "var(--accent-green)"; }
+        scheduleObsHudUpdate();
     }
     function danoSanidade() { playSfx('roll'); setTimeout(() => { let dano = Math.floor(Math.random() * 6) + 1; let sanInput = document.getElementById('san_atual'); let atual = parseInt(sanInput.value) || 0; sanInput.value = atual - dano; playSfx('alert'); abrirModalCustom("ALERTA DE SANIDADE\n\nVocê rolou [" + dano + "] de dano mental.", false, false, function(){}); atualizarCalculos(); salvarLocalData(); }, 600); }
     function efeitoInstavel() {
@@ -3035,18 +3585,39 @@
         }, 600);
     }
 
+    function clampInteger(value, min, max, fallback = 0) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback;
+    }
+
+    function normalizeCriticalNumericInputs() {
+        [['vd_atual', 0], ['san_atual', 0], ['pe_atual', 0]].forEach(([id, min]) => {
+            const input = document.getElementById(id);
+            if (!input || input.value === '') return;
+            const normalized = clampInteger(input.value, min, MAX_RESOURCE_VALUE, min);
+            if (String(normalized) !== String(input.value)) input.value = String(normalized);
+        });
+        const afi = document.getElementById('afi_val');
+        if (afi && afi.value !== '') afi.value = String(clampInteger(afi.value, 1, 1000, 1));
+        ['bonus_vd', 'bonus_san', 'bonus_pe', 'bonus_def'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.value = String(clampInteger(input.value, -100000, 100000, 0));
+        });
+    }
+
     function atualizarCalculos() {
+        normalizeCriticalNumericInputs();
         let base_for = parseInt(document.getElementById('base_for').value) || (document.querySelectorAll('#attr-FOR .box.filled').length || 1); let base_des = parseInt(document.getElementById('base_des').value) || (document.querySelectorAll('#attr-DES .box.filled').length || 1); let base_vig = parseInt(document.getElementById('base_vig').value) || (document.querySelectorAll('#attr-VIG .box.filled').length || 1); let base_int = parseInt(document.getElementById('base_int').value) || (document.querySelectorAll('#attr-INT .box.filled').length || 1);
         let afi_val = parseInt(document.getElementById('afi_val').value) || 1; let classe = document.getElementById('classeSelect').value; let subclasse = document.getElementById('subclasseSelect').value;
         let b_vd = parseInt(document.getElementById('bonus_vd').value) || 0; let b_san = parseInt(document.getElementById('bonus_san').value) || 0; let b_pe = parseInt(document.getElementById('bonus_pe').value) || 0; let b_def = parseInt(document.getElementById('bonus_def').value) || 0;
         let prog_vd = 0, prog_san = 0, prog_pe = 0;
         if (classe === 'brutalista') { prog_vd = 7; prog_san = 3; prog_pe = 2; } else if (classe === 'paranormalista') { prog_vd = 2; prog_san = 5; prog_pe = 6; } else if (classe === 'tecnico') { prog_vd = 4; prog_san = 6; prog_pe = 3; }
         let prog_multiplier = Math.floor(afi_val / 5);
-        let vd_max = (3 * (base_vig + base_for)) + (prog_multiplier * prog_vd) + b_vd; let san_max = (3 * (base_vig + base_int)) + (prog_multiplier * prog_san) + b_san; let pe_max = (base_des + base_vig) + (prog_multiplier * prog_pe) + b_pe;
+        let vd_max = clampInteger((3 * (base_vig + base_for)) + (prog_multiplier * prog_vd) + b_vd, 1, MAX_RESOURCE_VALUE, 1); let san_max = clampInteger((3 * (base_vig + base_int)) + (prog_multiplier * prog_san) + b_san, 1, MAX_RESOURCE_VALUE, 1); let pe_max = clampInteger((base_des + base_vig) + (prog_multiplier * prog_pe) + b_pe, 1, MAX_RESOURCE_VALUE, 1);
         let condsAtivas = getActiveConditions(); let effAttrs = getEffectiveAttributes();
         let penDefesa = 0; let isDesprevenido = condsAtivas.cond_desprevenido || condsAtivas.cond_cego || condsAtivas.cond_atordoado || condsAtivas.cond_agarrado || condsAtivas.cond_surpreendido; let isIndefeso = condsAtivas.cond_indefeso || condsAtivas.cond_paralisado || condsAtivas.cond_inconsciente; let isVulneravel = condsAtivas.cond_vulneravel || condsAtivas.cond_enredado || condsAtivas.cond_exausto || condsAtivas.cond_fatigado;
         if (isIndefeso) penDefesa -= 10; else if (isDesprevenido) penDefesa -= 5; if (isVulneravel) penDefesa -= 5;
-        let def_total = 12 + effAttrs.VIG + b_def + penDefesa;
+        let def_total = clampInteger(12 + effAttrs.VIG + b_def + penDefesa, -9999, 99999, 0);
         document.getElementById('vd_bonus_display').innerText = b_vd !== 0 ? (b_vd > 0 ? `[+${b_vd}]` : `[${b_vd}]`) : ""; document.getElementById('san_bonus_display').innerText = b_san !== 0 ? (b_san > 0 ? `[+${b_san}]` : `[${b_san}]`) : ""; document.getElementById('pe_bonus_display').innerText = b_pe !== 0 ? (b_pe > 0 ? `[+${b_pe}]` : `[${b_pe}]`) : ""; document.getElementById('def_bonus_display').innerText = b_def !== 0 ? (b_def > 0 ? `[+${b_def}]` : `[${b_def}]`) : "";
         document.getElementById('vd_max').value = vd_max; document.getElementById('san_max').value = san_max; document.getElementById('pe_max').value = pe_max;
         let defInput = document.getElementById('def_val'); if(defInput) defInput.value = def_total;
@@ -3057,16 +3628,16 @@
     }
 
     // 9. EXPORTAÇÃO E IMPORTAÇÃO DE DADOS MODO SEGURO
-    function salvarLocalData() {
+    function collectCurrentData() {
         let inventoryItems = []; document.querySelectorAll('.inventory-item').forEach(el => { inventoryItems.push({ nome: el.querySelector('.item-name').innerText, peso: el.querySelector('.item-weight').getAttribute('data-peso'), desc: el.querySelector('.item-desc') ? el.querySelector('.item-desc').innerText : '' }); });
         let updatedBoardNotes = []; document.querySelectorAll('.board-note').forEach(el => { let ta = el.querySelector('textarea'); updatedBoardNotes.push({ id: el.id, x: parseFloat(el.style.left), y: parseFloat(el.style.top), text: ta ? ta.value : '' }); });
         let updatedLogs = []; document.querySelectorAll('.log-entry').forEach(el => { updatedLogs.push({ id: el.id, date: el.querySelector('input').value, text: el.querySelector('textarea').value }); });
 
         let imgBase64 = ''; let portraitImg = document.getElementById('portraitImg'); if(portraitImg && portraitImg.style.display === 'block') { imgBase64 = portraitImg.src; }
-        
-        let savedTheme = Array.from(document.body.classList).find(className => className.startsWith('theme-') && className !== 'theme-combat') || 'theme-default';
+
+        let savedTheme = document.body.className.replace('layout-pages', '').replace('theme-print', '').replace('print-blank-mode', '').replace(/font-\w+/g, '').replace(/shape-\w+/g, '').trim();
         if(isCombatMode) { savedTheme = document.body.getAttribute('data-prev-theme') || 'theme-default'; }
-        
+
         let savedFont = 'mono';
         if(document.body.classList.contains('font-clean')) savedFont = 'clean';
         else if(document.body.classList.contains('font-militar')) savedFont = 'militar';
@@ -3088,10 +3659,8 @@
 
         let dataMap = {};
         document.querySelectorAll('.container input[id], .container textarea[id], .container select[id]').forEach(el => {
-            if (el.type === 'checkbox') { dataMap[el.id] = el.checked; } 
-            else if (el.type !== 'file' && !el.id.startsWith('macro') && !el.id.startsWith('newItem') && !el.id.startsWith('init') && el.id !== 'diceSkillSelect') {
-                dataMap[el.id] = el.value;
-            }
+            if (el.type === 'checkbox') { if (!NON_PROFILE_CONTROL_IDS.has(el.id)) dataMap[el.id] = el.checked; }
+            else if (el.type !== 'file' && !el.id.startsWith('macro') && !el.id.startsWith('newItem') && !el.id.startsWith('init') && el.id !== 'diceSkillSelect' && !NON_PROFILE_CONTROL_IDS.has(el.id)) dataMap[el.id] = el.value;
         });
 
         let safeBoxes = {
@@ -3100,18 +3669,32 @@
             SAB: document.querySelectorAll('#attr-SAB .box.filled').length || 1, APA: document.querySelectorAll('#attr-APA .box.filled').length || 1,
             AFI: document.querySelectorAll('#afi-boxes .box.filled').length || 0, INSP: document.querySelectorAll('#insp-boxes .box.filled').length || 0
         };
-        
-        const data = {
-            version: 4, dataMap: dataMap, safeBoxes: safeBoxes,
-            theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground, layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
+
+        return {
+            version: 5, dataMap, safeBoxes,
+            theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground,
+            layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
             vignette: isVignetteEnabled,
-            appearance: { customPaletteEnabled, customPalette: { ...customPalette }, density: uiDensity, barStyle, layoutPreset },
-            items: inventoryItems, combatMode: isCombatMode, combatTheme: combatTheme, portrait: imgBase64,
+            items: inventoryItems, combatMode: isCombatMode, portrait: imgBase64,
             panelState: { pag1: pag1Order, pag2: pag2Order, collapsed: collapsedPanels },
             board: { notes: updatedBoardNotes, links: boardLinks, logs: updatedLogs },
             initiative: { list: initList, turn: activeTurnIndex }, macros: combatMacros
         };
-        writeStoredSave(data);
+    }
+
+    function salvarLocalData(options = {}) {
+        const config = options && typeof options === 'object' ? options : {};
+        const data = stripObsFromProfileData(collectCurrentData());
+        if (isSecondaryTab) {
+            setSaveStatus('error', 'NÃO SALVO — OUTRA ABA CONTROLA O PERFIL');
+            return data;
+        }
+        setSaveStatus('saving');
+        const previous = readActiveProfileData() || readStoredSave();
+        if (!config.skipHistory && previous) recordActionHistory(previous, data, config.label || '');
+        const ok = commitSaveBundle(data);
+        if (ok) setSaveStatus('saved'); else setSaveStatus('error', 'ERRO AO SALVAR — EXPORTE UM BACKUP');
+        scheduleObsHudUpdate();
         return data;
     }
 
@@ -3131,22 +3714,58 @@
         URL.revokeObjectURL(url);
     }
 
+    function truncateImportedString(value, maxLength = 20000) {
+        return typeof value === 'string' ? value.slice(0, maxLength) : value;
+    }
+
+    function sanitizeImportedSave(data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new TypeError('Estrutura de save inválida.');
+        const clean = stripObsFromProfileData(JSON.parse(JSON.stringify(data)));
+        if (clean.dataMap && typeof clean.dataMap === 'object' && !Array.isArray(clean.dataMap)) {
+            const entries = Object.entries(clean.dataMap).slice(0, 600);
+            clean.dataMap = Object.fromEntries(entries.map(([key, value]) => [String(key).slice(0, 100), truncateImportedString(value)]));
+        }
+        if (Array.isArray(clean.inputs)) clean.inputs = clean.inputs.slice(0, 500).map(value => truncateImportedString(value));
+        if (Array.isArray(clean.textareas)) clean.textareas = clean.textareas.slice(0, 100).map(value => truncateImportedString(value));
+        if (Array.isArray(clean.selects)) clean.selects = clean.selects.slice(0, 500).map(value => truncateImportedString(value, 500));
+        if (Array.isArray(clean.checkboxes)) clean.checkboxes = clean.checkboxes.slice(0, 1000).map(Boolean);
+        if (Array.isArray(clean.boxes)) clean.boxes = clean.boxes.slice(0, 1000).map(Boolean);
+        clean.items = Array.isArray(clean.items) ? clean.items.slice(0, 200).map(item => ({ nome: String(item?.nome || '').slice(0, 200), peso: Number(item?.peso) || 0, desc: String(item?.desc || '').slice(0, 5000) })) : [];
+        clean.macros = Array.isArray(clean.macros) ? clean.macros.slice(0, 100) : [];
+        if (clean.initiative && typeof clean.initiative === 'object') clean.initiative.list = Array.isArray(clean.initiative.list) ? clean.initiative.list.slice(0, 100) : [];
+        if (clean.board && typeof clean.board === 'object') {
+            clean.board.notes = Array.isArray(clean.board.notes) ? clean.board.notes.slice(0, 300).map(note => ({ ...note, text: String(note?.text || '').slice(0, 20000) })) : [];
+            clean.board.links = Array.isArray(clean.board.links) ? clean.board.links.slice(0, 600) : [];
+            clean.board.logs = Array.isArray(clean.board.logs) ? clean.board.logs.slice(0, 500).map(log => ({ ...log, text: String(log?.text || '').slice(0, 20000), date: String(log?.date || '').slice(0, 100) })) : [];
+        }
+        const validImage = value => typeof value === 'string' && /^data:image\/(?:png|jpeg|jpg|webp);base64,/i.test(value) && utf8ByteLength(value) <= 1800000;
+        clean.portrait = validImage(clean.portrait) ? clean.portrait : '';
+        clean.customBg = validImage(clean.customBg) ? clean.customBg : '';
+        return clean;
+    }
+
     function importarFicha(event) {
         playSfx('click');
         const file = event.target.files[0];
         if (!file) return;
-
+        if (file.size > MAX_IMPORT_FILE_BYTES) {
+            abrirModalCustom('ERRO // O arquivo excede o limite seguro de 4 MB.', false, false, function(){});
+            event.target.value = '';
+            return;
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                processAndLoadDataMap(JSON.parse(e.target.result));
-                salvarLocalData();
-                abrirModalCustom('SISTEMA // Sincronização concluída. Dados carregados com sucesso.', false, false, function(){});
+                const imported = sanitizeImportedSave(JSON.parse(String(e.target?.result || '')));
+                processAndLoadDataMap(imported);
+                salvarLocalData({ label: 'FICHA IMPORTADA' });
+                abrirModalCustom('SISTEMA // Sincronização concluída. Dados validados e carregados com sucesso.', false, false, function(){});
             } catch (error) {
-                abrirModalCustom('ERRO CRÍTICO // Estrutura de arquivo corrompida ou inválida.', false, false, function(){});
+                abrirModalCustom('ERRO CRÍTICO // Estrutura de arquivo corrompida, inválida ou acima dos limites seguros.', false, false, function(){});
                 console.error(error);
             }
         };
+        reader.onerror = () => abrirModalCustom('ERRO // Não foi possível ler o arquivo.', false, false, function(){});
         reader.readAsText(file);
         event.target.value = '';
     }
@@ -3167,9 +3786,9 @@
     }
 
     function processarLoadModerno(data) {
-        const inputs = document.querySelectorAll('.container input:not([type="file"]):not([type="checkbox"]):not(#initName):not(#initRoll):not(#macroName):not(#macroCrit):not(#macroDmg):not(#macroSkill)'); if (data.inputs) { data.inputs.forEach((val, i) => { if(inputs[i]) inputs[i].value = val; }); }
+        const inputs = document.querySelectorAll('.container input:not([type="file"]):not([type="checkbox"]):not(#initName):not(#initRoll):not(#macroName):not(#macroCrit):not(#macroDmg):not(#macroSkill):not(#obsChannelInput):not(#obsOverlayUrl):not(#obsDuration)'); if (data.inputs) { data.inputs.forEach((val, i) => { if(inputs[i]) inputs[i].value = val; }); }
         const textareas = document.querySelectorAll('.container textarea'); if(data.textareas) { data.textareas.forEach((val, i) => { if(textareas[i]) textareas[i].value = val; }); }
-        const selects = document.querySelectorAll('.container select:not(#diceSkillSelect):not(#macroAttr)');
+        const selects = document.querySelectorAll('.container select:not(#diceSkillSelect):not(#macroAttr):not(#profileSelect):not(#obsOverlayLayout)');
         if(data.selects) { if (data.selects[0]) { selects[0].value = data.selects[0]; if (data.selects[0] !== "") { selects[0].disabled = true; const subclasseSelect = document.getElementById("subclasseSelect"); subclasseSelect.innerHTML = '<option value="">-- SELECIONE --</option>'; (bancoClasses[data.selects[0]] || []).forEach(sub => { let option = document.createElement("option"); option.value = sub.toLowerCase(); option.textContent = sub; subclasseSelect.appendChild(option); }); } } if (data.selects[1] && data.selects[1] !== "") { selects[1].value = data.selects[1]; selects[1].disabled = true; } data.selects.forEach((val, i) => { if(selects[i]) selects[i].value = val; }); }
     }
 
@@ -3183,24 +3802,6 @@
             document.getElementById('muteBtn').innerHTML = isMuted ? svgMute : svgVol;
         }
 
-        if (data.appearance && typeof data.appearance === 'object') {
-            if (data.appearance.customPalette && typeof data.appearance.customPalette === 'object') {
-                const defaults = customPalette;
-                customPalette = Object.fromEntries(Object.keys(defaults).map(key => [key, sanitizeHexColor(data.appearance.customPalette[key], defaults[key])]));
-                customPaletteEnabled = Boolean(data.appearance.customPaletteEnabled);
-                syncCustomPaletteInputs(); updateCustomPaletteStyle();
-            }
-            setDensity(data.appearance.density, null, false);
-            setBarStyle(data.appearance.barStyle, null, false);
-            layoutPreset = ALLOWED_LAYOUT_PRESETS.has(data.appearance.layoutPreset) ? data.appearance.layoutPreset : 'custom';
-            updatePresetButtons();
-        } else {
-            syncCustomPaletteInputs(); updateCustomPaletteStyle();
-            setDensity('balanced', null, false);
-            setBarStyle('linear', null, false);
-            layoutPreset = 'custom'; updatePresetButtons();
-        }
-
         if (typeof data.theme === 'string') {
             const theme = ALLOWED_THEMES.has(data.theme) ? data.theme : '';
             document.body.className = document.body.className.replace(/theme-\w+/g, '').trim();
@@ -3210,8 +3811,6 @@
             });
             const themeName = theme.replace('theme-', '') || 'default';
             document.getElementById(`btn-theme-${themeName}`)?.classList.add('active');
-            customPaletteEnabled = themeName === 'custom';
-            if (customPaletteEnabled) updateCustomPaletteStyle();
         }
 
         if (typeof data.layout === 'string' && ALLOWED_LAYOUTS.has(data.layout)) {
@@ -3263,6 +3862,10 @@
                 delete background.dataset.b64;
             }
         }
+
+        loadGlobalObsSettings();
+        ensureObsChannel();
+        syncObsControls();
 
         if (data.panelState && typeof data.panelState === 'object') {
             const pag1 = document.getElementById('pag1');
@@ -3316,10 +3919,12 @@
             portraitImg.src = data.portrait;
             portraitImg.style.display = 'block';
             portraitPlaceholder.style.display = 'none';
+            portraitImg.addEventListener('load', refreshObsPortraitThumbnail, { once: true });
         } else if (data.portrait === '') {
             portraitImg.removeAttribute('src');
             portraitImg.style.display = 'none';
             portraitPlaceholder.style.display = 'block';
+            clearObsPortraitThumbnail();
 
         }
         
@@ -3327,6 +3932,7 @@
         if (data.version && data.version >= 3) {
             if (data.dataMap) {
                 for (let id in data.dataMap) {
+                    if (NON_PROFILE_CONTROL_IDS.has(id)) continue;
                     let el = document.getElementById(id);
                     if (el) { 
                         if (el.type === 'checkbox') el.checked = data.dataMap[id]; 
@@ -3367,7 +3973,7 @@
             // LOAD LEGADO
             let isLegacy = data.inputs && data.inputs.length === 24 && data.selects && data.selects.length === 28;
             if (isLegacy) processarLoadLegado(data); else processarLoadModerno(data);
-            if(data.checkboxes) { const checkbs = document.querySelectorAll('.container input[type="checkbox"]'); data.checkboxes.forEach((val, i) => { if(checkbs[i]) checkbs[i].checked = val; }); }
+            if(data.checkboxes) { const checkbs = document.querySelectorAll('.container input[type="checkbox"]:not(#obsShowName):not(#obsHudEnabled):not(#obsHudConditions):not(#obsHudPortrait)'); data.checkboxes.forEach((val, i) => { if(checkbs[i]) checkbs[i].checked = val; }); }
             if(data.boxes) { const boxes = document.querySelectorAll('.container .box'); data.boxes.forEach((isFilled, i) => { if(boxes[i]) { if (isFilled) boxes[i].classList.add('filled'); else boxes[i].classList.remove('filled'); } }); }
         }
 
@@ -3390,13 +3996,15 @@
         }
 
         if (Array.isArray(data.macros)) {
+            editingMacroId = null;
             combatMacros = data.macros.map((macro, index) => ({
                 id: macro?.id ?? `macro_${Date.now()}_${index}`,
                 nome: String(macro?.nome ?? ''),
                 attr: ['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA'].includes(macro?.attr) ? macro.attr : 'FOR',
                 skill: Number.parseInt(macro?.skill ?? macro?.hit, 10) || 0,
                 crit: String(macro?.crit ?? ''),
-                dmg: String(macro?.dmg ?? '0')
+                dmg: String(macro?.dmg ?? '0'),
+                peCost: Math.max(0, Number.parseInt(macro?.peCost ?? macro?.costPe ?? macro?.pe, 10) || 0)
             }));
             renderMacros();
         }
@@ -3439,14 +4047,14 @@
                 btnAttr.disabled = true; 
             }
         }
-        combatTheme = ALLOWED_COMBAT_THEMES.has(data.combatTheme) ? data.combatTheme : 'carbon';
-        updateCombatThemeButtons();
-        applyCombatThemeClass();
-
         if(data.combatMode) { 
             let btnCombat = document.getElementById('btn-combat-mode'); 
             if(btnCombat && !isCombatMode) toggleCombatMode(btnCombat); 
         }
+        renderProfileControls();
+        loadActionHistory();
+        if (!isSecondaryTab) setSaveStatus('saved');
+        scheduleObsHudUpdate(true);
     }
 
     function resetarFicha() { playSfx('alert'); document.getElementById('resetModal').style.display = 'flex'; }
@@ -3458,6 +4066,7 @@
             if (saved) {
                 delete saved.panelState;
                 writeStoredSave(saved);
+                writeActiveProfileData(saved);
             }
             location.reload(); 
         } else if (tipo === 'ficha') { 
@@ -3468,37 +4077,36 @@
             document.querySelectorAll('.skill-val').forEach(el => { el.value = "+0"; el.style.color = "var(--text-main)"; el.style.borderColor = "var(--border-color)"; }); 
             const classeSelect = document.getElementById('classeSelect'); classeSelect.disabled = false; classeSelect.value = ""; 
             const subclasseSelect = document.getElementById('subclasseSelect'); subclasseSelect.disabled = false; subclasseSelect.innerHTML = '<option value="">Aguardando Classe...</option>'; 
-            document.getElementById('classDetails').style.display = 'none'; document.getElementById('inventoryList').innerHTML = ''; document.getElementById('portraitImg').src = ''; document.getElementById('portraitImg').style.display = 'none'; document.getElementById('portraitPlaceholder').style.display = 'block'; 
+            document.getElementById('classDetails').style.display = 'none'; document.getElementById('inventoryList').innerHTML = ''; document.getElementById('portraitImg').src = ''; document.getElementById('portraitImg').style.display = 'none'; document.getElementById('portraitPlaceholder').style.display = 'block'; clearObsPortraitThumbnail(); 
             let btnAttr = document.getElementById('btnConcluirAtributos'); if (btnAttr) { btnAttr.innerHTML = `<span style="display: flex; align-items: center; justify-content: center; gap: 8px;"><span id="lockIcon" style="display: flex;">${svgLockOpen}</span> <span id="lockText">TRAVAR ATRIBUTOS BASE</span></span>`; btnAttr.style.color = "var(--accent-green)"; btnAttr.style.borderColor = "var(--accent-green)"; btnAttr.disabled = false; } 
             
             // RESET LOGS E CANVAS E MACROS
             document.getElementById('logList').innerHTML = ''; boardLogs = [];
             document.getElementById('boardNodes').innerHTML = ''; boardNodes = [];
             document.getElementById('boardLines').innerHTML = ''; boardLinks = [];
-            combatMacros = []; renderMacros();
+            combatMacros = []; limparFormularioMacro(); renderMacros();
             resetBoardView();
             
-            atualizarCalculos(); playSfx('lock'); removeStoredSave(); abrirModalCustom("SISTEMA // Memória apagada. Banco de dados redefinido.", false, false, function(){}); 
+            atualizarCalculos(); playSfx('lock');
+            safeWriteJson(profileHistoryKey(), []);
+            salvarLocalData({ skipHistory: true, label: 'FICHA REDEFINIDA' });
+            renderActionHistory([]);
+            abrirModalCustom("SISTEMA // Perfil ativo redefinido. Os outros perfis foram preservados.", false, false, function(){}); 
         }
     }
 
     function carregarLocalData() {
-        const saved = readStoredSave();
-        if (!saved) {
-            updateCombatThemeButtons();
-            applyCombatThemeClass();
-            return;
-        }
+        if (!profilesIndex || !activeProfileId) initializeCharacterProfiles();
+        const saved = readActiveProfileData() || readStoredSave();
+        if (!saved) { renderProfileControls(); loadActionHistory(); return; }
         try {
+            writeStoredSave(saved);
             processAndLoadDataMap(saved);
         } catch (error) {
             console.error('Falha ao carregar save local.', error);
+            setSaveStatus('error', 'ERRO AO CARREGAR');
         }
     }
-window.addEventListener('DOMContentLoaded', () => {
-        syncCustomPaletteInputs(); updateCustomPaletteStyle();
-        setDensity(uiDensity, null, false); setBarStyle(barStyle, null, false); updatePresetButtons();
-    });
 </script>
 </body>
 </html>
