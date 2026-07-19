@@ -694,10 +694,6 @@
         .box.filled { background: var(--text-main); border-color: var(--text-main); box-shadow: 0 0 8px rgba(255,255,255,0.2); }
         #attributes .boxes .box:nth-child(5) { border-color: var(--gold-color); }
         #attributes .boxes .box:nth-child(5).filled { background: var(--gold-color); box-shadow: 0 0 10px var(--gold-color); border-color: var(--gold-color);}
-        #attributes .boxes .box:nth-child(6) { border-color: var(--accent-green); }
-        #attributes .boxes .box:nth-child(6).filled { background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); border-color: var(--accent-green);}
-        #attributes .boxes .box:nth-child(7) { border-color: #a855f7; }
-        #attributes .boxes .box:nth-child(7).filled { background: #a855f7; box-shadow: 0 0 10px #a855f7; border-color: #a855f7;}
         .circle { border-radius: 50%; width: 18px; height: 18px; }
         .rollable-attr { cursor: pointer; transition: 0.2s; border-bottom: 1px dashed transparent; font-weight: bold; letter-spacing: 1px;}
         .rollable-attr:hover { color: var(--gold-color); border-bottom: 1px dashed var(--gold-color); }
@@ -1496,7 +1492,7 @@
                 let row = document.createElement('div'); row.className = 'attr-row';
                 let label = document.createElement('span'); label.innerText = attr; label.className = 'rollable-attr'; label.title = 'Clique para rolar o atributo'; label.onclick = () => abrirRolador(attr);
                 let boxesDiv = document.createElement('div'); boxesDiv.className = 'boxes'; boxesDiv.id = 'attr-' + attr;
-                for(let i=1; i<=7; i++) { 
+                for(let i=1; i<=5; i++) { 
                     let box = document.createElement('div'); box.className = i === 1 ? 'box filled' : 'box'; 
                     box.onclick = () => { fillAttributes(boxesDiv, i); atualizarCalculos(); autoSalvarOtimizado(); }; 
                     boxesDiv.appendChild(box); 
