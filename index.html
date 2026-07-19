@@ -1400,12 +1400,15 @@
     let hudHeartbeatTimer = null;
     let obsLifecycleListenersBound = false;
     let lastHudSignature = '';
-    let pendingHudDelivery = null;
-    let hudAckTimer = null;
-    let hudRetryTimer = null;
-    let obsAckEventSource = null;
-    let obsAckReconnectTimer = null;
-    let lastObsAckAt = 0;
+    let obsHudSendInFlight = false;
+    let obsHudQueued = false;
+    let obsLastHudRemoteAt = 0;
+    let obsRelayBlockedUntil = 0;
+    let obsRelayResumeTimer = null;
+    let obsTestAckSocket = null;
+    let obsTestAckTimer = null;
+    let lastSentObsPortrait = null;
+    let obsPortraitSendTimer = null;
     let saveStatusTimer = null;
     let isSecondaryTab = false;
     let profileLockTimer = null;
@@ -1414,7 +1417,7 @@
     let activeProfileId = '';
     let profilesIndex = null;
 
-    const APP_VERSION = '2026.07.19.1';
+    const APP_VERSION = '2026.07.19.2-safe';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -1432,6 +1435,10 @@
     const MAX_HISTORY_ENTRIES = 30;
     const OBS_RELAY_BASE = 'https://ntfy.sh';
     const OBS_LOCAL_EVENT_KEY = 'DarkObsLastEvent';
+    const OBS_HUD_DEBOUNCE_MS = 2000;
+    const OBS_HUD_MIN_INTERVAL_MS = 10000;
+    const OBS_RELAY_COOLDOWN_MS = 5 * 60 * 1000;
+    const OBS_TEST_TIMEOUT_MS = 12000;
     const ALLOWED_THEMES = new Set(['', 'theme-default', 'theme-architect', 'theme-light', 'theme-ambar', 'theme-ordem', 'theme-contencao', 'theme-neon', 'theme-custom']);
     const ALLOWED_FONTS = new Set(['mono', 'clean', 'militar', 'gotica', 'pixel', 'typewriter', 'book']);
     const ALLOWED_LAYOUTS = new Set(['colunas', 'paginas']);
@@ -1627,56 +1634,43 @@
         } catch (error) { return null; }
     }
 
-    function handleObsAckPayload(payload) {
-        if (!payload || payload.event !== 'ack') return;
-        if (String(payload.channel || '') !== ensureObsChannel()) return;
-        if (String(payload.accessKey || '') !== ensureObsAccessKey()) return;
-        const ackFor = String(payload.ackFor || '');
-        const protocol = Number(payload.protocol) || 0;
-        const overlayVersion = String(payload.overlayVersion || 'DESCONHECIDA');
-        lastObsAckAt = Date.now();
-        if (protocol !== OBS_PROTOCOL_VERSION) {
-            setObsStatus(`VERSÕES INCOMPATÍVEIS // SITE ${OBS_PROTOCOL_VERSION} · OBS ${protocol || '?'}`, 'error');
-            return;
+    function closeObsTestAckListener() {
+        clearTimeout(obsTestAckTimer); obsTestAckTimer = null;
+        if (obsTestAckSocket) {
+            try {
+                obsTestAckSocket.onopen = obsTestAckSocket.onmessage = obsTestAckSocket.onerror = obsTestAckSocket.onclose = null;
+                obsTestAckSocket.close();
+            } catch (error) {}
+            obsTestAckSocket = null;
         }
-        if (pendingHudDelivery && pendingHudDelivery.id === ackFor) {
-            clearTimeout(hudAckTimer); hudAckTimer = null;
-            pendingHudDelivery = null;
-            setObsStatus(`HUD CONFIRMADO NO OBS // ${overlayVersion}`, 'ok');
-            return;
-        }
-        if (payload.ackType === 'test') setObsStatus(`TESTE CONFIRMADO NO OBS // ${overlayVersion}`, 'ok');
     }
 
-    function closeObsAckListener() {
-        if (obsAckEventSource) {
-            try { obsAckEventSource.close(); } catch (error) {}
-            obsAckEventSource = null;
-        }
-        clearTimeout(obsAckReconnectTimer); obsAckReconnectTimer = null;
+    function getObsRelayCooldownRemaining() {
+        return Math.max(0, obsRelayBlockedUntil - Date.now());
     }
 
-    function startObsAckListener() {
-        closeObsAckListener();
-        if (!obsSettings.enabled || navigator.onLine === false) return;
-        try {
-            const source = new EventSource(`${OBS_RELAY_BASE}/${encodeURIComponent(ensureObsChannel())}/sse`);
-            obsAckEventSource = source;
-            source.onmessage = event => {
-                const payload = parseObsRelayPayload(event.data);
-                if (payload) handleObsAckPayload(payload);
-            };
-            source.onerror = () => {
-                if (obsAckEventSource !== source) return;
-                try { source.close(); } catch (error) {}
-                obsAckEventSource = null;
-                clearTimeout(obsAckReconnectTimer);
-                obsAckReconnectTimer = window.setTimeout(startObsAckListener, 5000);
-            };
-        } catch (error) {
-            console.warn('Confirmação do OBS indisponível.', error);
-            obsAckReconnectTimer = window.setTimeout(startObsAckListener, 7000);
-        }
+    function scheduleObsRelayResume() {
+        clearTimeout(obsRelayResumeTimer); obsRelayResumeTimer = null;
+        const remaining = getObsRelayCooldownRemaining();
+        if (!remaining) return;
+        obsRelayResumeTimer = window.setTimeout(() => {
+            obsRelayResumeTimer = null;
+            if (Date.now() < obsRelayBlockedUntil) { scheduleObsRelayResume(); return; }
+            obsRelayBlockedUntil = 0;
+            setObsStatus('RELAY RECUPERADO // ENVIANDO ESTADO ATUAL', 'ok');
+            if (obsSettings.enabled && !isSecondaryTab) {
+                scheduleObsPortraitUpdate(true);
+                scheduleObsHudUpdate(true);
+            }
+        }, remaining + 750);
+    }
+
+    function enterObsRelayCooldown() {
+        obsRelayBlockedUntil = Math.max(obsRelayBlockedUntil, Date.now() + OBS_RELAY_COOLDOWN_MS);
+        clearTimeout(hudUpdateTimer); hudUpdateTimer = null;
+        clearTimeout(obsPortraitSendTimer); obsPortraitSendTimer = null;
+        setObsStatus('RELAY PAUSADO POR 5 MINUTOS // HUD PRESERVADO', 'error');
+        scheduleObsRelayResume();
     }
 
     function initObsIntegration() {
@@ -1685,25 +1679,30 @@
             try {
                 obsBroadcastChannel?.close();
                 obsBroadcastChannel = new BroadcastChannel(`dark-obs-${obsSettings.channel}`);
-                obsBroadcastChannel.addEventListener('message', event => handleObsAckPayload(event.data));
             } catch (error) {
-                console.warn('BroadcastChannel indisponível para o overlay OBS.', error);
+                console.warn('BroadcastChannel local indisponível.', error);
                 obsBroadcastChannel = null;
             }
         }
-        clearInterval(hudHeartbeatTimer); hudHeartbeatTimer = null;
         if (!obsLifecycleListenersBound) {
             obsLifecycleListenersBound = true;
-            const resyncObsHud = () => {
-                if (obsSettings.enabled && !isSecondaryTab) window.setTimeout(() => sendObsHudUpdate(true), 250);
-            };
-            window.addEventListener('online', () => { startObsAckListener(); resyncObsHud(); });
-            window.addEventListener('pageshow', resyncObsHud);
-            document.addEventListener('visibilitychange', () => { if (!document.hidden) resyncObsHud(); });
+            window.addEventListener('online', () => {
+                if (obsSettings.enabled && !isSecondaryTab) {
+                    window.setTimeout(() => {
+                        scheduleObsPortraitUpdate(true);
+                        scheduleObsHudUpdate(true);
+                    }, 1500);
+                }
+            });
+            window.addEventListener('offline', () => setObsStatus('SEM INTERNET // FICHA CONTINUA FUNCIONANDO', 'error'));
         }
-        if (obsSettings.enabled) startObsAckListener(); else closeObsAckListener();
         syncObsControls();
-        if (obsSettings.enabled && !isSecondaryTab) window.setTimeout(() => sendObsHudUpdate(true), 900);
+        if (obsSettings.enabled && !isSecondaryTab) {
+            window.setTimeout(() => {
+                scheduleObsPortraitUpdate(true);
+                scheduleObsHudUpdate(true);
+            }, 1200);
+        }
     }
 
     function toggleObsIntegration(button) {
@@ -1713,9 +1712,14 @@
         playSfx('click');
         setSaveStatus('saved', obsSettings.enabled ? 'OBS ATIVADO' : 'OBS DESATIVADO');
         if (obsSettings.enabled) {
-            startObsAckListener();
-            testObsOverlay();
-        } else closeObsAckListener();
+            setObsStatus('TRANSMISSÃO ATIVA // MODO SESSÃO SEGURA', 'ok');
+            scheduleObsPortraitUpdate(true);
+            scheduleObsHudUpdate(true);
+        } else {
+            closeObsTestAckListener();
+            clearTimeout(hudUpdateTimer); hudUpdateTimer = null;
+            clearTimeout(obsPortraitSendTimer); obsPortraitSendTimer = null;
+        }
     }
 
     function updateObsChannel(value) {
@@ -1759,10 +1763,12 @@
         obsSettings.hudPortrait = document.getElementById('obsHudPortrait')?.checked !== false;
         obsSettings.layout = sanitizeObsLayout(document.getElementById('obsOverlayLayout')?.value);
         if (obsSettings.hudPortrait) refreshObsPortraitThumbnail();
+        else { clearObsPortraitThumbnail(); scheduleObsPortraitUpdate(true); }
         syncObsControls();
         writeGlobalObsSettings();
         setSaveStatus('saved', 'PREFERÊNCIAS OBS SALVAS');
-        sendObsHudUpdate(true);
+        scheduleObsPortraitUpdate(true);
+        scheduleObsHudUpdate(true);
     }
 
     async function copyObsOverlayUrl() {
@@ -1845,49 +1851,119 @@
         }
         const { payload, serialized, bytes, trimmed } = prepared;
         let deliveredLocally = false;
-        try { obsBroadcastChannel?.postMessage(payload); deliveredLocally = Boolean(obsBroadcastChannel); }
-        catch (error) { console.warn('Falha no canal local do overlay.', error); }
-        try { localStorage.setItem(OBS_LOCAL_EVENT_KEY, serialized); deliveredLocally = true; }
-        catch (error) { console.warn('Falha ao registrar evento local do overlay.', error); }
+        if (!payload.remoteOnly) {
+            try { obsBroadcastChannel?.postMessage(payload); deliveredLocally = Boolean(obsBroadcastChannel); }
+            catch (error) { console.warn('Falha no canal local do overlay.', error); }
+            try { localStorage.setItem(OBS_LOCAL_EVENT_KEY, serialized); deliveredLocally = true; }
+            catch (error) { console.warn('Falha ao registrar evento local do overlay.', error); }
+        }
+
+        const remaining = getObsRelayCooldownRemaining();
+        if (remaining > 0) {
+            const seconds = Math.ceil(remaining / 1000);
+            setObsStatus(`RELAY EM PAUSA // ${seconds}s // ESTADO PRESERVADO`, 'error');
+            scheduleObsRelayResume();
+            return { remote: false, local: deliveredLocally, payload, bytes, trimmed, cooldown: true };
+        }
+        if (navigator.onLine === false) {
+            setObsStatus('SEM INTERNET // ESTADO PRESERVADO', 'error');
+            return { remote: false, local: deliveredLocally, payload, bytes, trimmed, offline: true };
+        }
 
         const controller = new AbortController();
         const timeoutId = window.setTimeout(() => controller.abort(), 7000);
         try {
             const response = await fetch(`${OBS_RELAY_BASE}/${encodeURIComponent(channel)}`, {
-                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: serialized,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=UTF-8'
+                },
+                body: serialized,
                 mode: 'cors', cache: 'no-store', credentials: 'omit', keepalive: bytes < 64000, signal: controller.signal
             });
-            if (!response.ok) { const relayError = new Error(`HTTP ${response.status}`); relayError.status = response.status; throw relayError; }
-            const label = payload.event === 'hud' ? 'HUD PUBLICADO // AGUARDANDO OBS' : payload.remoteOnly ? 'TESTE REMOTO PUBLICADO' : 'RESULTADO PUBLICADO';
+            if (!response.ok) {
+                const relayError = new Error(`HTTP ${response.status}`);
+                relayError.status = response.status;
+                throw relayError;
+            }
+            const label = payload.event === 'hud' ? 'HUD PUBLICADO' : payload.event === 'portrait' ? 'RETRATO PUBLICADO' : payload.remoteOnly ? 'TESTE REMOTO PUBLICADO' : 'RESULTADO PUBLICADO';
             setObsStatus(trimmed.length ? `${label} // SEM ${trimmed.join(' E ')}` : label, 'ok');
             return { remote: true, local: deliveredLocally, payload, bytes, trimmed };
         } catch (error) {
-            console.warn('Relay remoto do OBS indisponível; tentativa local mantida.', error);
-            if (error?.status === 429) setObsStatus('LIMITE TEMPORÁRIO DO RELAY ATINGIDO', 'error');
+            console.warn('Relay remoto do OBS indisponível.', error);
+            if (error?.status === 429) enterObsRelayCooldown();
             else if (payload.remoteOnly) setObsStatus('TESTE REMOTO NÃO CHEGOU AO RELAY', 'error');
-            else setObsStatus(deliveredLocally ? 'SOMENTE ENTREGA LOCAL // OBS REMOTO NÃO CONFIRMADO' : 'FALHA NA TRANSMISSÃO', 'error');
+            else setObsStatus(deliveredLocally ? 'ENTREGA LOCAL ATIVA // RELAY INDISPONÍVEL' : 'FALHA NA TRANSMISSÃO', 'error');
             return { remote: false, local: deliveredLocally, payload, bytes, trimmed, error };
         } finally { window.clearTimeout(timeoutId); }
     }
 
     async function testObsOverlay() {
-        const result = await sendObsEvent({
-            event: 'test', title: 'CONEXÃO ESTABELECIDA', subtitle: 'DARK DASHBOARD // OBS',
-            rolls: [7, 13, 20], chosen: 20, bonus: 5, total: 25, critical: true,
-            failure: false, damage: null, remoteOnly: true
-        }, true);
-        if (result.remote) window.setTimeout(() => sendObsHudUpdate(true), 350);
+        if (getObsRelayCooldownRemaining() > 0) {
+            setObsStatus('TESTE BLOQUEADO DURANTE A PAUSA DO RELAY', 'error');
+            return;
+        }
+        if (navigator.onLine === false) {
+            setObsStatus('SEM INTERNET // TESTE NÃO INICIADO', 'error');
+            return;
+        }
+        closeObsTestAckListener();
+        const testId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        setObsStatus('ABRINDO CONFIRMAÇÃO TEMPORÁRIA DO OBS...', 'idle');
+
+        await new Promise(resolve => {
+            let settled = false;
+            const finish = (confirmed, message) => {
+                if (settled) return;
+                settled = true;
+                closeObsTestAckListener();
+                setObsStatus(message, confirmed ? 'ok' : 'error');
+                resolve(confirmed);
+            };
+            try {
+                const socket = new WebSocket(`wss://ntfy.sh/${encodeURIComponent(ensureObsChannel())}/ws`);
+                obsTestAckSocket = socket;
+                obsTestAckTimer = window.setTimeout(() => finish(false, 'OBS NÃO CONFIRMOU O TESTE EM 12 SEGUNDOS'), OBS_TEST_TIMEOUT_MS);
+                socket.onopen = async () => {
+                    const result = await sendObsEvent({
+                        id: testId,
+                        event: 'test', title: 'CONEXÃO ESTABELECIDA', subtitle: 'DARK DASHBOARD // OBS',
+                        rolls: [7, 13, 20], chosen: 20, bonus: 5, total: 25, critical: true,
+                        failure: false, damage: null, remoteOnly: true
+                    }, true);
+                    if (!result.remote) finish(false, 'TESTE NÃO FOI PUBLICADO NO RELAY');
+                };
+                socket.onmessage = event => {
+                    const payload = parseObsRelayPayload(event.data);
+                    if (!payload || payload.event !== 'ack' || payload.ackType !== 'test') return;
+                    if (String(payload.channel || '') !== ensureObsChannel()) return;
+                    if (String(payload.accessKey || '') !== ensureObsAccessKey()) return;
+                    if (String(payload.ackFor || '') !== testId) return;
+                    const protocol = Number(payload.protocol) || 0;
+                    if (protocol !== OBS_PROTOCOL_VERSION) {
+                        finish(false, `VERSÕES INCOMPATÍVEIS // SITE ${OBS_PROTOCOL_VERSION} · OBS ${protocol || '?'}`);
+                        return;
+                    }
+                    finish(true, `TESTE CONFIRMADO PELA FONTE DO OBS // ${String(payload.overlayVersion || 'OK')}`);
+                };
+                socket.onerror = () => finish(false, 'CANAL DE CONFIRMAÇÃO DO OBS INDISPONÍVEL');
+                socket.onclose = () => { if (!settled) finish(false, 'CONEXÃO DE TESTE ENCERRADA ANTES DA CONFIRMAÇÃO'); };
+            } catch (error) {
+                console.warn('Teste OBS indisponível.', error);
+                finish(false, 'NÃO FOI POSSÍVEL ABRIR O TESTE DO OBS');
+            }
+        });
         playSfx('alert');
     }
 
     function syncObsHudNow() {
         lastHudSignature = '';
-        clearTimeout(hudRetryTimer); hudRetryTimer = null;
+        sendObsPortraitUpdate(true);
         sendObsHudUpdate(true);
         playSfx('box');
     }
 
-    // Variáveis do Quadro Canvas (Pan e Zoom)
+    // Variáveis do Quadro Canvas    // Variáveis do Quadro Canvas (Pan e Zoom)
     let boardNodes = [];
     let boardLinks = [];
     let boardLogs = []; // Logs salvos
@@ -2392,7 +2468,7 @@
         const changed = Boolean(obsPortraitThumbnail || obsPortraitSource);
         obsPortraitThumbnail = '';
         obsPortraitSource = '';
-        if (changed) scheduleObsHudUpdate(true);
+        if (changed) scheduleObsPortraitUpdate(true);
     }
 
     function createObsPortraitThumbnail(image) {
@@ -2439,14 +2515,17 @@
             const changed = thumbnail !== obsPortraitThumbnail || latestSource !== obsPortraitSource;
             obsPortraitThumbnail = thumbnail;
             obsPortraitSource = latestSource;
-            if (changed) scheduleObsHudUpdate(true);
+            if (changed) scheduleObsPortraitUpdate(true);
         };
         if (image.complete && image.naturalWidth) generate();
         else image.addEventListener('load', generate, { once: true });
     }
 
     function getObsHudState() {
-        const numberValue = (id, fallback = 0) => { const value = Number.parseInt(document.getElementById(id)?.value, 10); return Number.isFinite(value) ? Math.max(0, Math.min(MAX_RESOURCE_VALUE, value)) : fallback; };
+        const numberValue = (id, fallback = 0) => {
+            const value = Number.parseInt(document.getElementById(id)?.value, 10);
+            return Number.isFinite(value) ? Math.max(0, Math.min(MAX_RESOURCE_VALUE, value)) : fallback;
+        };
         const conditions = obsSettings.hudConditions
             ? Array.from(document.querySelectorAll('.cond-item input[type="checkbox"]:checked')).map(input => {
                 const container = input.closest('.cond-item');
@@ -2459,54 +2538,112 @@
             san: { current: numberValue('san_atual'), max: Math.max(1, numberValue('san_max', 1)) },
             pe: { current: numberValue('pe_atual'), max: Math.max(1, numberValue('pe_max', 1)) },
             afi: numberValue('afi_val', 1),
-            portrait: obsSettings.hudPortrait ? obsPortraitThumbnail : '',
             conditions
         };
     }
 
-    function scheduleObsHudUpdate(immediate = false) {
-        clearTimeout(hudUpdateTimer);
-        hudUpdateTimer = window.setTimeout(() => sendObsHudUpdate(false), immediate ? 0 : 650);
+    function isObsHudRelevantElement(element) {
+        if (!(element instanceof Element)) return false;
+        const relevantIds = new Set([
+            'charNameInput', 'vd_atual', 'vd_max', 'san_atual', 'san_max',
+            'pe_atual', 'pe_max', 'afi_val', 'obsShowName', 'obsHudEnabled',
+            'obsHudConditions', 'obsHudPortrait', 'obsOverlayLayout'
+        ]);
+        if (relevantIds.has(element.id)) return true;
+        return element.matches('.cond-item input[type="checkbox"]');
     }
 
-    async function sendObsHudUpdate(force = false, attempt = 0) {
+    function scheduleObsHudUpdate(immediate = false) {
+        if (!obsSettings.enabled || isSecondaryTab) return;
+        clearTimeout(hudUpdateTimer);
+        const cooldownDelay = getObsRelayCooldownRemaining();
+        const minIntervalDelay = Math.max(0, OBS_HUD_MIN_INTERVAL_MS - (Date.now() - obsLastHudRemoteAt));
+        const delay = immediate ? cooldownDelay : Math.max(OBS_HUD_DEBOUNCE_MS, minIntervalDelay, cooldownDelay);
+        hudUpdateTimer = window.setTimeout(() => {
+            hudUpdateTimer = null;
+            sendObsHudUpdate(false);
+        }, delay);
+    }
+
+    function scheduleObsPortraitUpdate(immediate = false) {
+        if (!obsSettings.enabled || isSecondaryTab) return;
+        clearTimeout(obsPortraitSendTimer);
+        const delay = Math.max(immediate ? 0 : OBS_HUD_DEBOUNCE_MS, getObsRelayCooldownRemaining());
+        obsPortraitSendTimer = window.setTimeout(() => {
+            obsPortraitSendTimer = null;
+            sendObsPortraitUpdate(false);
+        }, delay);
+    }
+
+    async function sendObsPortraitUpdate(force = false) {
         if ((!obsSettings.enabled && !force) || isSecondaryTab) return false;
         refreshObsPortraitThumbnail();
-        const hud = getObsHudState();
-        const signature = JSON.stringify({ hud, name: document.getElementById('charNameInput')?.value || '', theme: getCurrentThemeName(), layout: sanitizeObsLayout(obsSettings.layout) });
-        if (!force && signature === lastHudSignature && !pendingHudDelivery) return false;
-        clearTimeout(hudRetryTimer); hudRetryTimer = null;
-        const result = await sendObsEvent({ event: 'hud', title: 'HUD', subtitle: 'STATUS', rolls: [], chosen: 0, bonus: 0, total: 0, damage: null, hud }, force);
+        const portrait = obsSettings.hudPortrait ? obsPortraitThumbnail : '';
+        if (!force && portrait === lastSentObsPortrait) return false;
+        const result = await sendObsEvent({
+            event: 'portrait', title: 'RETRATO', subtitle: 'HUD', portrait
+        }, force);
         if (result.remote) {
-            lastHudSignature = signature;
-            pendingHudDelivery = { id: result.payload.id, signature, attempt, sentAt: Date.now() };
-            clearTimeout(hudAckTimer);
-            hudAckTimer = window.setTimeout(() => {
-                if (!pendingHudDelivery || pendingHudDelivery.id !== result.payload.id) return;
-                if (attempt < 1 && obsSettings.enabled && navigator.onLine !== false) {
-                    pendingHudDelivery = null;
-                    sendObsHudUpdate(true, attempt + 1);
-                } else {
-                    pendingHudDelivery = null;
-                    setObsStatus('HUD PUBLICADO // OBS NÃO CONFIRMOU', 'error');
-                }
-            }, 9000);
+            lastSentObsPortrait = portrait;
             return true;
-        }
-        lastHudSignature = '';
-        if (attempt < 2 && obsSettings.enabled && navigator.onLine !== false) {
-            hudRetryTimer = window.setTimeout(() => sendObsHudUpdate(true, attempt + 1), attempt === 0 ? 3500 : 10000);
         }
         return false;
     }
 
+    async function sendObsHudUpdate(force = false) {
+        if ((!obsSettings.enabled && !force) || isSecondaryTab) return false;
+        if (obsHudSendInFlight) {
+            obsHudQueued = true;
+            return false;
+        }
+        const hud = getObsHudState();
+        const signature = JSON.stringify({
+            hud,
+            name: document.getElementById('charNameInput')?.value || '',
+            theme: getCurrentThemeName(),
+            layout: sanitizeObsLayout(obsSettings.layout),
+            showName: obsSettings.showName
+        });
+        if (!force && signature === lastHudSignature) return false;
+        const cooldownRemaining = getObsRelayCooldownRemaining();
+        if (cooldownRemaining > 0) {
+            obsHudQueued = true;
+            scheduleObsRelayResume();
+            return false;
+        }
+        const elapsed = Date.now() - obsLastHudRemoteAt;
+        if (!force && obsLastHudRemoteAt && elapsed < OBS_HUD_MIN_INTERVAL_MS) {
+            obsHudQueued = true;
+            scheduleObsHudUpdate(false);
+            return false;
+        }
+
+        obsHudSendInFlight = true;
+        try {
+            const result = await sendObsEvent({
+                event: 'hud', title: 'HUD', subtitle: 'STATUS', rolls: [],
+                chosen: 0, bonus: 0, total: 0, damage: null, hud
+            }, force);
+            if (result.remote) {
+                lastHudSignature = signature;
+                obsLastHudRemoteAt = Date.now();
+                return true;
+            }
+            return false;
+        } finally {
+            obsHudSendInFlight = false;
+            if (obsHudQueued) {
+                obsHudQueued = false;
+                scheduleObsHudUpdate(false);
+            }
+        }
+    }
 
     // 2. FUNÇÕES DE INICIALIZAÇÃO E HOTBAR DE COMBATE
     function autoSalvarOtimizado() {
         setSaveStatus('dirty');
         clearTimeout(timeoutAutoSave);
         timeoutAutoSave = setTimeout(() => { salvarLocalData(); }, 800);
-        scheduleObsHudUpdate();
     }
 
     function fillBoxesSafe(container, count, forceFirst=false) {
@@ -3138,8 +3275,16 @@
         if (isOverlayActive('initiativeBoard')) closeOverlay('initiativeBoard');
     });
 
-    document.addEventListener('input', function(e) { if(e.target.matches('input, textarea, select')) { autoSalvarOtimizado(); scheduleObsHudUpdate(); } });
-    document.addEventListener('change', function(e) { if(e.target.matches('input, textarea, select')) { autoSalvarOtimizado(); scheduleObsHudUpdate(); } });
+    document.addEventListener('input', function(e) {
+        if (!e.target.matches('input, textarea, select')) return;
+        autoSalvarOtimizado();
+        if (isObsHudRelevantElement(e.target)) scheduleObsHudUpdate();
+    });
+    document.addEventListener('change', function(e) {
+        if (!e.target.matches('input, textarea, select')) return;
+        autoSalvarOtimizado();
+        if (isObsHudRelevantElement(e.target)) scheduleObsHudUpdate();
+    });
     window.addEventListener('beforeunload', function() { salvarLocalData({ skipHistory: true }); });
 
     // DRAG AND DROP PANELS
@@ -4099,6 +4244,7 @@
         }
 
         atualizarCoresPericias();
+        scheduleObsHudUpdate(true);
         if (shouldSave) salvarLocalData();
     }
     function setLayout(layoutName, btnElement) {
@@ -4188,6 +4334,7 @@
             }
 
             salvarLocalData();
+            scheduleObsHudUpdate(true);
         }, 150);
     }
     
@@ -4481,7 +4628,6 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         if (!config.skipHistory && previous) recordActionHistory(previous, data, config.label || '');
         const ok = commitSaveBundle(data);
         if (ok) setSaveStatus('saved'); else setSaveStatus('error', 'ERRO AO SALVAR — EXPORTE UM BACKUP');
-        scheduleObsHudUpdate();
         return data;
     }
 
