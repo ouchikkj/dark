@@ -171,7 +171,7 @@
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.18.2';
+            const OVERLAY_VERSION = '2026.07.19.2';
             const OBS_PROTOCOL_VERSION = 3;
             const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
@@ -252,6 +252,7 @@
                     character: String(payload.character || '').slice(0, 80),
                     title: String(payload.title || 'ROLAGEM').slice(0, 120),
                     subtitle: String(payload.subtitle || 'DARK DASHBOARD').slice(0, 100),
+                    message: String(payload.message || '').slice(0, 900),
                     rolls: Array.isArray(payload.rolls) ? payload.rolls.slice(0, 30).map(Number) : [],
                     chosen: Number(payload.chosen) || 0,
                     bonus: Number(payload.bonus) || 0,
@@ -280,6 +281,9 @@
                 };
                 try { broadcastChannel?.postMessage(ack); } catch (error) {}
                 try { localStorage.setItem('DarkObsLastAck', JSON.stringify(ack)); } catch (error) {}
+                // Atualizações contínuas do HUD não precisam de confirmação remota.
+                // Isso reduz pela metade o consumo de requisições no relay público.
+                if (ackType === 'hud') return;
                 try {
                     const controller = new AbortController();
                     const timeoutId = window.setTimeout(() => controller.abort(), 5000);
@@ -344,6 +348,14 @@
                 const event = queue.shift();
                 applyTheme(event.theme);
                 applyLayout(event.layout);
+                if (event.event === 'banner') {
+                    const card = document.createElement('section');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div></div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
+                    stage.replaceChildren(card); requestAnimationFrame(() => card.classList.add('visible')); sendAck(event, 'banner');
+                    window.setTimeout(() => { card.classList.remove('visible'); card.classList.add('leaving'); window.setTimeout(() => { card.remove(); showNext(); }, 420); }, event.duration);
+                    return;
+                }
                 const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
                 const bonus = event.bonus ? ` ${event.bonus > 0 ? '+' : ''}${event.bonus}` : '';
                 const rolls = event.rolls.length ? `[ ${event.rolls.join(' | ')} ]` : '[ -- ]';
