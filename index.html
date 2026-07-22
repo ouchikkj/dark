@@ -837,8 +837,10 @@
         .save-status-indicator[data-state="dirty"], .save-status-indicator[data-state="saving"] { color: var(--gold-color); border-color: var(--gold-color); }
         .save-status-indicator[data-state="saved"] { color: var(--accent-green); border-color: var(--accent-green); }
         .save-status-indicator[data-state="error"] { color: var(--alert-color); border-color: var(--alert-color); }
-        .profile-controls { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto auto; gap: 8px; align-items: center; }
+        .profile-controls { display: grid; grid-template-columns: minmax(210px, 1fr) repeat(3, auto); gap: 8px; align-items: center; }
         .profile-controls select { min-width: 0; font-size: .8rem; padding: 7px 5px; }
+        .profile-actions-secondary { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .profile-actions-secondary .sys-btn { flex: 0 1 auto; }
         .history-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
         .history-list { max-height: 155px; overflow-y: auto; border: 1px solid var(--border-color); background: rgba(0,0,0,.18); }
         .history-entry { padding: 7px 9px; border-bottom: 1px dashed var(--border-color); display: grid; grid-template-columns: 70px 1fr; gap: 10px; font-size: .68rem; }
@@ -905,10 +907,15 @@
             <div class="options-group">
             <span class="options-label">PERFIS DE PERSONAGEM</span>
             <div class="profile-controls">
-            <select aria-label="Perfil ativo" id="profileSelect" onchange="switchCharacterProfile(this.value)"></select>
-            <button class="sys-btn" onclick="createCharacterProfile()">NOVO</button>
-            <button class="sys-btn" onclick="renameCharacterProfile()">RENOMEAR</button>
-            <button class="sys-btn" onclick="deleteCharacterProfile()" style="color:var(--alert-color); border-color:var(--alert-color);">EXCLUIR</button>
+            <select aria-label="Personagem ativo" id="profileSelect" onchange="switchCharacterProfile(this.value)"></select>
+            <button class="sys-btn" id="btnProfileNew" onclick="createCharacterProfile()">NOVO</button>
+            <button class="sys-btn" id="btnProfileRename" onclick="renameCharacterProfile()">RENOMEAR</button>
+            <button class="sys-btn" id="btnProfileDuplicate" onclick="duplicateCharacterProfile()">DUPLICAR</button>
+            </div>
+            <div class="profile-actions-secondary">
+            <button class="sys-btn" id="btnProfileExport" onclick="exportarFicha()">EXPORTAR ATUAL</button>
+            <button class="sys-btn" id="btnProfileImportNew" onclick="document.getElementById('importNewProfileFile').click()">IMPORTAR COMO NOVO</button>
+            <button class="sys-btn" id="btnProfileDelete" onclick="deleteCharacterProfile()" style="color:var(--alert-color); border-color:var(--alert-color);">EXCLUIR</button>
             </div>
             <div id="profileStatusText">[ PERFIL ATIVO: -- ]</div>
             </div>
@@ -1074,9 +1081,12 @@
             <div class="options-group">
             <span class="options-label">DADOS E ARQUIVOS</span>
             <div class="options-row">
-            <input accept=".json" id="importAppearanceFile" onchange="importAppearance(event)" style="display: none;" type="file"/><input accept=".json" id="importFile" onchange="importarFicha(event)" style="display: none;" type="file"/>
-            <button class="sys-btn" onclick="document.getElementById('importFile').click()">IMPORTAR</button>
-            <button class="sys-btn" onclick="exportarFicha()">EXPORTAR</button><button class="sys-btn" onclick="document.getElementById('importAppearanceFile').click()">IMPORTAR APARÊNCIA</button><button class="sys-btn" onclick="exportAppearance()">EXPORTAR APARÊNCIA</button>
+            <input accept=".json" id="importAppearanceFile" onchange="importAppearance(event)" style="display: none;" type="file"/>
+            <input accept=".json" id="importFile" onchange="importarFicha(event, 'replace')" style="display: none;" type="file"/>
+            <input accept=".json" id="importNewProfileFile" onchange="importarFicha(event, 'new')" style="display: none;" type="file"/>
+            <button class="sys-btn" id="btnImportReplace" onclick="document.getElementById('importFile').click()">IMPORTAR E SUBSTITUIR ATUAL</button>
+            <button class="sys-btn" id="btnImportAsNew" onclick="document.getElementById('importNewProfileFile').click()">IMPORTAR COMO NOVO PERSONAGEM</button>
+            <button class="sys-btn" onclick="exportarFicha()">EXPORTAR PERSONAGEM ATUAL</button><button class="sys-btn" onclick="document.getElementById('importAppearanceFile').click()">IMPORTAR APARÊNCIA</button><button class="sys-btn" onclick="exportAppearance()">EXPORTAR APARÊNCIA</button>
             <button class="sys-btn" id="btnExportarPdf" onclick="exportarParaPDF()">GERAR PDF</button>
             <button class="sys-btn" onclick="resetarFicha()" style="color: var(--alert-color); border-color: var(--alert-color);">RESETAR FICHA</button>
             </div>
@@ -1414,10 +1424,13 @@
     let profileLockTimer = null;
     let storageWarningShown = false;
     let isApplyingHistory = false;
+    let isSwitchingProfile = false;
+    let isLoadingProfileData = false;
     let activeProfileId = '';
     let profilesIndex = null;
+    let defaultPanelState = null;
 
-    const APP_VERSION = '2026.07.19.2-safe';
+    const APP_VERSION = '2026.07.21.1-profiles';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -1452,7 +1465,11 @@
         'obsChannelInput', 'obsOverlayUrl', 'obsShowName', 'obsHudEnabled',
         'obsHudConditions', 'obsHudPortrait', 'obsOverlayLayout', 'obsDuration'
     ]);
-    const NON_PROFILE_CONTROL_IDS = new Set([...OBS_CONTROL_IDS, 'profileSelect', 'importAppearanceFile']);
+    const NON_PROFILE_CONTROL_IDS = new Set([...OBS_CONTROL_IDS, 'profileSelect', 'importAppearanceFile', 'importFile', 'importNewProfileFile']);
+    const DEFAULT_CUSTOM_PALETTE = Object.freeze({
+        bg: '#050505', panel: '#0a0a0a', text: '#e0e0e0', border: '#303030',
+        glow: '#ffffff', alert: '#ff3344', accent: '#33cc88', gold: '#eebb00'
+    });
 
     function escapeHTML(value) {
         return String(value ?? '')
@@ -1481,7 +1498,8 @@
             const key = profileDataKey(profile.id);
             const raw = safeReadJson(key, null);
             if (!raw) return;
-            const clean = stripObsFromProfileData(raw);
+            const clean = normalizeProfileDataForId(raw, profile.id, false);
+            if (!clean) return;
             if (JSON.stringify(raw) !== JSON.stringify(clean)) safeWriteJson(key, clean);
         });
         const mirror = readStoredSave();
@@ -1514,14 +1532,23 @@
         }
     }
 
-    function writeStoredSave(data) {
+    function writeStoredSave(data, profileId = activeProfileId) {
+        if (!data || typeof data !== 'object' || !profileId) return false;
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(stripObsFromProfileData(data)));
+            const clean = stripObsFromProfileData(JSON.parse(JSON.stringify(data)));
+            clean.profileId = profileId;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
             return true;
         } catch (error) {
             console.error('Falha ao salvar os dados localmente.', error);
             return false;
         }
+    }
+
+    function readStoredSaveForProfile(profileId) {
+        const stored = readStoredSave();
+        if (!stored || stored.profileId !== profileId) return null;
+        return normalizeProfileDataForId(stored, profileId, false);
     }
 
     function removeStoredSave() {
@@ -2071,77 +2098,65 @@
         return trimmed;
     }
 
-    function getProfileLockKey(id = activeProfileId) { return `${PROFILE_LOCK_PREFIX}${id || 'unknown'}`; }
+    function getProfileLockKey(profileId) {
+        return `${PROFILE_LOCK_PREFIX}${profileId || 'unknown'}`;
+    }
 
-    function releaseProfileTabLock() {
+    function cancelPendingProfileEffects() {
+        clearTimeout(timeoutAutoSave); timeoutAutoSave = null;
+        clearTimeout(hudUpdateTimer); hudUpdateTimer = null;
+        clearTimeout(obsPortraitSendTimer); obsPortraitSendTimer = null;
+        obsHudQueued = false;
+    }
+
+    function releaseProfileTabLock(profileId) {
         clearInterval(profileLockTimer); profileLockTimer = null;
-        if (!activeProfileId) return;
-        const current = safeReadJson(getProfileLockKey(), null);
-        if (current?.tabId === TAB_INSTANCE_ID) safeRemoveKey(getProfileLockKey());
+        if (!profileId) return;
+        const key = getProfileLockKey(profileId);
+        const current = safeReadJson(key, null);
+        if (current?.tabId === TAB_INSTANCE_ID) safeRemoveKey(key);
     }
 
-    function writeProfileTabLease() {
-        if (!activeProfileId || isSecondaryTab) return;
-        safeWriteJson(getProfileLockKey(), { tabId: TAB_INSTANCE_ID, timestamp: Date.now(), profileId: activeProfileId });
+    function writeProfileTabLease(profileId = activeProfileId) {
+        if (!profileId || isSecondaryTab || profileId !== activeProfileId) return;
+        safeWriteJson(getProfileLockKey(profileId), { tabId: TAB_INSTANCE_ID, timestamp: Date.now(), profileId });
     }
 
-    function acquireProfileTabLock(force = false) {
-        if (!activeProfileId) return true;
-        const lock = safeReadJson(getProfileLockKey(), null);
+    function acquireProfileTabLock(profileId = activeProfileId, force = false) {
+        if (!profileId) return true;
+        const key = getProfileLockKey(profileId);
+        const lock = safeReadJson(key, null);
         const occupied = lock?.tabId && lock.tabId !== TAB_INSTANCE_ID && Date.now() - Number(lock.timestamp || 0) < PROFILE_LOCK_TTL;
         if (occupied && !force) {
             isSecondaryTab = true;
             setSaveStatus('error', 'OUTRA ABA ESTÁ CONTROLANDO ESTE PERFIL');
             setObsStatus('OBS PAUSADO NESTA ABA', 'error');
             window.setTimeout(() => abrirModalCustom('OUTRA ABA ESTÁ CONTROLANDO ESTE PERFIL.\n\nAssumir o controle nesta aba? A outra aba deixará de salvar e transmitir.', false, true, function(confirm) {
-                if (confirm) acquireProfileTabLock(true);
+                if (confirm) acquireProfileTabLock(profileId, true);
             }), 300);
             return false;
         }
         isSecondaryTab = false;
-        safeWriteJson(getProfileLockKey(), { tabId: TAB_INSTANCE_ID, timestamp: Date.now(), profileId: activeProfileId });
+        safeWriteJson(key, { tabId: TAB_INSTANCE_ID, timestamp: Date.now(), profileId });
         clearInterval(profileLockTimer);
-        profileLockTimer = window.setInterval(writeProfileTabLease, 5000);
+        profileLockTimer = window.setInterval(() => writeProfileTabLease(profileId), 5000);
         return true;
     }
 
-    function recoverInterruptedSave() {
-        const marker = safeReadJson(SAVE_COMMIT_KEY, null);
-        if (!marker?.profileId) return;
-        const profileData = safeReadJson(profileDataKey(marker.profileId), null);
-        if (profileData) {
-            writeStoredSave(profileData);
-            const index = normalizeProfileIndex(safeReadJson(PROFILE_INDEX_KEY, null));
-            if (index && index.profiles.some(profile => profile.id === marker.profileId)) {
-                index.activeId = marker.profileId;
-                safeWriteJson(PROFILE_INDEX_KEY, index);
-            }
-            if (marker.globalSettings) safeWriteJson(GLOBAL_SETTINGS_KEY, marker.globalSettings);
-        }
-        safeRemoveKey(SAVE_COMMIT_KEY);
-    }
-
-    function commitSaveBundle(data) {
-        if (!activeProfileId || !profilesIndex) return false;
-        const cleanData = stripObsFromProfileData(data);
-        const updatedIndex = JSON.parse(JSON.stringify(profilesIndex));
-        const profile = updatedIndex.profiles.find(item => item.id === activeProfileId);
-        if (profile) profile.updatedAt = Date.now();
-        const globalSettings = { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } };
-        const marker = { version: 1, profileId: activeProfileId, timestamp: Date.now(), globalSettings };
-        if (!safeWriteJson(SAVE_COMMIT_KEY, marker)) return false;
-        const profileOk = safeWriteJson(profileDataKey(activeProfileId), cleanData);
-        if (!profileOk) return false;
-        const mirrorOk = writeStoredSave(cleanData);
-        const indexOk = safeWriteJson(PROFILE_INDEX_KEY, updatedIndex);
-        const globalOk = safeWriteJson(GLOBAL_SETTINGS_KEY, globalSettings);
-        if (mirrorOk && indexOk && globalOk) {
-            profilesIndex = updatedIndex;
-            safeRemoveKey(SAVE_COMMIT_KEY);
-            checkStorageHealth();
-            return true;
-        }
-        return false;
+    function normalizeProfileIndex(index) {
+        if (!index || typeof index !== 'object' || !Array.isArray(index.profiles)) return null;
+        const seen = new Set();
+        const profiles = index.profiles
+            .filter(profile => profile && typeof profile.id === 'string' && profile.id && !seen.has(profile.id) && seen.add(profile.id))
+            .map(profile => ({
+                id: profile.id,
+                name: String(profile.name || 'PERSONAGEM').slice(0, 60),
+                createdAt: Number(profile.createdAt) || Date.now(),
+                updatedAt: Number(profile.updatedAt) || Date.now()
+            }));
+        if (!profiles.length) return null;
+        const activeId = profiles.some(profile => profile.id === index.activeId) ? index.activeId : profiles[0].id;
+        return { version: 2, activeId, profiles };
     }
 
     function setSaveStatus(state, message = '') {
@@ -2161,33 +2176,97 @@
 
     function generateProfileId() {
         if (window.crypto?.getRandomValues) {
-            const values = new Uint32Array(3); window.crypto.getRandomValues(values);
+            const values = new Uint32Array(3);
+            window.crypto.getRandomValues(values);
             return `profile_${Array.from(values, value => value.toString(36)).join('')}`;
         }
         return `profile_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
     }
 
-    function normalizeProfileIndex(index) {
-        if (!index || typeof index !== 'object' || !Array.isArray(index.profiles)) return null;
-        const profiles = index.profiles
-            .filter(profile => profile && typeof profile.id === 'string')
-            .map(profile => ({
-                id: profile.id,
-                name: String(profile.name || 'PERSONAGEM').slice(0, 60),
-                createdAt: Number(profile.createdAt) || Date.now(),
-                updatedAt: Number(profile.updatedAt) || Date.now()
-            }));
-        if (!profiles.length) return null;
-        const activeId = profiles.some(profile => profile.id === index.activeId) ? index.activeId : profiles[0].id;
-        return { version: 1, activeId, profiles };
-    }
-
     function profileDataKey(id) { return `${PROFILE_DATA_PREFIX}${id}`; }
     function profileHistoryKey(id = activeProfileId) { return `${PROFILE_HISTORY_PREFIX}${id}`; }
 
+    function cloneProfileData(data) {
+        return JSON.parse(JSON.stringify(data || {}));
+    }
+
+    function captureCurrentPanelState() {
+        const pag1 = document.getElementById('pag1');
+        const pag2 = document.getElementById('pag2');
+        return {
+            pag1: pag1 ? Array.from(pag1.children).filter(element => element.classList.contains('panel') || element.id === 'panel-attr-specials').map(element => element.id) : [],
+            pag2: pag2 ? Array.from(pag2.children).filter(element => element.classList.contains('panel')).map(element => element.id) : [],
+            collapsed: []
+        };
+    }
+
+    function buildBlankDataMap(name) {
+        const dataMap = {};
+        document.querySelectorAll('.container input[id], .container textarea[id], .container select[id]').forEach(element => {
+            if (NON_PROFILE_CONTROL_IDS.has(element.id) || element.type === 'file') return;
+            if (element.id.startsWith('macro') || element.id.startsWith('newItem') || element.id.startsWith('init') || element.id === 'diceSkillSelect') return;
+            dataMap[element.id] = element.type === 'checkbox' ? false : '';
+        });
+        document.querySelectorAll('.skill-val[id]').forEach(element => { dataMap[element.id] = '+0'; });
+        dataMap.charNameInput = String(name || 'NOVO PERSONAGEM').trim().slice(0, 60) || 'NOVO PERSONAGEM';
+        dataMap.afi_val = '1';
+        return dataMap;
+    }
+
+    function createBlankProfileData(name, profileId = '') {
+        return {
+            version: 7,
+            profileId,
+            dataMap: buildBlankDataMap(name),
+            safeBoxes: { FOR: 1, DES: 1, VIG: 1, INT: 1, SAB: 1, APA: 1, AFI: 0, INSP: 0 },
+            theme: 'theme-default', fontType: 'mono', shape: 'default',
+            customBg: '', layout: 'colunas', muted: false, vignette: true,
+            appearance: { customPaletteEnabled: false, customPalette: { ...DEFAULT_CUSTOM_PALETTE }, density: 'balanced', barStyle: 'linear', layoutPreset: 'custom' },
+            items: [], combatMode: false, combatTheme: 'carbon', portrait: '',
+            panelState: cloneProfileData(defaultPanelState || captureCurrentPanelState()),
+            board: { notes: [], links: [], logs: [] }, initiative: { list: [], turn: -1 }, macros: []
+        };
+    }
+
+    function normalizeProfileDataForId(data, profileId, allowRebind = false) {
+        if (!data || typeof data !== 'object' || Array.isArray(data) || !profileId) return null;
+        if (data.profileId && data.profileId !== profileId && !allowRebind) {
+            console.warn(`Save rejeitado: profileId ${data.profileId} não corresponde a ${profileId}.`);
+            return null;
+        }
+        const clean = stripObsFromProfileData(cloneProfileData(data));
+        clean.profileId = profileId;
+        if (clean.version >= 3 || clean.dataMap) {
+            const profileName = getProfileNameFromSave(clean, 'PERSONAGEM');
+            const defaults = createBlankProfileData(profileName, profileId);
+            clean.version = Math.max(7, Number(clean.version) || 0);
+            clean.dataMap = { ...defaults.dataMap, ...(clean.dataMap && typeof clean.dataMap === 'object' ? clean.dataMap : {}) };
+            clean.safeBoxes = { ...defaults.safeBoxes, ...(clean.safeBoxes && typeof clean.safeBoxes === 'object' ? clean.safeBoxes : {}) };
+            if (!clean.appearance || typeof clean.appearance !== 'object') clean.appearance = defaults.appearance;
+            if (!clean.panelState || typeof clean.panelState !== 'object') clean.panelState = defaults.panelState;
+            if (!Array.isArray(clean.items)) clean.items = [];
+            if (!Array.isArray(clean.macros)) clean.macros = [];
+            if (!clean.board || typeof clean.board !== 'object') clean.board = defaults.board;
+            if (!clean.initiative || typeof clean.initiative !== 'object') clean.initiative = defaults.initiative;
+            if (typeof clean.portrait !== 'string') clean.portrait = '';
+            if (typeof clean.customBg !== 'string') clean.customBg = '';
+        }
+        return clean;
+    }
+
+    function readProfileData(profileId) {
+        if (!profileId) return null;
+        const raw = safeReadJson(profileDataKey(profileId), null);
+        if (!raw) return null;
+        const normalized = normalizeProfileDataForId(raw, profileId, false);
+        if (normalized && JSON.stringify(normalized) !== JSON.stringify(raw)) safeWriteJson(profileDataKey(profileId), normalized);
+        return normalized;
+    }
+
     function getProfileNameFromSave(data, fallback = 'PERSONAGEM 1') {
-        const name = data?.dataMap?.charNameInput;
-        return String(name || fallback).trim().slice(0, 60) || fallback;
+        const modernName = data?.dataMap?.charNameInput;
+        const legacyName = Array.isArray(data?.inputs) ? data.inputs[12] : '';
+        return String(modernName || legacyName || fallback).trim().slice(0, 60) || fallback;
     }
 
     function loadGlobalObsSettings(fallback = null) {
@@ -2213,6 +2292,46 @@
         return safeWriteJson(GLOBAL_SETTINGS_KEY, { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } });
     }
 
+    function recoverInterruptedSave() {
+        const marker = safeReadJson(SAVE_COMMIT_KEY, null);
+        if (!marker?.profileId) return;
+        const profileData = readProfileData(marker.profileId);
+        if (profileData) {
+            writeStoredSave(profileData, marker.profileId);
+            const index = normalizeProfileIndex(safeReadJson(PROFILE_INDEX_KEY, null));
+            if (index && index.profiles.some(profile => profile.id === marker.profileId)) {
+                index.activeId = marker.profileId;
+                safeWriteJson(PROFILE_INDEX_KEY, index);
+            }
+            if (marker.globalSettings) safeWriteJson(GLOBAL_SETTINGS_KEY, marker.globalSettings);
+        }
+        safeRemoveKey(SAVE_COMMIT_KEY);
+    }
+
+    function commitSaveBundle(data, profileId = activeProfileId) {
+        if (!profileId || !profilesIndex || !profilesIndex.profiles.some(profile => profile.id === profileId)) return false;
+        const cleanData = normalizeProfileDataForId(data, profileId, true);
+        if (!cleanData) return false;
+        const updatedIndex = cloneProfileData(profilesIndex);
+        const profile = updatedIndex.profiles.find(item => item.id === profileId);
+        if (profile) profile.updatedAt = Date.now();
+        const globalSettings = { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } };
+        const marker = { version: 2, profileId, timestamp: Date.now(), globalSettings };
+        if (!safeWriteJson(SAVE_COMMIT_KEY, marker)) return false;
+        const profileOk = safeWriteJson(profileDataKey(profileId), cleanData);
+        if (!profileOk) return false;
+        const mirrorOk = profileId === activeProfileId ? writeStoredSave(cleanData, profileId) : true;
+        const indexOk = safeWriteJson(PROFILE_INDEX_KEY, updatedIndex);
+        const globalOk = safeWriteJson(GLOBAL_SETTINGS_KEY, globalSettings);
+        if (mirrorOk && indexOk && globalOk) {
+            profilesIndex = updatedIndex;
+            safeRemoveKey(SAVE_COMMIT_KEY);
+            checkStorageHealth();
+            return true;
+        }
+        return false;
+    }
+
     function initializeCharacterProfiles() {
         let index = normalizeProfileIndex(safeReadJson(PROFILE_INDEX_KEY, null));
         if (!index) {
@@ -2220,21 +2339,26 @@
             const legacyObs = legacy?.obs && typeof legacy.obs === 'object' ? legacy.obs : null;
             const id = generateProfileId();
             const now = Date.now();
+            const migrated = legacy
+                ? normalizeProfileDataForId(legacy, id, true)
+                : createBlankProfileData('PERSONAGEM 1', id);
             index = {
-                version: 1,
+                version: 2,
                 activeId: id,
-                profiles: [{ id, name: getProfileNameFromSave(legacy), createdAt: now, updatedAt: now }]
+                profiles: [{ id, name: getProfileNameFromSave(migrated), createdAt: now, updatedAt: now }]
             };
-            if (legacy) safeWriteJson(profileDataKey(id), stripObsFromProfileData(legacy));
+            safeWriteJson(profileDataKey(id), migrated);
             safeWriteJson(PROFILE_INDEX_KEY, index);
+            writeStoredSave(migrated, id);
             loadGlobalObsSettings(legacyObs);
         } else {
-            const currentData = safeReadJson(profileDataKey(index.activeId), null) || readStoredSave();
-            const legacyObs = currentData?.obs && typeof currentData.obs === 'object' ? currentData.obs : null;
-            if (currentData && !safeReadJson(profileDataKey(index.activeId), null)) {
-                safeWriteJson(profileDataKey(index.activeId), stripObsFromProfileData(currentData));
-            }
-            loadGlobalObsSettings(legacyObs);
+            const activeDirect = readProfileData(index.activeId);
+            const activeMirror = readStoredSaveForProfile(index.activeId);
+            const activeProfile = index.profiles.find(profile => profile.id === index.activeId);
+            const currentData = activeDirect || activeMirror || createBlankProfileData(activeProfile?.name, index.activeId);
+            safeWriteJson(profileDataKey(index.activeId), currentData);
+            const legacyObs = readStoredSave()?.obs;
+            loadGlobalObsSettings(legacyObs && typeof legacyObs === 'object' ? legacyObs : null);
         }
         profilesIndex = index;
         activeProfileId = index.activeId;
@@ -2245,17 +2369,26 @@
     }
 
     function readActiveProfileData() {
-        if (!activeProfileId) return null;
-        return stripObsFromProfileData(safeReadJson(profileDataKey(activeProfileId), null));
+        return readProfileData(activeProfileId);
     }
 
     function writeActiveProfileData(data) {
         if (!activeProfileId || !profilesIndex) return false;
-        const ok = safeWriteJson(profileDataKey(activeProfileId), stripObsFromProfileData(data));
+        const clean = normalizeProfileDataForId(data, activeProfileId, true);
+        if (!clean) return false;
+        const ok = safeWriteJson(profileDataKey(activeProfileId), clean);
         const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
         if (profile) profile.updatedAt = Date.now();
         safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        if (ok) writeStoredSave(clean, activeProfileId);
         return ok;
+    }
+
+    function formatProfileTimestamp(timestamp) {
+        if (!timestamp) return '--';
+        try {
+            return new Date(timestamp).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        } catch (error) { return '--'; }
     }
 
     function renderProfileControls() {
@@ -2271,89 +2404,264 @@
         });
         const active = profilesIndex.profiles.find(profile => profile.id === activeProfileId);
         const status = document.getElementById('profileStatusText');
-        if (status) status.textContent = `[ PERFIL ATIVO: ${active?.name || '--'} // ${profilesIndex.profiles.length} PERFIL(IS) ]`;
+        if (status) status.textContent = `[ ATIVO: ${active?.name || '--'} // ${profilesIndex.profiles.length} PERSONAGEM(NS) // ÚLTIMA EDIÇÃO: ${formatProfileTimestamp(active?.updatedAt)} ]`;
     }
 
-    function createBlankProfileData(name) {
-        const current = typeof collectCurrentData === 'function' ? collectCurrentData() : {};
-        return {
-            version: 5,
-            dataMap: { charNameInput: String(name || 'NOVO PERSONAGEM').slice(0, 60) },
-            safeBoxes: { FOR: 1, DES: 1, VIG: 1, INT: 1, SAB: 1, APA: 1, AFI: 0, INSP: 0 },
-            theme: current.theme || 'theme-default', fontType: current.fontType || 'mono', shape: current.shape || 'default',
-            customBg: '', layout: current.layout || 'colunas', muted: Boolean(current.muted), vignette: current.vignette !== false,
-            items: [], combatMode: false, portrait: '',
-            panelState: current.panelState || null,
-            board: { notes: [], links: [], logs: [] }, initiative: { list: [], turn: -1 }, macros: []
-        };
+    function syncActiveProfileNameFromInput() {
+        if (isSwitchingProfile || isLoadingProfileData || !profilesIndex || !activeProfileId) return;
+        const input = document.getElementById('charNameInput');
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        if (!input || !profile) return;
+        const name = String(input.value || '').trim().slice(0, 60) || 'DESCONHECIDO';
+        if (profile.name === name) return;
+        profile.name = name;
+        profile.updatedAt = Date.now();
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        renderProfileControls();
+        updateMenuHUD();
+        updatePortraitHUD();
+    }
+
+    function resetCharacterRuntimeState() {
+        document.querySelectorAll('.container input[id], .container textarea[id], .container select[id]').forEach(element => {
+            if (NON_PROFILE_CONTROL_IDS.has(element.id) || element.type === 'file') return;
+            if (element.id.startsWith('macro') || element.id.startsWith('newItem') || element.id.startsWith('init') || element.id === 'diceSkillSelect') return;
+            if (element.type === 'checkbox') element.checked = false;
+            else element.value = '';
+        });
+        document.querySelectorAll('.skill-val').forEach(element => { element.value = '+0'; element.style.color = 'var(--text-main)'; element.style.borderColor = 'var(--border-color)'; });
+        document.querySelectorAll('.boxes').forEach(container => {
+            Array.from(container.children).forEach((box, index) => box.classList.toggle('filled', container.id.startsWith('attr-') && index === 0));
+        });
+        const afi = document.getElementById('afi_val'); if (afi) afi.value = '1';
+        const classe = document.getElementById('classeSelect'); if (classe) { classe.disabled = false; classe.value = ''; }
+        const subclasse = document.getElementById('subclasseSelect'); if (subclasse) { subclasse.disabled = false; subclasse.innerHTML = '<option value="">Aguardando Classe...</option>'; }
+        const details = document.getElementById('classDetails'); if (details) details.style.display = 'none';
+        document.getElementById('inventoryList')?.replaceChildren();
+        initList = []; activeTurnIndex = -1; renderInitiative();
+        combatMacros = []; editingMacroId = null; limparFormularioMacro(); renderMacros();
+        boardNodes = []; boardLinks = []; boardLogs = [];
+        document.getElementById('boardNodes')?.replaceChildren();
+        document.getElementById('boardLines')?.replaceChildren();
+        document.getElementById('logList')?.replaceChildren();
+        const portraitImg = document.getElementById('portraitImg');
+        if (portraitImg) { portraitImg.removeAttribute('src'); portraitImg.style.display = 'none'; }
+        const portraitPlaceholder = document.getElementById('portraitPlaceholder');
+        if (portraitPlaceholder) portraitPlaceholder.style.display = 'block';
+        clearObsPortraitThumbnail();
+        document.querySelectorAll('.panel.collapsed').forEach(panel => {
+            panel.classList.remove('collapsed');
+            const content = panel.querySelector('.panel-content'); if (content) content.style.display = '';
+            const button = panel.querySelector('.minimize-btn'); if (button) button.innerText = '_';
+        });
+        isCombatMode = false;
+        document.body.classList.remove('theme-combat');
+        Array.from(document.body.classList).filter(className => className.startsWith('combat-')).forEach(className => document.body.classList.remove(className));
+        document.getElementById('btn-combat-mode')?.classList.remove('active');
+        mostrarTodasPericias();
+        applyCombatThemeClass();
+    }
+
+    function applyCombatModeState(enabled) {
+        const button = document.getElementById('btn-combat-mode');
+        isCombatMode = Boolean(enabled);
+        document.body.classList.remove('theme-combat');
+        Array.from(document.body.classList).filter(className => className.startsWith('combat-')).forEach(className => document.body.classList.remove(className));
+        if (isCombatMode) {
+            const normalTheme = Array.from(document.body.classList).find(className => className.startsWith('theme-') && className !== 'theme-combat') || 'theme-default';
+            document.body.setAttribute('data-prev-theme', normalTheme);
+            document.body.className = document.body.className.replace(/\btheme-\w+\b/g, '').replace(/\blayout-pages\b/g, '').replace(/\s+/g, ' ').trim();
+            document.body.classList.add('theme-combat');
+            button?.classList.add('active');
+            filtrarPericiasCombate();
+        } else {
+            button?.classList.remove('active');
+            mostrarTodasPericias();
+        }
+        applyCombatThemeClass();
+    }
+
+    function finalizeProfileActivation() {
+        renderProfileControls();
+        updateMenuHUD();
+        updatePortraitHUD();
+        atualizarCalculos();
+        atualizarCoresPericias();
+        lastHudSignature = '';
+        lastSentObsPortrait = null;
+        if (!isSecondaryTab) setSaveStatus('saved');
+        if (obsSettings.enabled && !isSecondaryTab) {
+            window.setTimeout(() => {
+                if (!isSwitchingProfile) {
+                    refreshObsPortraitThumbnail();
+                    sendObsHudUpdate(true);
+                }
+            }, 0);
+        }
+    }
+
+    function activateCharacterProfile(targetId, options = {}) {
+        if (isSwitchingProfile || !profilesIndex || !profilesIndex.profiles.some(profile => profile.id === targetId)) return false;
+        const previousId = options.previousId ?? activeProfileId;
+        isSwitchingProfile = true;
+        isLoadingProfileData = true;
+        cancelPendingProfileEffects();
+        try {
+            if (options.saveCurrent !== false && previousId && previousId === activeProfileId && profilesIndex.profiles.some(profile => profile.id === previousId)) {
+                salvarLocalData({ skipHistory: true, profileId: previousId, allowDuringSwitch: true });
+            }
+            releaseProfileTabLock(previousId);
+            activeProfileId = targetId;
+            profilesIndex.activeId = targetId;
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            const profile = profilesIndex.profiles.find(item => item.id === targetId);
+            let data = options.data
+                ? normalizeProfileDataForId(options.data, targetId, true)
+                : readProfileData(targetId);
+            if (!data) data = createBlankProfileData(profile?.name || 'PERSONAGEM', targetId);
+            safeWriteJson(profileDataKey(targetId), data);
+            writeStoredSave(data, targetId);
+            resetCharacterRuntimeState();
+            processAndLoadDataMap(data);
+            acquireProfileTabLock(targetId);
+            loadActionHistory();
+            return true;
+        } catch (error) {
+            console.error('Falha ao trocar o personagem ativo.', error);
+            setSaveStatus('error', 'ERRO AO TROCAR PERSONAGEM');
+            return false;
+        } finally {
+            isLoadingProfileData = false;
+            isSwitchingProfile = false;
+            finalizeProfileActivation();
+        }
     }
 
     function createCharacterProfile() {
-        abrirModalCustom('NOVO PERFIL // Digite o nome do personagem.', true, true, function(value) {
+        abrirModalCustom('NOVO PERSONAGEM // Digite o nome do personagem.', true, true, function(value) {
             if (value === false) return;
             const name = String(value || '').trim().slice(0, 60);
-            if (!name) { abrirModalCustom('ERRO // O perfil precisa de um nome.', false, false, function(){}); return; }
-            salvarLocalData({ skipHistory: true });
+            if (!name) { abrirModalCustom('ERRO // O personagem precisa de um nome.', false, false, function(){}); return; }
             const id = generateProfileId();
             const now = Date.now();
+            const data = createBlankProfileData(name, id);
             profilesIndex.profiles.push({ id, name, createdAt: now, updatedAt: now });
-            profilesIndex.activeId = id;
-            activeProfileId = id;
-            const data = createBlankProfileData(name);
             safeWriteJson(profileDataKey(id), data);
+            safeWriteJson(profileHistoryKey(id), []);
             safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
-            writeStoredSave(data);
-            releaseProfileTabLock();
-            location.reload();
+            activateCharacterProfile(id, { saveCurrent: true, data });
         });
     }
 
     function switchCharacterProfile(id) {
-        if (!profilesIndex || id === activeProfileId || !profilesIndex.profiles.some(profile => profile.id === id)) return;
-        salvarLocalData({ skipHistory: true });
-        profilesIndex.activeId = id;
-        activeProfileId = id;
-        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
-        const data = stripObsFromProfileData(readActiveProfileData() || createBlankProfileData(profilesIndex.profiles.find(profile => profile.id === id)?.name));
-        safeWriteJson(profileDataKey(id), data);
-        writeStoredSave(data);
-        releaseProfileTabLock();
-        location.reload();
+        if (!profilesIndex || id === activeProfileId) { renderProfileControls(); return; }
+        activateCharacterProfile(id, { saveCurrent: true });
     }
 
     function renameCharacterProfile() {
         const profile = profilesIndex?.profiles.find(item => item.id === activeProfileId);
         if (!profile) return;
-        abrirModalCustom(`RENOMEAR PERFIL // Nome atual: ${profile.name}`, true, true, function(value) {
+        abrirModalCustom(`RENOMEAR PERSONAGEM // Nome atual: ${profile.name}`, true, true, function(value) {
             if (value === false) return;
             const name = String(value || '').trim().slice(0, 60);
             if (!name) return;
             profile.name = name;
             profile.updatedAt = Date.now();
+            const input = document.getElementById('charNameInput');
+            if (input) input.value = name;
             safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
             renderProfileControls();
-            setSaveStatus('saved', 'PERFIL RENOMEADO');
+            updateMenuHUD();
+            updatePortraitHUD();
+            salvarLocalData({ skipHistory: true, label: 'PERSONAGEM RENOMEADO' });
+            scheduleObsHudUpdate(true);
+            setSaveStatus('saved', 'PERSONAGEM RENOMEADO');
         });
+    }
+
+    function duplicateCharacterProfile() {
+        if (!profilesIndex || !activeProfileId || isSwitchingProfile) return;
+        const sourceProfile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        salvarLocalData({ skipHistory: true, profileId: activeProfileId });
+        const sourceData = readProfileData(activeProfileId) || collectCurrentData();
+        const id = generateProfileId();
+        const now = Date.now();
+        const name = `${sourceProfile?.name || getProfileNameFromSave(sourceData, 'PERSONAGEM')} — CÓPIA`.slice(0, 60);
+        const copy = normalizeProfileDataForId(sourceData, id, true) || createBlankProfileData(name, id);
+        copy.profileId = id;
+        copy.dataMap = { ...(copy.dataMap || {}), charNameInput: name };
+        copy.combatMode = false;
+        copy.initiative = { ...(copy.initiative || { list: [] }), turn: -1 };
+        delete copy.obs;
+        profilesIndex.profiles.push({ id, name, createdAt: now, updatedAt: now });
+        safeWriteJson(profileDataKey(id), copy);
+        safeWriteJson(profileHistoryKey(id), []);
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        activateCharacterProfile(id, { saveCurrent: false, data: copy });
+        setSaveStatus('saved', 'PERSONAGEM DUPLICADO');
+    }
+
+    function replaceActiveProfileData(imported) {
+        if (!activeProfileId || !profilesIndex) return false;
+        const previous = collectCurrentData();
+        const clean = normalizeProfileDataForId(imported, activeProfileId, true);
+        if (!clean) return false;
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        const importedName = getProfileNameFromSave(clean, profile?.name || 'PERSONAGEM');
+        if (profile) { profile.name = importedName; profile.updatedAt = Date.now(); }
+        recordActionHistory(previous, clean, 'IMPORTAÇÃO SUBSTITUIU A FICHA');
+        isSwitchingProfile = true;
+        isLoadingProfileData = true;
+        cancelPendingProfileEffects();
+        try {
+            safeWriteJson(profileDataKey(activeProfileId), clean);
+            safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+            writeStoredSave(clean, activeProfileId);
+            resetCharacterRuntimeState();
+            processAndLoadDataMap(clean);
+            return true;
+        } finally {
+            isLoadingProfileData = false;
+            isSwitchingProfile = false;
+            finalizeProfileActivation();
+        }
+    }
+
+    function importAsNewCharacter(imported) {
+        const id = generateProfileId();
+        const now = Date.now();
+        const name = getProfileNameFromSave(imported, 'PERSONAGEM IMPORTADO');
+        const clean = normalizeProfileDataForId(imported, id, true) || createBlankProfileData(name, id);
+        clean.profileId = id;
+        if (clean.dataMap) clean.dataMap.charNameInput = name;
+        delete clean.obs;
+        profilesIndex.profiles.push({ id, name, createdAt: now, updatedAt: now });
+        safeWriteJson(profileDataKey(id), clean);
+        safeWriteJson(profileHistoryKey(id), []);
+        safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
+        activateCharacterProfile(id, { saveCurrent: true, data: clean });
+        setSaveStatus('saved', 'PERSONAGEM IMPORTADO');
     }
 
     function deleteCharacterProfile() {
         if (!profilesIndex || profilesIndex.profiles.length <= 1) {
-            abrirModalCustom('SISTEMA // É necessário manter pelo menos um perfil.', false, false, function(){}); return;
+            abrirModalCustom('SISTEMA // É necessário manter pelo menos um personagem.', false, false, function(){}); return;
         }
         const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
-        abrirModalCustom(`EXCLUIR PERFIL // ${profile?.name || 'PERSONAGEM'}?\nEsta ação remove somente este perfil.`, false, true, function(confirm) {
-            if (!confirm) return;
+        abrirModalCustom(`EXCLUIR PERSONAGEM // ${profile?.name || 'PERSONAGEM'}?\nEsta ação remove somente este personagem e seu histórico.`, false, true, function(confirm) {
+            if (!confirm || isSwitchingProfile) return;
             const removedId = activeProfileId;
-            profilesIndex.profiles = profilesIndex.profiles.filter(item => item.id !== removedId);
-            activeProfileId = profilesIndex.profiles[0].id;
-            profilesIndex.activeId = activeProfileId;
+            cancelPendingProfileEffects();
+            releaseProfileTabLock(removedId);
+            const remaining = profilesIndex.profiles.filter(item => item.id !== removedId);
+            const nextProfile = remaining[0];
+            profilesIndex.profiles = remaining;
+            profilesIndex.activeId = nextProfile.id;
             safeRemoveKey(profileDataKey(removedId));
             safeRemoveKey(profileHistoryKey(removedId));
             safeWriteJson(PROFILE_INDEX_KEY, profilesIndex);
-            const data = stripObsFromProfileData(readActiveProfileData() || createBlankProfileData(profilesIndex.profiles[0].name));
-            writeStoredSave(data);
-            releaseProfileTabLock();
-            location.reload();
+            activateCharacterProfile(nextProfile.id, { saveCurrent: false, previousId: removedId });
+            setSaveStatus('saved', 'PERSONAGEM EXCLUÍDO');
         });
     }
 
@@ -2398,7 +2706,7 @@
     }
 
     function recordActionHistory(previous, next, explicitLabel = '') {
-        if (isApplyingHistory || !previous || comparableSave(previous) === comparableSave(next)) return;
+        if (isApplyingHistory || isSwitchingProfile || isLoadingProfileData || !previous || comparableSave(previous) === comparableSave(next)) return;
         const history = loadActionHistory();
         history.unshift({
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -2554,7 +2862,7 @@
     }
 
     function scheduleObsHudUpdate(immediate = false) {
-        if (!obsSettings.enabled || isSecondaryTab) return;
+        if (isSwitchingProfile || isLoadingProfileData || !obsSettings.enabled || isSecondaryTab) return;
         clearTimeout(hudUpdateTimer);
         const cooldownDelay = getObsRelayCooldownRemaining();
         const minIntervalDelay = Math.max(0, OBS_HUD_MIN_INTERVAL_MS - (Date.now() - obsLastHudRemoteAt));
@@ -2566,7 +2874,7 @@
     }
 
     function scheduleObsPortraitUpdate(immediate = false) {
-        if (!obsSettings.enabled || isSecondaryTab) return;
+        if (isSwitchingProfile || isLoadingProfileData || !obsSettings.enabled || isSecondaryTab) return;
         clearTimeout(obsPortraitSendTimer);
         const delay = Math.max(immediate ? 0 : OBS_HUD_DEBOUNCE_MS, getObsRelayCooldownRemaining());
         obsPortraitSendTimer = window.setTimeout(() => {
@@ -2576,7 +2884,7 @@
     }
 
     async function sendObsPortraitUpdate(force = false) {
-        if ((!obsSettings.enabled && !force) || isSecondaryTab) return false;
+        if (isSwitchingProfile || isLoadingProfileData || ((!obsSettings.enabled && !force) || isSecondaryTab)) return false;
         refreshObsPortraitThumbnail();
         const portrait = obsSettings.hudPortrait ? obsPortraitThumbnail : '';
         if (!force && portrait === lastSentObsPortrait) return false;
@@ -2591,7 +2899,7 @@
     }
 
     async function sendObsHudUpdate(force = false) {
-        if ((!obsSettings.enabled && !force) || isSecondaryTab) return false;
+        if (isSwitchingProfile || isLoadingProfileData || ((!obsSettings.enabled && !force) || isSecondaryTab)) return false;
         if (obsHudSendInFlight) {
             obsHudQueued = true;
             return false;
@@ -2641,9 +2949,15 @@
 
     // 2. FUNÇÕES DE INICIALIZAÇÃO E HOTBAR DE COMBATE
     function autoSalvarOtimizado() {
+        if (isSwitchingProfile || isLoadingProfileData || isSecondaryTab || !activeProfileId) return;
+        const scheduledProfileId = activeProfileId;
         setSaveStatus('dirty');
         clearTimeout(timeoutAutoSave);
-        timeoutAutoSave = setTimeout(() => { salvarLocalData(); }, 800);
+        timeoutAutoSave = setTimeout(() => {
+            timeoutAutoSave = null;
+            if (isSwitchingProfile || isLoadingProfileData || activeProfileId !== scheduledProfileId) return;
+            salvarLocalData({ profileId: scheduledProfileId });
+        }, 800);
     }
 
     function fillBoxesSafe(container, count, forceFirst=false) {
@@ -2790,9 +3104,10 @@
             });
         }
 
+        defaultPanelState = captureCurrentPanelState();
         recoverInterruptedSave();
         initializeCharacterProfiles();
-        acquireProfileTabLock();
+        acquireProfileTabLock(activeProfileId);
         carregarLocalData();
         initObsIntegration();
         initParticles();
@@ -2813,10 +3128,18 @@
         scheduleObsHudUpdate(true);
     }
     window.addEventListener('load', windowInitSetup, { once: true });
-    window.addEventListener('beforeunload', releaseProfileTabLock);
+    function handleBeforeUnload() {
+        const profileId = activeProfileId;
+        cancelPendingProfileEffects();
+        if (!isSwitchingProfile && !isLoadingProfileData && !isSecondaryTab && profileId && profilesIndex?.profiles.some(profile => profile.id === profileId)) {
+            salvarLocalData({ skipHistory: true, profileId });
+        }
+        releaseProfileTabLock(profileId);
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('storage', event => {
-        if (!activeProfileId || event.key !== getProfileLockKey()) return;
-        const lock = safeReadJson(getProfileLockKey(), null);
+        if (!activeProfileId || event.key !== getProfileLockKey(activeProfileId)) return;
+        const lock = safeReadJson(getProfileLockKey(activeProfileId), null);
         if (lock?.tabId && lock.tabId !== TAB_INSTANCE_ID && Date.now() - Number(lock.timestamp || 0) < PROFILE_LOCK_TTL) {
             isSecondaryTab = true; clearInterval(profileLockTimer); profileLockTimer = null;
             setSaveStatus('error', 'CONTROLE TRANSFERIDO PARA OUTRA ABA');
@@ -3276,16 +3599,17 @@
     });
 
     document.addEventListener('input', function(e) {
-        if (!e.target.matches('input, textarea, select')) return;
+        if (!e.target.matches('input, textarea, select') || isSwitchingProfile || isLoadingProfileData) return;
+        if (e.target.id === 'charNameInput') syncActiveProfileNameFromInput();
         autoSalvarOtimizado();
         if (isObsHudRelevantElement(e.target)) scheduleObsHudUpdate();
     });
     document.addEventListener('change', function(e) {
-        if (!e.target.matches('input, textarea, select')) return;
+        if (!e.target.matches('input, textarea, select') || isSwitchingProfile || isLoadingProfileData) return;
+        if (e.target.id === 'charNameInput') syncActiveProfileNameFromInput();
         autoSalvarOtimizado();
         if (isObsHudRelevantElement(e.target)) scheduleObsHudUpdate();
     });
-    window.addEventListener('beforeunload', function() { salvarLocalData({ skipHistory: true }); });
 
     // DRAG AND DROP PANELS
     let draggedPanel = null;
@@ -4604,7 +4928,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         };
 
         return {
-            version: 6, dataMap, safeBoxes,
+            version: 7, profileId: activeProfileId, dataMap, safeBoxes,
             theme: savedTheme, fontType: savedFont, shape: savedShape, customBg: customBackground,
             layout: document.body.classList.contains('layout-pages') ? 'paginas' : 'colunas', muted: isMuted,
             vignette: isVignetteEnabled,
@@ -4618,15 +4942,22 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 
     function salvarLocalData(options = {}) {
         const config = options && typeof options === 'object' ? options : {};
-        const data = stripObsFromProfileData(collectCurrentData());
+        const targetProfileId = config.profileId || activeProfileId;
+        if (!targetProfileId || !profilesIndex?.profiles.some(profile => profile.id === targetProfileId)) return null;
+        if ((isSwitchingProfile || isLoadingProfileData) && !config.allowDuringSwitch) return null;
+        if (targetProfileId !== activeProfileId) {
+            console.warn('Save bloqueado: o estado visual não pertence ao profileId solicitado.', { targetProfileId, activeProfileId });
+            return null;
+        }
+        const data = normalizeProfileDataForId(collectCurrentData(), targetProfileId, true);
         if (isSecondaryTab) {
             setSaveStatus('error', 'NÃO SALVO — OUTRA ABA CONTROLA O PERFIL');
             return data;
         }
         setSaveStatus('saving');
-        const previous = readActiveProfileData() || readStoredSave();
+        const previous = readProfileData(targetProfileId) || readStoredSaveForProfile(targetProfileId);
         if (!config.skipHistory && previous) recordActionHistory(previous, data, config.label || '');
-        const ok = commitSaveBundle(data);
+        const ok = commitSaveBundle(data, targetProfileId);
         if (ok) setSaveStatus('saved'); else setSaveStatus('error', 'ERRO AO SALVAR — EXPORTE UM BACKUP');
         return data;
     }
@@ -4677,22 +5008,34 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         return clean;
     }
 
-    function importarFicha(event) {
+    function importarFicha(event, mode = 'replace') {
         playSfx('click');
-        const file = event.target.files[0];
+        const input = event?.target;
+        const file = input?.files?.[0];
         if (!file) return;
         if (file.size > MAX_IMPORT_FILE_BYTES) {
             abrirModalCustom('ERRO // O arquivo excede o limite seguro de 4 MB.', false, false, function(){});
-            event.target.value = '';
+            input.value = '';
             return;
         }
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const imported = sanitizeImportedSave(JSON.parse(String(e.target?.result || '')));
-                processAndLoadDataMap(imported);
-                salvarLocalData({ label: 'FICHA IMPORTADA' });
-                abrirModalCustom('SISTEMA // Sincronização concluída. Dados validados e carregados com sucesso.', false, false, function(){});
+                delete imported.profileId;
+                if (mode === 'new') {
+                    importAsNewCharacter(imported);
+                    abrirModalCustom('SISTEMA // Novo personagem importado sem substituir nenhuma ficha existente.', false, false, function(){});
+                    return;
+                }
+                const currentName = profilesIndex?.profiles.find(profile => profile.id === activeProfileId)?.name || 'PERSONAGEM ATUAL';
+                abrirModalCustom(`IMPORTAR E SUBSTITUIR ATUAL // ${currentName}?\n\nEsta ação substituirá os dados visíveis deste personagem. Os outros personagens não serão alterados.`, false, true, function(confirm) {
+                    if (!confirm) return;
+                    if (replaceActiveProfileData(imported)) {
+                        setSaveStatus('saved', 'IMPORTAÇÃO CONCLUÍDA');
+                        abrirModalCustom('SISTEMA // Personagem atual substituído. Dados validados e carregados com sucesso.', false, false, function(){});
+                    }
+                });
             } catch (error) {
                 abrirModalCustom('ERRO CRÍTICO // Estrutura de arquivo corrompida, inválida ou acima dos limites seguros.', false, false, function(){});
                 console.error(error);
@@ -4700,7 +5043,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         };
         reader.onerror = () => abrirModalCustom('ERRO // Não foi possível ler o arquivo.', false, false, function(){});
         reader.readAsText(file);
-        event.target.value = '';
+        input.value = '';
     }
 
     function processarLoadLegado(data) {
@@ -5004,14 +5347,10 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
             }
         }
         updateCombatThemeButtons();
-        applyCombatThemeClass();
-        if(data.combatMode) { 
-            let btnCombat = document.getElementById('btn-combat-mode'); 
-            if(btnCombat && !isCombatMode) toggleCombatMode(btnCombat); 
-        }
+        applyCombatModeState(Boolean(data.combatMode));
         renderProfileControls();
         loadActionHistory();
-        if (!isSecondaryTab) setSaveStatus('saved');
+        if (!isSecondaryTab && !isSwitchingProfile) setSaveStatus('saved');
         scheduleObsHudUpdate(true);
     }
 
@@ -5055,14 +5394,20 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 
     function carregarLocalData() {
         if (!profilesIndex || !activeProfileId) initializeCharacterProfiles();
-        const saved = readActiveProfileData() || readStoredSave();
-        if (!saved) { renderProfileControls(); loadActionHistory(); return; }
+        const profile = profilesIndex.profiles.find(item => item.id === activeProfileId);
+        const saved = readActiveProfileData() || readStoredSaveForProfile(activeProfileId) || createBlankProfileData(profile?.name, activeProfileId);
         try {
-            writeStoredSave(saved);
-            processAndLoadDataMap(saved);
+            const clean = normalizeProfileDataForId(saved, activeProfileId, false) || createBlankProfileData(profile?.name, activeProfileId);
+            safeWriteJson(profileDataKey(activeProfileId), clean);
+            writeStoredSave(clean, activeProfileId);
+            isLoadingProfileData = true;
+            resetCharacterRuntimeState();
+            processAndLoadDataMap(clean);
         } catch (error) {
             console.error('Falha ao carregar save local.', error);
             setSaveStatus('error', 'ERRO AO CARREGAR');
+        } finally {
+            isLoadingProfileData = false;
         }
     }
 </script>
