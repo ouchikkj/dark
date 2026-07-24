@@ -675,7 +675,8 @@
             body:not(.layout-pages):not(.theme-combat) .page-header { display: block; color: var(--glow); font-size: 1.5rem; margin-bottom: 25px; text-align: left; letter-spacing: 5px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; opacity: 0.7; }
         }
 
-        .info-grid { display: grid; grid-template-columns: 180px 1fr; gap: 30px; align-items: start; }
+        .info-grid { display: grid; grid-template-columns: minmax(380px, 420px) 1fr; gap: 30px; align-items: start; }
+        .character-visuals { display: grid; grid-template-columns: minmax(150px, 180px) minmax(185px, 1fr); gap: 18px; align-items: start; min-width: 0; }
         .char-portrait-container { display: flex; flex-direction: column; gap: 10px; align-items: center; width: 100%; }
         .portrait-box { width: 100%; aspect-ratio: 1/1; border: 1px dashed var(--dim-text); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; background: rgba(255,255,255,0.02); position: relative; overflow: hidden; border-radius: 2px; }
         body.theme-light .portrait-box { background: transparent; }
@@ -685,7 +686,33 @@
         .hud-bar-mini { width: 100%; }
         .bar-bg-mini { width: 100%; height: 4px; background: #000; border: 1px solid var(--border-color); }
         .bar-fill-mini { height: 100%; transition: width 0.5s ease; background: var(--menu-accent); }
-        @media (max-width: 800px) { .info-grid { grid-template-columns: 1fr; } .char-portrait-container { max-width: 250px; margin: 0 auto; } }
+        .attribute-radar-card { min-width: 0; border: 1px solid var(--border-color); background: rgba(255,255,255,0.018); padding: 10px 10px 8px; position: relative; overflow: hidden; }
+        body.theme-light .attribute-radar-card { background: transparent; }
+        .attribute-radar-card::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 42%; height: 1px; background: var(--menu-accent); box-shadow: 0 0 10px var(--menu-accent); opacity: .8; }
+        .attribute-radar-header { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 2px; }
+        .attribute-radar-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .attribute-radar-title span { color: var(--dim-text); font-size: .55rem; letter-spacing: 2px; }
+        .attribute-radar-title strong { color: var(--text-main); font-size: .72rem; letter-spacing: 2px; }
+        .attribute-overall { display: grid; grid-template-columns: auto auto; gap: 4px 7px; align-items: baseline; text-align: right; }
+        .attribute-overall span { color: var(--dim-text); font-size: .5rem; letter-spacing: 1px; grid-column: 1; }
+        .attribute-overall strong { color: var(--menu-accent); font-size: 1.35rem; line-height: 1; grid-column: 2; grid-row: 1 / span 2; text-shadow: 0 0 9px color-mix(in srgb, var(--menu-accent) 45%, transparent); }
+        .attribute-overall small { color: var(--dim-text); font-size: .48rem; grid-column: 1; }
+        .attribute-radar-stage { width: 100%; max-width: 230px; aspect-ratio: 1; margin: 0 auto; }
+        #attributeRadarCanvas { display: block; width: 100%; height: 100%; }
+        .attribute-radar-footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; padding-top: 3px; border-top: 1px solid var(--border-color); font-size: .52rem; letter-spacing: 1px; }
+        .attribute-radar-key { display: inline-flex; align-items: center; gap: 5px; color: var(--dim-text); }
+        .attribute-radar-key::before { content: ""; width: 12px; height: 2px; display: inline-block; background: var(--gold-color); }
+        .attribute-radar-key.current::before { background: var(--menu-accent); box-shadow: 0 0 5px var(--menu-accent); }
+        #attributeEvolution { color: var(--accent-green); margin-left: auto; white-space: nowrap; }
+        @media (max-width: 800px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .character-visuals { width: min(100%, 460px); margin: 0 auto; }
+        }
+        @media (max-width: 520px) {
+            .character-visuals { grid-template-columns: 1fr; max-width: 270px; }
+            .char-portrait-container { max-width: 250px; margin: 0 auto; }
+            .attribute-radar-card { width: 100%; }
+        }
 
         .panel { background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); border: 1px solid var(--border-color); border-radius: 2px; padding: 35px 30px 30px 30px; margin-bottom: 25px; position: relative; transition: 0.2s ease-in-out; }
         body.theme-light .panel { background: var(--panel-bg); }
@@ -1113,10 +1140,22 @@
                 <span class="panel-title">INFORMAÇÕES</span>
                 <div class="panel-controls hide-in-combat"><button class="minimize-btn" onclick="toggleMinimize(this)">_</button><button class="drag-handle">⠿</button></div>
                 <div class="panel-content info-grid">
-                    <div class="char-portrait-container hide-in-combat">
+                    <div class="character-visuals hide-in-combat">
+                    <div class="char-portrait-container">
                         <div class="portrait-box" onclick="document.getElementById('portraitUpload').click()"><span id="portraitPlaceholder" style="color: var(--dim-text); letter-spacing: 2px;">+ FOTO</span><img id="portraitImg" style="display:none; width:100%; height:100%; object-fit:cover;"></div>
                         <input type="file" id="portraitUpload" accept="image/*" style="display:none;" onchange="loadPortrait(event)">
                         <div class="portrait-hud"><div class="portrait-name" id="portraitNameDisplay">DESCONHECIDO</div><div class="hud-bar-mini" title="Vida"><div class="bar-bg-mini"><div class="bar-fill-mini" id="portVdBar"></div></div></div><div class="hud-bar-mini" title="Sanidade"><div class="bar-bg-mini"><div class="bar-fill-mini" id="portSanBar"></div></div></div><div class="hud-bar-mini" title="Energia"><div class="bar-bg-mini"><div class="bar-fill-mini" id="portPeBar"></div></div></div></div>
+                    </div>
+                    <section class="attribute-radar-card" aria-labelledby="attributeRadarTitle">
+                        <div class="attribute-radar-header">
+                            <div class="attribute-radar-title"><span>EVOLUÇÃO</span><strong id="attributeRadarTitle">PERFIL DE ATRIBUTOS</strong></div>
+                            <div class="attribute-overall"><span>OVERALL</span><small>DE 100</small><strong id="attributeOverallScore">14</strong></div>
+                        </div>
+                        <div class="attribute-radar-stage" id="attributeRadarStage" role="img" aria-label="Gráfico dos seis atributos do personagem">
+                            <canvas id="attributeRadarCanvas" width="230" height="230"></canvas>
+                        </div>
+                        <div class="attribute-radar-footer"><span class="attribute-radar-key">BASE</span><span class="attribute-radar-key current">ATUAL</span><strong id="attributeEvolution">BASE LIVRE</strong></div>
+                    </section>
                     </div>
                     <div class="grid-2" style="align-items: start;">
                         <div style="grid-column: span 2;" class="grid-2"><div><label>NOME:</label> <input type="text" id="charNameInput" placeholder="Nome do Personagem" oninput="atualizarCalculos()"></div><div class="hide-in-combat"><label>JOGADOR:</label> <input type="text" id="charPlayer" placeholder="Seu Nome"></div></div>
@@ -1430,7 +1469,7 @@
     let profilesIndex = null;
     let defaultPanelState = null;
 
-    const APP_VERSION = '2026.07.21.1-profiles';
+    const APP_VERSION = '2026.07.24.1-overall';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -3103,6 +3142,12 @@
                 row.appendChild(label); row.appendChild(boxesDiv); attrContainer.appendChild(row);
             });
         }
+        window.addEventListener('resize', () => requestAnimationFrame(updateAttributeRadar), { passive: true });
+        if (!attributeRadarResizeObserver && typeof ResizeObserver !== 'undefined') {
+            const radarStage = document.getElementById('attributeRadarStage');
+            attributeRadarResizeObserver = new ResizeObserver(() => requestAnimationFrame(updateAttributeRadar));
+            if (radarStage) attributeRadarResizeObserver.observe(radarStage);
+        }
 
         defaultPanelState = captureCurrentPanelState();
         recoverInterruptedSave();
@@ -4568,6 +4613,7 @@
         }
 
         atualizarCoresPericias();
+        requestAnimationFrame(updateAttributeRadar);
         scheduleObsHudUpdate(true);
         if (shouldSave) salvarLocalData();
     }
@@ -4722,6 +4768,138 @@
         }, 1200);
     }
     
+    const ATTRIBUTE_RADAR_KEYS = Object.freeze(['FOR', 'DES', 'VIG', 'INT', 'SAB', 'APA']);
+    let attributeRadarResizeObserver = null;
+
+    function readAttributeRadarValues(useLockedBase = false) {
+        return ATTRIBUTE_RADAR_KEYS.map(attribute => {
+            const current = document.querySelectorAll(`#attr-${attribute} .box.filled`).length || 1;
+            if (!useLockedBase) return current;
+            const baseInput = document.getElementById(`base_${attribute.toLowerCase()}`);
+            const savedBase = Number.parseInt(baseInput?.value, 10);
+            return Number.isFinite(savedBase) ? Math.max(1, Math.min(7, savedBase)) : current;
+        });
+    }
+
+    function drawAttributeRadarShape(context, values, center, radius, color, fillOpacity, dashed = false) {
+        context.save();
+        context.beginPath();
+        values.forEach((value, index) => {
+            const angle = (-Math.PI / 2) + (index * Math.PI * 2 / ATTRIBUTE_RADAR_KEYS.length);
+            const distance = radius * (Math.max(0, Math.min(7, value)) / 7);
+            const x = center + Math.cos(angle) * distance;
+            const y = center + Math.sin(angle) * distance;
+            if (index === 0) context.moveTo(x, y);
+            else context.lineTo(x, y);
+        });
+        context.closePath();
+        context.fillStyle = color;
+        context.globalAlpha = fillOpacity;
+        context.fill();
+        context.globalAlpha = 1;
+        context.strokeStyle = color;
+        context.lineWidth = dashed ? 1.25 : 2;
+        context.setLineDash(dashed ? [4, 4] : []);
+        context.stroke();
+        context.restore();
+    }
+
+    function updateAttributeRadar() {
+        const canvas = document.getElementById('attributeRadarCanvas');
+        const stage = document.getElementById('attributeRadarStage');
+        const score = document.getElementById('attributeOverallScore');
+        const evolution = document.getElementById('attributeEvolution');
+        if (!canvas || !stage || !score || !evolution) return;
+
+        const logicalSize = Math.max(180, Math.min(250, Math.round(stage.clientWidth || 230)));
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(logicalSize * pixelRatio);
+        canvas.height = Math.round(logicalSize * pixelRatio);
+        canvas.style.height = `${logicalSize}px`;
+
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        context.clearRect(0, 0, logicalSize, logicalSize);
+
+        const styles = getComputedStyle(document.body);
+        const textColor = styles.getPropertyValue('--text-main').trim() || '#e0e0e0';
+        const borderColor = styles.getPropertyValue('--border-color').trim() || '#303030';
+        const currentColor = styles.getPropertyValue('--menu-accent').trim() || '#ffffff';
+        const baseColor = styles.getPropertyValue('--gold-color').trim() || '#eebb00';
+        const currentValues = readAttributeRadarValues(false);
+        const baseValues = readAttributeRadarValues(true);
+        const center = logicalSize / 2;
+        const radius = logicalSize * .31;
+        const levels = [1, 3, 5, 7];
+
+        levels.forEach(level => {
+            context.beginPath();
+            ATTRIBUTE_RADAR_KEYS.forEach((_, index) => {
+                const angle = (-Math.PI / 2) + (index * Math.PI * 2 / ATTRIBUTE_RADAR_KEYS.length);
+                const distance = radius * (level / 7);
+                const x = center + Math.cos(angle) * distance;
+                const y = center + Math.sin(angle) * distance;
+                if (index === 0) context.moveTo(x, y);
+                else context.lineTo(x, y);
+            });
+            context.closePath();
+            context.strokeStyle = borderColor;
+            context.globalAlpha = level === 7 ? .9 : .48;
+            context.lineWidth = 1;
+            context.stroke();
+        });
+        context.globalAlpha = 1;
+
+        ATTRIBUTE_RADAR_KEYS.forEach((_, index) => {
+            const angle = (-Math.PI / 2) + (index * Math.PI * 2 / ATTRIBUTE_RADAR_KEYS.length);
+            context.beginPath();
+            context.moveTo(center, center);
+            context.lineTo(center + Math.cos(angle) * radius, center + Math.sin(angle) * radius);
+            context.strokeStyle = borderColor;
+            context.globalAlpha = .55;
+            context.stroke();
+        });
+        context.globalAlpha = 1;
+
+        drawAttributeRadarShape(context, baseValues, center, radius, baseColor, .06, true);
+        drawAttributeRadarShape(context, currentValues, center, radius, currentColor, .18, false);
+
+        currentValues.forEach((value, index) => {
+            const angle = (-Math.PI / 2) + (index * Math.PI * 2 / ATTRIBUTE_RADAR_KEYS.length);
+            const distance = radius * (value / 7);
+            context.beginPath();
+            context.arc(center + Math.cos(angle) * distance, center + Math.sin(angle) * distance, 2.5, 0, Math.PI * 2);
+            context.fillStyle = currentColor;
+            context.shadowColor = currentColor;
+            context.shadowBlur = 6;
+            context.fill();
+            context.shadowBlur = 0;
+        });
+
+        context.fillStyle = textColor;
+        context.font = `700 ${Math.max(10, logicalSize * .045)}px ${styles.fontFamily || 'monospace'}`;
+        currentValues.forEach((value, index) => {
+            const angle = (-Math.PI / 2) + (index * Math.PI * 2 / ATTRIBUTE_RADAR_KEYS.length);
+            const cosine = Math.cos(angle);
+            const sine = Math.sin(angle);
+            const labelRadius = radius + logicalSize * .075;
+            context.textAlign = Math.abs(cosine) < .2 ? 'center' : (cosine > 0 ? 'left' : 'right');
+            context.textBaseline = Math.abs(sine) < .2 ? 'middle' : (sine > 0 ? 'top' : 'bottom');
+            context.fillText(`${ATTRIBUTE_RADAR_KEYS[index]} ${value}`, center + cosine * labelRadius, center + sine * labelRadius);
+        });
+
+        const currentTotal = currentValues.reduce((sum, value) => sum + value, 0);
+        const baseTotal = baseValues.reduce((sum, value) => sum + value, 0);
+        const overall = Math.round((currentTotal / (ATTRIBUTE_RADAR_KEYS.length * 7)) * 100);
+        const hasLockedBase = ATTRIBUTE_RADAR_KEYS.some(attribute => document.getElementById(`base_${attribute.toLowerCase()}`)?.value !== '');
+        const difference = currentTotal - baseTotal;
+        score.textContent = String(overall);
+        evolution.textContent = hasLockedBase ? `EVOLUÇÃO ${difference >= 0 ? '+' : ''}${difference}` : 'BASE LIVRE';
+        evolution.style.color = !hasLockedBase ? 'var(--dim-text)' : (difference < 0 ? 'var(--alert-color)' : 'var(--accent-green)');
+        stage.setAttribute('aria-label', `Overall ${overall} de 100. ${ATTRIBUTE_RADAR_KEYS.map((attribute, index) => `${attribute} ${currentValues[index]}`).join(', ')}.${hasLockedBase ? ` Evolução de ${difference} pontos sobre a base.` : ' A base ainda não foi travada.'}`);
+    }
+
     function fillAttributes(container, index) {
         if (!container) return;
         const boxes = Array.from(container.children);
@@ -4798,7 +4976,10 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         playSfx('click');
         abrirModalCustom("SISTEMA // Deseja fixar estes atributos como sua base de criação?\n\nOs cálculos máximos de Vida, Sanidade e PE serão travados permanentemente nestes valores.", false, true, function(confirma) {
             if (confirma) {
-                playSfx('lock'); document.getElementById('base_for').value = document.querySelectorAll('#attr-FOR .box.filled').length || 1; document.getElementById('base_des').value = document.querySelectorAll('#attr-DES .box.filled').length || 1; document.getElementById('base_vig').value = document.querySelectorAll('#attr-VIG .box.filled').length || 1; document.getElementById('base_int').value = document.querySelectorAll('#attr-INT .box.filled').length || 1;
+                playSfx('lock');
+                ATTRIBUTE_RADAR_KEYS.forEach(attribute => {
+                    document.getElementById(`base_${attribute.toLowerCase()}`).value = document.querySelectorAll(`#attr-${attribute} .box.filled`).length || 1;
+                });
                 let btn = document.getElementById('btnConcluirAtributos'); btn.innerHTML = `<span style="display: flex; align-items: center; justify-content: center; gap: 8px;"><span id="lockIcon" style="display: flex;">${svgLockClosed}</span> <span id="lockText">BASE TRAVADA</span></span>`; btn.style.color = "var(--alert-color)"; btn.style.borderColor = "var(--alert-color)"; btn.disabled = true; atualizarCalculos(); salvarLocalData();
             }
         });
@@ -4880,7 +5061,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         let defInput = document.getElementById('def_val'); if(defInput) defInput.value = def_total;
         let vd_atual = document.getElementById('vd_atual'); let san_atual = document.getElementById('san_atual'); let pe_atual = document.getElementById('pe_atual');
         if (!vd_atual.value) vd_atual.value = vd_max; if (!san_atual.value) san_atual.value = san_max; if (!pe_atual.value) pe_atual.value = pe_max;
-        atualizarStatusVDSAN(); atualizarCarga(); aplicarTracosClasse(classe, subclasse, base_int); renderizarHabilidades(classe, subclasse, afi_val); updatePortraitHUD();
+        atualizarStatusVDSAN(); atualizarCarga(); aplicarTracosClasse(classe, subclasse, base_int); renderizarHabilidades(classe, subclasse, afi_val); updatePortraitHUD(); updateAttributeRadar();
         const menu = document.getElementById('gameMenuOverlay'); if(menu.classList.contains('active')) updateMenuHUD();
     }
 
