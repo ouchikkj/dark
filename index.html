@@ -204,11 +204,18 @@
             text-shadow: 0 0 8px rgba(var(--combat-rgb), 0.72);
         }
         
-        body.theme-combat .macro-btn { 
-            background: #ffffff; color: #000; box-shadow: 0 0 10px #ffffff; border-color: #ffffff;
+        /* Botões de ataque seguem o mesmo componente visual (.sys-btn) do restante do site. */
+        body.theme-combat .macro-btn {
+            background: rgba(var(--combat-rgb), 0.08);
+            color: var(--alert-color);
+            border-color: var(--alert-color);
+            box-shadow: none;
         }
-        body.theme-combat .macro-btn:hover { 
-            background: var(--glow); color: var(--bg-color); box-shadow: 0 0 15px var(--glow); 
+        body.theme-combat .macro-btn:hover:not(:disabled) {
+            background: var(--alert-color);
+            color: var(--bg-color);
+            border-color: var(--alert-color);
+            box-shadow: 0 0 10px var(--glow);
         }
 
         body.theme-combat h1 { display: none !important; }
@@ -505,6 +512,7 @@
         .sys-btn { background: rgba(0,0,0,0.3); color: var(--dim-text); border: 1px solid var(--border-color); padding: 8px 15px; font-family: inherit; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 1px; border-radius: 2px; }
         .sys-btn:hover:not(:disabled) { color: var(--bg-color); border-color: var(--menu-accent); background: var(--menu-accent); box-shadow: 0 0 10px var(--glow); }
         .sys-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); font-weight: bold; }
+        .macro-btn { padding: 6px 12px; font-size: 0.75rem; color: var(--alert-color); border-color: var(--alert-color); font-weight: bold; }
         .obs-config-grid { display: grid; grid-template-columns: minmax(180px, 0.8fr) minmax(0, 2fr); gap: 10px; align-items: end; width: 100%; max-width: 900px; }
 
         @media (max-height: 820px) {
@@ -3344,7 +3352,7 @@
             actions.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;';
 
             const attackButton = document.createElement('button');
-            attackButton.className = 'macro-btn';
+            attackButton.className = 'sys-btn macro-btn';
             attackButton.textContent = 'ATACAR';
             attackButton.addEventListener('click', () => rolarMacro(macro.id));
 
