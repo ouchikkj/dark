@@ -1839,7 +1839,6 @@
     let combatMacros = [];
     let editingMacroId = null;
     let obsSettings = { enabled: false, channel: '', accessKey: '', duration: 6000, showName: true, hudEnabled: true, hudConditions: true, hudPortrait: true, layout: 'standard' };
-    let diceSettings = { enabled: true, sound: true, speed: 'normal', effects: true };
     let obsBroadcastChannel = null;
     let obsPortraitThumbnail = '';
     let obsPortraitSource = '';
@@ -1867,7 +1866,7 @@
     let profilesIndex = null;
     let defaultPanelState = null;
 
-    const APP_VERSION = '2026.07.27.12-dice-controls';
+    const APP_VERSION = '2026.07.27.11-stability';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -2265,10 +2264,6 @@
             character: obsSettings.showName ? characterName.slice(0, 80) : '',
             theme: getCurrentThemeName(),
             layout: sanitizeObsLayout(obsSettings.layout),
-            dice3d: diceSettings.enabled !== false,
-            diceSound: diceSettings.sound !== false,
-            diceSpeed: ['fast', 'normal', 'cinematic'].includes(diceSettings.speed) ? diceSettings.speed : 'normal',
-            diceFx: diceSettings.effects !== false,
             channel: ensureObsChannel(),
             accessKey: ensureObsAccessKey(),
             profileId: activeProfileId || '',
@@ -2728,26 +2723,12 @@
             obsSettings.hudPortrait = source.hudPortrait !== false;
             obsSettings.layout = sanitizeObsLayout(source.layout);
         }
-        const diceSource = stored?.dice && typeof stored.dice === 'object' ? stored.dice : fallback?.dice;
-        if (diceSource && typeof diceSource === 'object') {
-            diceSettings.enabled = diceSource.enabled !== false;
-            diceSettings.sound = diceSource.sound !== false;
-            diceSettings.effects = diceSource.effects !== false;
-            diceSettings.speed = ['fast', 'normal', 'cinematic'].includes(diceSource.speed) ? diceSource.speed : 'normal';
-        }
         ensureObsChannel(); ensureObsAccessKey();
         writeGlobalObsSettings();
     }
 
     function writeGlobalObsSettings() {
-        const stored = safeReadJson(GLOBAL_SETTINGS_KEY, null);
-        return safeWriteJson(GLOBAL_SETTINGS_KEY, {
-            ...(stored && typeof stored === 'object' ? stored : {}),
-            version: 3,
-            appVersion: APP_VERSION,
-            obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() },
-            dice: { ...diceSettings }
-        });
+        return safeWriteJson(GLOBAL_SETTINGS_KEY, { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } });
     }
 
     function recoverInterruptedSave() {
@@ -2773,7 +2754,7 @@
         const updatedIndex = cloneProfileData(profilesIndex);
         const profile = updatedIndex.profiles.find(item => item.id === profileId);
         if (profile) profile.updatedAt = Date.now();
-        const globalSettings = { version: 3, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() }, dice: { ...diceSettings } };
+        const globalSettings = { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } };
         const marker = { version: 2, profileId, timestamp: Date.now(), globalSettings };
         if (!safeWriteJson(SAVE_COMMIT_KEY, marker)) return false;
         const profileOk = safeWriteJson(profileDataKey(profileId), cleanData);
@@ -3861,7 +3842,6 @@
         ddAnimate3DDiceRoll({ rolls: d20Rolls, chosenIndex, resultArea, title: `MACRO // ${macro.nome}`, subtitle: `ATAQUE ${macro.attr}${disadvantage ? ' · DESVANTAGEM' : ''}` }).then(() => {
             if (!document.body.contains(resultArea)) return;
             playSfx('alert'); resultArea.innerHTML = finalResult;
-            ddTriggerDiceOutcomeEffect(isCritical ? 'critical' : isFailure ? 'failure' : '');
             sendObsEvent({ event: 'macro', title: `MACRO // ${macro.nome}`, subtitle: `ATAQUE ${macro.attr}`, rolls: d20Rolls, chosen: chosenD20, bonus: skillBonus, total: hitTotal, critical: isCritical, failure: isFailure, damage: Math.max(0, damageTotal), damageRolls, damageDetail, peCost: effectivePeCost, peRemaining: remainingPe });
         });
     }
@@ -5229,20 +5209,6 @@
             .dd-dice3d-title { color: var(--text-main); font-weight: bold; }
             .dd-dice3d-hint { color: var(--gold-color); font-size: .68rem; opacity: .92; }
             .dd-dice3d-badge { position:absolute; top:10px; right:10px; z-index:2; border:1px solid var(--border-color); background: rgba(0,0,0,.45); padding:5px 8px; font-size:.66rem; letter-spacing:1.6px; color:var(--gold-color); }
-            .dd-dice-outcome-fx { position:fixed; inset:0; z-index:10050; pointer-events:none; overflow:hidden; }
-            .dd-dice-outcome-fx::before { content:''; position:absolute; inset:-15%; opacity:0; }
-            .dd-dice-outcome-fx.critical::before { background:radial-gradient(circle, rgba(255,224,90,.55), rgba(255,190,0,.12) 35%, transparent 70%); animation:ddCriticalFlash .9s ease-out forwards; }
-            .dd-dice-outcome-fx.failure::before { background:repeating-linear-gradient(90deg, transparent 0 9px, rgba(255,0,45,.18) 10px 12px); animation:ddFailureGlitch .72s steps(7,end) forwards; }
-            .dd-dice-particle { position:absolute; left:50%; top:50%; width:5px; height:18px; background:var(--gold-color); box-shadow:0 0 12px currentColor; transform-origin:50% 260px; animation:ddParticleBurst .95s cubic-bezier(.12,.72,.24,1) forwards; }
-            .dd-dice-outcome-fx.failure .dd-dice-particle { width:18px; height:3px; background:var(--alert-color); color:var(--alert-color); animation-name:ddFailureShard; }
-            body.dd-dice-critical-pulse .modal-content { animation:ddCriticalCardPulse .75s ease-out; }
-            body.dd-dice-failure-shake .modal-content { animation:ddFailureShake .55s steps(6,end); }
-            @keyframes ddCriticalFlash { 0%{opacity:0;transform:scale(.55)} 25%{opacity:1} 100%{opacity:0;transform:scale(1.2)} }
-            @keyframes ddFailureGlitch { 0%{opacity:0;transform:translateX(0)} 25%{opacity:.8;transform:translateX(-12px)} 50%{opacity:.45;transform:translateX(14px)} 75%{opacity:.75;transform:translateX(-5px)} 100%{opacity:0;transform:translateX(0)} }
-            @keyframes ddParticleBurst { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scale(.25)} 18%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-250px) scale(1)} }
-            @keyframes ddFailureShard { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scaleX(.2)} 22%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-210px) scaleX(1.6)} }
-            @keyframes ddCriticalCardPulse { 0%{filter:brightness(1)} 35%{filter:brightness(1.75);box-shadow:0 0 55px rgba(255,204,51,.6)} 100%{filter:brightness(1)} }
-            @keyframes ddFailureShake { 0%,100%{transform:translate(0)} 20%{transform:translate(-8px,3px)} 40%{transform:translate(8px,-3px)} 60%{transform:translate(-5px,-2px)} 80%{transform:translate(5px,2px)} }
         `;
         document.head.appendChild(style);
     }
@@ -5325,69 +5291,6 @@
         const dark = 'rgba(10, 10, 12, 0.96)';
         return { fill: isChosen ? ddHexToRgba(accent, 0.96) : dark, edge: isChosen ? accent : border, text: isChosen ? '#080808' : text, glow: isChosen ? ddHexToRgba(accent, 0.22) : 'rgba(255,255,255,0.08)', chosenOutline: isChosen ? accent : alert, shadow: isChosen ? ddHexToRgba(accent, 0.32) : 'rgba(0,0,0,0.35)' };
     }
-
-    function ddPlayDiceImpact(strength = 0.7, outcome = '') {
-        if (isMuted || diceSettings.sound === false) return;
-        const context = getAudioContext();
-        if (!context) return;
-        if (context.state === 'suspended') context.resume().catch(() => {});
-        const now = context.currentTime;
-        const duration = 0.075 + Math.max(0, Math.min(1, strength)) * 0.055;
-        const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * duration)), context.sampleRate);
-        const samples = buffer.getChannelData(0);
-        for (let index = 0; index < samples.length; index++) {
-            const envelope = Math.pow(1 - index / samples.length, 3.2);
-            samples[index] = (Math.random() * 2 - 1) * envelope;
-        }
-        const noise = context.createBufferSource();
-        const filter = context.createBiquadFilter();
-        const gain = context.createGain();
-        noise.buffer = buffer;
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(outcome === 'critical' ? 1450 : outcome === 'failure' ? 560 : 920, now);
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.045 * Math.max(.3, strength), now + .005);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-        noise.connect(filter); filter.connect(gain); gain.connect(context.destination);
-        noise.start(now); noise.stop(now + duration + .02);
-        const oscillator = context.createOscillator();
-        const oscillatorGain = context.createGain();
-        oscillator.type = outcome === 'failure' ? 'sawtooth' : 'triangle';
-        oscillator.frequency.setValueAtTime(outcome === 'critical' ? 115 : outcome === 'failure' ? 48 : 72, now);
-        oscillator.frequency.exponentialRampToValueAtTime(32, now + duration);
-        oscillatorGain.gain.setValueAtTime(0.016 * Math.max(.35, strength), now);
-        oscillatorGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-        oscillator.connect(oscillatorGain); oscillatorGain.connect(context.destination);
-        oscillator.start(now); oscillator.stop(now + duration + .02);
-    }
-
-    function ddTriggerDiceOutcomeEffect(type) {
-        if (!type || diceSettings.effects === false) return;
-        const effect = document.createElement('div');
-        effect.className = `dd-dice-outcome-fx ${type}`;
-        const particleCount = type === 'critical' ? 28 : 20;
-        for (let index = 0; index < particleCount; index++) {
-            const particle = document.createElement('span');
-            particle.className = 'dd-dice-particle';
-            particle.style.setProperty('--angle', `${(360 / particleCount) * index + Math.random() * 10}deg`);
-            particle.style.animationDelay = `${Math.random() * .12}s`;
-            effect.appendChild(particle);
-        }
-        document.body.appendChild(effect);
-        const bodyClass = type === 'critical' ? 'dd-dice-critical-pulse' : 'dd-dice-failure-shake';
-        document.body.classList.add(bodyClass);
-        ddPlayDiceImpact(1, type);
-        window.setTimeout(() => { effect.remove(); document.body.classList.remove(bodyClass); }, 1100);
-    }
-
-    function ddDiceDuration(count) {
-        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-        if (reduced) return 280;
-        if (diceSettings.speed === 'fast') return Math.min(1100, 520 + count * 65);
-        if (diceSettings.speed === 'cinematic') return Math.min(4200, 2200 + count * 230);
-        return Math.min(2400, 1150 + count * 170);
-    }
-
     function ddDraw3DD20(ctx, actor) {
         const rotatedVertices = DD_D20_GEOMETRY.vertices.map(vertex => ddRotateVertex(vertex, actor.rx, actor.ry, actor.rz));
         const projectionDistance = 4.8;
@@ -5443,8 +5346,9 @@
     function ddAnimate3DDiceRoll({ rolls, chosenIndex = 0, resultArea, title = 'ROLAGEM', subtitle = '' }) {
         ddEnsure3DDiceStyles();
         return new Promise(resolve => {
-            if (!resultArea || diceSettings.enabled === false) { resolve(); return; }
+            if (!resultArea) { resolve(); return; }
             const safeRolls = Array.isArray(rolls) && rolls.length ? rolls.slice(0, 8) : [ddRollSecureDie(20)];
+            const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
             const count = safeRolls.length;
             const rows = count > 4 ? 2 : 1;
             const columns = rows === 1 ? count : Math.ceil(count / 2);
@@ -5455,9 +5359,7 @@
             const canvas = document.getElementById('ddDice3dCanvas'); const shell = document.getElementById('ddDice3dShell'); const context = canvas?.getContext('2d');
             if (!canvas || !context) { resolve(); return; }
             let skip = false; shell.addEventListener('click', () => { skip = true; }, { once: true });
-            const duration = ddDiceDuration(count);
-            const impactThresholds = [.13, .31, .49, .69, .83];
-            let impactIndex = 0;
+            const duration = prefersReduced ? 350 : Math.min(2400, 1150 + count * 170);
             const actors = safeRolls.map((value, index) => {
                 const row = rows === 1 ? 0 : Math.floor(index / columns); const column = rows === 1 ? index : index % columns; const cellWidth = canvasWidth / columns; const cellHeight = canvasHeight / rows; const x = cellWidth * (column + 0.5); const y = cellHeight * (row + 0.55); const target = ddGetTargetEulerForFace((Number(value) || 1) - 1);
                 return { value: Number(value) || 1, targetFace: (Number(value) || 1) - 1, x, y, radius: Math.min(62, Math.max(42, Math.min(cellWidth, cellHeight) * 0.26)), rx: Math.random() * Math.PI * 2, ry: Math.random() * Math.PI * 2, rz: Math.random() * Math.PI * 2, target, offsetY: -10, highlight: index === chosenIndex ? 1 : 0, highlightPulse: 0, phase: Math.random() * Math.PI * 2, spinX: (Math.random() * 0.35 + 0.28) * (Math.random() > 0.5 ? 1 : -1), spinY: (Math.random() * 0.40 + 0.32) * (Math.random() > 0.5 ? 1 : -1), spinZ: (Math.random() * 0.30 + 0.20) * (Math.random() > 0.5 ? 1 : -1), revealed: false };
@@ -5466,10 +5368,6 @@
             function drawFrame(timestamp) {
                 if (startTime === null) startTime = timestamp;
                 const elapsed = timestamp - startTime; const progress = skip ? 1 : Math.min(1, elapsed / duration);
-                while (impactIndex < impactThresholds.length && progress >= impactThresholds[impactIndex]) {
-                    ddPlayDiceImpact(.38 + impactIndex * .11);
-                    impactIndex += 1;
-                }
                 context.clearRect(0, 0, canvasWidth, canvasHeight); ddDrawDiceTray(context, canvasWidth, canvasHeight);
                 actors.forEach(actor => {
                     if (progress < 0.72) {
@@ -5542,7 +5440,6 @@
             if (!document.body.contains(resultArea)) return;
             resultArea.innerHTML = `<div class="dice-result-box"><div class="dice-array">DADOS ROLADOS: [ ${rollsText} ]</div><div>DADO ESCOLHIDO: <span class="dice-highest">${chosenDie}</span></div>${disadvText}${bonusLine}<div class="dice-total">RESULTADO FINAL: ${total}</div></div>`;
             sendObsEvent({ event: 'roll', title, subtitle, rolls, chosen: chosenDie, bonus, total, critical: chosenDie === 20, failure: chosenDie === 1, damage: null });
-            ddTriggerDiceOutcomeEffect(chosenDie === 20 ? 'critical' : chosenDie === 1 ? 'failure' : '');
             playSfx('alert'); btnRoll.disabled = false; btnRoll.innerHTML = '[ NOVA ROLAGEM ]';
         });
     }
@@ -6410,7 +6307,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 </script>
 
 <script id="ddEnhancementScript">(() => {
-    const DD_VERSION = '2026.07.27.12-dice-controls';
+    const DD_VERSION = '2026.07.27.11-stability';
     const DD_DB_NAME = 'DarkDashboardStorage';
     const DD_DB_VERSION = 1;
     const DD_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -6684,13 +6581,29 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     }
 
     function ddCreateSupportPanel() {
-        document.getElementById('panel-dd-support')?.remove();
+        if (document.getElementById('panel-dd-support')) return;
+        const panel = document.createElement('div'); panel.id = 'panel-dd-support'; panel.className = 'panel';
+        panel.innerHTML = `<span class="panel-title">PROTEÇÕES & AÇÕES DO TURNO</span><div class="panel-controls hide-in-combat"><button class="minimize-btn" onclick="toggleMinimize(this)">_</button><button class="drag-handle">⠿</button></div><div class="panel-content">
+          <div class="dd-field-grid">
+            <label>VIDA TEMPORÁRIA<input id="ddTempHp" type="number" min="0" value="0"></label>
+            <label>REDUÇÃO GERAL<input id="ddDrGeneral" type="number" min="0" value="0"></label>
+            <label>REDUÇÃO FÍSICA<input id="ddDrPhysical" type="number" min="0" value="0"></label>
+            <label>REDUÇÃO PARANORMAL<input id="ddDrParanormal" type="number" min="0" value="0"></label>
+            <label style="grid-column:span 2;">VULNERABILIDADE A TIPOS<input id="ddVulnerabilityTypes" type="text" placeholder="Ex.: fogo, paranormal"></label>
+            <label>MULTIPLICADOR<input id="ddVulnerabilityMultiplier" type="number" min="1" max="5" step=".5" value="2"></label>
+            <label><button class="sys-btn" type="button" onclick="ddOpenResourceModal('vd')" style="width:100%; margin-top:20px;">APLICAR DANO / CURA</button></label>
+          </div>
+          <div style="margin-top:18px; border-top:1px dashed var(--border-color); padding-top:13px;"><span class="options-label">AÇÕES DO TURNO</span><div class="dd-action-tracker"><button id="ddActionStandard" class="sys-btn dd-action-btn available" onclick="ddToggleTurnAction('standard')">AÇÃO PADRÃO</button><button id="ddActionMovement" class="sys-btn dd-action-btn available" onclick="ddToggleTurnAction('movement')">MOVIMENTO</button><button id="ddActionReaction" class="sys-btn dd-action-btn available" onclick="ddToggleTurnAction('reaction')">REAÇÃO</button></div><div class="appearance-summary">As ações são restauradas ao avançar o turno. Macros podem consumir automaticamente a ação configurada.</div></div>
+        </div>`;
+        const pag2 = document.getElementById('pag2'); const background = document.getElementById('panel-background');
+        if (pag2) pag2.insertBefore(panel, background || null);
+        panel.querySelectorAll('input').forEach(input => input.addEventListener('change', () => { ddUpdateResourceSummaries(); autoSalvarOtimizado(); }));
     }
 
     function ddEnhanceMacroForm() {
         const form = document.getElementById('macroName')?.parentElement; if (!form || document.getElementById('macroAmmoCurrent')) return;
         const wrapper = document.createElement('div'); wrapper.className = 'dd-field-grid hide-in-combat'; wrapper.style.cssText = 'grid-template-columns:repeat(4,minmax(100px,1fr)); margin:0 0 12px;';
-        wrapper.innerHTML = `<label>MUNIÇÃO ATUAL<input type="number" id="macroAmmoCurrent" min="0" placeholder="SEM LIMITE"></label><label>CAPACIDADE<input type="number" id="macroAmmoCapacity" min="0" placeholder="0"></label><label>RESERVA<input type="number" id="macroAmmoReserve" min="0" placeholder="0"></label><label>CONSUMO / ATAQUE<input type="number" id="macroAmmoCost" min="0" value="0"></label><label style="display:flex;align-items:center;gap:8px;margin-top:19px;"><input type="checkbox" id="macroFavorite" style="width:auto;"> FAVORITA</label>`;
+        wrapper.innerHTML = `<label>MUNIÇÃO ATUAL<input type="number" id="macroAmmoCurrent" min="0" placeholder="SEM LIMITE"></label><label>CAPACIDADE<input type="number" id="macroAmmoCapacity" min="0" placeholder="0"></label><label>RESERVA<input type="number" id="macroAmmoReserve" min="0" placeholder="0"></label><label>CONSUMO / ATAQUE<input type="number" id="macroAmmoCost" min="0" value="0"></label><label>AÇÃO CONSUMIDA<select id="macroActionType"><option value="standard">PADRÃO</option><option value="movement">MOVIMENTO</option><option value="reaction">REAÇÃO</option><option value="free">LIVRE</option></select></label><label style="display:flex;align-items:center;gap:8px;margin-top:19px;"><input type="checkbox" id="macroFavorite" style="width:auto;"> FAVORITA</label>`;
         form.parentElement.insertBefore(wrapper, form.nextSibling);
     }
 
@@ -6707,60 +6620,6 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         group.innerHTML = `<span class="options-label">SEGURANÇA, DIAGNÓSTICO E OFFLINE</span><div class="dd-menu-tools"><button class="sys-btn" onclick="ddOpenSnapshots()">VERSÕES AUTOMÁTICAS</button><button class="sys-btn" onclick="ddExportFullBackup()">BACKUP DE TODOS</button><button class="sys-btn" onclick="document.getElementById('ddFullBackupInput').click()">IMPORTAR BACKUP</button><button class="sys-btn" onclick="ddOpenValidator()">VERIFICAR FICHA</button><button class="sys-btn" onclick="ddOpenRollHistory()">ROLAGENS</button><button class="sys-btn" id="ddInstallButton" onclick="ddInstallApp()" disabled>INSTALAR APP</button></div><div id="ddStorageMeter" class="dd-storage-meter"><span></span></div><div id="ddStorageText" class="dd-storage-text">CALCULANDO ARMAZENAMENTO...</div>`;
         const firstObs = Array.from(list.querySelectorAll('.options-group')).find(el => el.textContent.includes('INTEGRAÇÃO OBS'));
         list.insertBefore(group, firstObs || null);
-    }
-
-
-    function ddUpdateDiceSettingsUi() {
-        const enabled = document.getElementById('ddDice3dToggle');
-        const sound = document.getElementById('ddDiceSoundToggle');
-        const effects = document.getElementById('ddDiceEffectsToggle');
-        if (enabled) { enabled.classList.toggle('active', diceSettings.enabled !== false); enabled.textContent = `D20 3D: ${diceSettings.enabled !== false ? 'LIGADO' : 'DESLIGADO'}`; }
-        if (sound) { sound.classList.toggle('active', diceSettings.sound !== false); sound.textContent = `SOM DE IMPACTO: ${diceSettings.sound !== false ? 'LIGADO' : 'DESLIGADO'}`; }
-        if (effects) { effects.classList.toggle('active', diceSettings.effects !== false); effects.textContent = `EFEITOS CRÍTICOS: ${diceSettings.effects !== false ? 'LIGADOS' : 'DESLIGADOS'}`; }
-        ['fast', 'normal', 'cinematic'].forEach(speed => document.getElementById(`ddDiceSpeed_${speed}`)?.classList.toggle('active', diceSettings.speed === speed));
-    }
-
-    function ddSetDiceEnabled(value = null) {
-        diceSettings.enabled = value === null ? diceSettings.enabled === false : Boolean(value);
-        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
-    }
-    function ddSetDiceSound(value = null) {
-        diceSettings.sound = value === null ? diceSettings.sound === false : Boolean(value);
-        ddUpdateDiceSettingsUi(); writeGlobalObsSettings();
-        if (diceSettings.sound) ddPlayDiceImpact(.7);
-        else playSfx('click');
-    }
-    function ddSetDiceEffects(value = null) {
-        diceSettings.effects = value === null ? diceSettings.effects === false : Boolean(value);
-        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
-    }
-    function ddSetDiceSpeed(speed) {
-        diceSettings.speed = ['fast', 'normal', 'cinematic'].includes(speed) ? speed : 'normal';
-        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
-    }
-
-    function ddEnhanceDiceSettings() {
-        const list = document.getElementById('customizationMenuList');
-        if (!list || document.getElementById('ddDiceSettingsGroup')) return;
-        const group = document.createElement('div');
-        group.id = 'ddDiceSettingsGroup';
-        group.className = 'options-group';
-        group.innerHTML = `<span class="options-label">DADO D20 3D</span>
-            <div class="options-row">
-                <button id="ddDice3dToggle" class="sys-btn" onclick="ddSetDiceEnabled()">D20 3D: LIGADO</button>
-                <button id="ddDiceSoundToggle" class="sys-btn" onclick="ddSetDiceSound()">SOM DE IMPACTO: LIGADO</button>
-                <button id="ddDiceEffectsToggle" class="sys-btn" onclick="ddSetDiceEffects()">EFEITOS CRÍTICOS: LIGADOS</button>
-            </div>
-            <span class="options-label" style="margin-top:14px;">VELOCIDADE DA ANIMAÇÃO</span>
-            <div class="options-row">
-                <button id="ddDiceSpeed_fast" class="sys-btn" onclick="ddSetDiceSpeed('fast')">RÁPIDO</button>
-                <button id="ddDiceSpeed_normal" class="sys-btn" onclick="ddSetDiceSpeed('normal')">NORMAL</button>
-                <button id="ddDiceSpeed_cinematic" class="sys-btn" onclick="ddSetDiceSpeed('cinematic')">CINEMATOGRÁFICO</button>
-            </div>
-            <div class="appearance-summary">As escolhas também são enviadas ao overlay do OBS. O botão geral de áudio da ficha continua tendo prioridade sobre o som do dado.</div>`;
-        const effectsGroup = Array.from(list.querySelectorAll('.options-group')).find(element => element.textContent.includes('EFEITOS VISUAIS'));
-        list.insertBefore(group, effectsGroup || null);
-        ddUpdateDiceSettingsUi();
     }
 
     function ddEnhanceBoardControls() {
@@ -6925,17 +6784,17 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         element.innerHTML = `CARGA: <span style="color:${color}">ATUAL [ ${current} ]</span> | NORMAL [ ${normal} ] | MÁXIMA [ ${max} ]`; element.style.borderColor = color;
     };
 
-    limparFormularioMacro = function() { ddOriginals.limparFormularioMacro(); ['macroAmmoCurrent','macroAmmoCapacity','macroAmmoReserve','macroAmmoCost'].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === 'macroAmmoCost' ? '0' : ''; }); const fav = document.getElementById('macroFavorite'); if (fav) fav.checked = false; };
+    limparFormularioMacro = function() { ddOriginals.limparFormularioMacro(); ['macroAmmoCurrent','macroAmmoCapacity','macroAmmoReserve','macroAmmoCost'].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === 'macroAmmoCost' ? '0' : ''; }); const action = document.getElementById('macroActionType'); if (action) action.value = 'standard'; const fav = document.getElementById('macroFavorite'); if (fav) fav.checked = false; };
     adicionarMacro = function() {
         const editing = editingMacroId; const beforeLength = combatMacros.length;
-        const extra = { ammoCurrent:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCurrent')?.value,10)||0), ammoCapacity:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCapacity')?.value,10)||0), ammoReserve:Math.max(0,Number.parseInt(document.getElementById('macroAmmoReserve')?.value,10)||0), ammoCost:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCost')?.value,10)||0), favorite:Boolean(document.getElementById('macroFavorite')?.checked) };
+        const extra = { ammoCurrent:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCurrent')?.value,10)||0), ammoCapacity:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCapacity')?.value,10)||0), ammoReserve:Math.max(0,Number.parseInt(document.getElementById('macroAmmoReserve')?.value,10)||0), ammoCost:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCost')?.value,10)||0), actionType:document.getElementById('macroActionType')?.value || 'standard', favorite:Boolean(document.getElementById('macroFavorite')?.checked) };
         ddOriginals.adicionarMacro();
         const macro = editing ? combatMacros.find(item => item.id === editing) : combatMacros.length > beforeLength ? combatMacros[combatMacros.length - 1] : null;
         if (!macro) return; Object.assign(macro, extra); if (macro.ammoCapacity > 0 && macro.ammoCurrent > macro.ammoCapacity) macro.ammoCurrent = macro.ammoCapacity;
         renderMacros(); salvarLocalData({ label:editing ? 'MACRO EDITADA' : 'MACRO ADICIONADA' }); ddRenderFavorites();
     };
     iniciarEdicaoMacro = function(id) { ddOriginals.iniciarEdicaoMacro(id); const macro = combatMacros.find(item => item.id === id); if (!macro) return;
-        const values = { macroAmmoCurrent:macro.ammoCurrent ?? '', macroAmmoCapacity:macro.ammoCapacity ?? '', macroAmmoReserve:macro.ammoReserve ?? '', macroAmmoCost:macro.ammoCost ?? 0 };
+        const values = { macroAmmoCurrent:macro.ammoCurrent ?? '', macroAmmoCapacity:macro.ammoCapacity ?? '', macroAmmoReserve:macro.ammoReserve ?? '', macroAmmoCost:macro.ammoCost ?? 0, macroActionType:macro.actionType || 'standard' };
         Object.entries(values).forEach(([key,value]) => { const element = document.getElementById(key); if (element) element.value = String(value); }); const fav = document.getElementById('macroFavorite'); if (fav) fav.checked = Boolean(macro.favorite);
     };
     renderMacros = function() {
@@ -6943,7 +6802,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         combatMacros.forEach((macro,index) => { const item = items[index]; if (!item) return; const info = item.firstElementChild; const actions = item.lastElementChild;
             const extra = document.createElement('div'); extra.className = 'dd-macro-extra'; const capacity = Math.max(0,Number(macro.ammoCapacity)||0); const current = Math.max(0,Number(macro.ammoCurrent)||0); const reserve = Math.max(0,Number(macro.ammoReserve)||0); const cost = Math.max(0,Number(macro.ammoCost)||0);
             if (capacity > 0 || cost > 0) { const ammo = document.createElement('span'); ammo.textContent = `MUNIÇÃO ${current}/${capacity || '∞'} · RESERVA ${reserve} · CONSUMO ${cost}`; if (current < cost) ammo.classList.add('dd-ammo-low'); extra.appendChild(ammo); }
-            info?.appendChild(extra);
+            const action = document.createElement('span'); action.textContent = `AÇÃO: ${(macro.actionType || 'standard').toUpperCase()}`; extra.appendChild(action); info?.appendChild(extra);
             if (capacity > 0) { const reload = document.createElement('button'); reload.className = 'sys-btn'; reload.style.cssText = 'padding:2px 7px;font-size:.67rem;color:var(--gold-color);border-color:var(--gold-color);'; reload.textContent = 'RECARREGAR'; reload.addEventListener('click', () => ddReloadMacro(macro.id)); actions?.insertBefore(reload, actions.firstChild); }
             const star = document.createElement('button'); star.className = `dd-favorite-star${macro.favorite ? ' active' : ''}`; star.textContent = '★'; star.title = 'Favoritar macro'; star.addEventListener('click', () => ddToggleMacroFavorite(macro.id)); actions?.appendChild(star);
         });
@@ -6954,9 +6813,10 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     rolarMacro = function(id) { const macro = combatMacros.find(item => item.id === id); if (!macro) return;
         const active = getActiveConditions(); const basePe = Math.max(0,Number.parseInt(macro.peCost,10)||0); const costPe = basePe > 0 && active.cond_alquebrado ? basePe+1 : basePe; const currentPe = Math.max(0,Number.parseInt(document.getElementById('pe_atual')?.value,10)||0); if (costPe > currentPe) { ddOriginals.rolarMacro(id); return; }
         const ammoCost = Math.max(0,Number(macro.ammoCost)||0); const ammoCurrent = Math.max(0,Number(macro.ammoCurrent)||0); if (ammoCost > ammoCurrent) { ddToast(`Munição insuficiente para ${macro.nome}.`, 'error'); return; }
+        if (!ddConsumeAction(macro.actionType || 'standard')) return;
         if (ammoCost > 0) macro.ammoCurrent = ammoCurrent - ammoCost; ddPendingRollRepeat = { type:'macro', id }; renderMacros(); salvarLocalData({ skipHistory:true, label:`ATAQUE: ${macro.nome}` }); ddOriginals.rolarMacro(id);
     };
-    nextTurn = function() { ddOriginals.nextTurn(); salvarLocalData({ skipHistory:true, label:'PRÓXIMO TURNO' }); };
+    nextTurn = function() { ddOriginals.nextTurn(); ddResetTurnActions(false); salvarLocalData({ skipHistory:true, label:'PRÓXIMO TURNO' }); };
 
     function ddEnhanceSkillFavorites() {
         document.querySelectorAll('.skill-row').forEach(row => {
@@ -7302,11 +7162,11 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     }
 
     Object.assign(window,{
-        ddOpenResourceModal,ddCloseResourceModal,ddApplyResourceModal,ddOpenCommandPalette,ddCloseCommandPalette,
+        ddOpenResourceModal,ddCloseResourceModal,ddApplyResourceModal,ddToggleTurnAction,ddOpenCommandPalette,ddCloseCommandPalette,
         ddOpenRollHistory,ddCloseRollHistory,ddClearRollHistory,ddOpenValidator,ddCloseValidator,ddOpenSnapshots,ddCloseSnapshots,ddCreateManualSnapshot,
         ddExportFullBackup,ddImportFullBackup,ddInstallApp,ddExportBoard,ddImportBoard,ddExportBoardPng,ddFitBoard,ddRenameBoardNode,ddDuplicateBoardNode,
         ddCycleBoardCategory,ddSelectAllBoardNodes,ddDeleteBoardLink,ddAdjustItem,ddUseItem,ddRechargeItem,ddToggleItemFavorite,ddReloadMacro,ddToggleMacroFavorite,
-        deleteBoardNote,ddSetDiceEnabled,ddSetDiceSound,ddSetDiceEffects,ddSetDiceSpeed
+        deleteBoardNote
     });
 
     ddInjectStaticUi();
@@ -7315,15 +7175,16 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     ddEnhanceMacroForm();
     ddEnhanceItemForm();
     ddEnhanceMenu();
-    ddEnhanceDiceSettings();
     ddEnhanceBoardControls();
     ddEnhanceSkillFavorites();
+    ddBindDynamicPanelDrag(document.getElementById('panel-dd-support'));
+    ddRenderTurnActions();
     ddUpdateResourceSummaries();
     ddRenderFavorites();
     ddRegisterPwa();
 
     window.addEventListener('load',()=>{
-        ddEnhanceSkillFavorites();ddEnhanceDiceSettings();ddRenderFavorites();ddUpdateResourceSummaries();ddUpdateStorageStatus();ddRegisterPwa();
+        ddEnhanceSkillFavorites();ddRenderFavorites();ddRenderTurnActions();ddUpdateResourceSummaries();ddUpdateStorageStatus();ddRegisterPwa();
         document.addEventListener('input',event=>{if(['vd_atual','san_atual','pe_atual','ddTempHp','ddDrGeneral','ddDrPhysical','ddDrParanormal'].includes(event.target?.id))ddUpdateResourceSummaries();});
         window.setTimeout(()=>{const current=collectCurrentData();ddSaveSnapshot(current,'VERSÃO INICIAL DA SESSÃO',false);ddCleanupOrphanAttachments();},1500);
     },{once:true});
