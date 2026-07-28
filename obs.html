@@ -304,6 +304,7 @@
                     diceSound: payload.diceSound !== false,
                     diceSpeed: ['fast', 'normal', 'cinematic'].includes(payload.diceSpeed) ? payload.diceSpeed : 'normal',
                     diceFx: payload.diceFx !== false,
+                    diceTheme: ['adaptive', 'onyx', 'ivory', 'emerald', 'crimson', 'amethyst', 'gold', 'frost'].includes(payload.diceTheme) ? payload.diceTheme : 'adaptive',
                     portrait: validPortrait(payload.portrait) ? payload.portrait : (payload.portrait === '' ? '' : undefined),
                     hud
                 };
@@ -461,6 +462,46 @@
                 return best;
             }
 
+
+            function primeOverlayOrientations() {
+                if (primeOverlayOrientations.done) return;
+                primeOverlayOrientations.done = true;
+                const warm = () => { for (let face = 0; face < 20; face += 1) targetOrientationForFace(face); };
+                if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 1400 });
+                else window.setTimeout(warm, 100);
+            }
+            primeOverlayOrientations();
+
+            const DICE_THEME_PRESETS = {
+                adaptive: null,
+                onyx: { fill: '#121318', edge: '#d6d9e4', text: '#f5f7ff', glow: '#ffffff' },
+                ivory: { fill: '#f1eadf', edge: '#8d7256', text: '#221b16', glow: '#e0b980' },
+                emerald: { fill: '#0d1714', edge: '#37d39a', text: '#e8fff8', glow: '#37d39a' },
+                crimson: { fill: '#180c10', edge: '#ff4a67', text: '#ffecef', glow: '#ff4a67' },
+                amethyst: { fill: '#15101b', edge: '#bd87ff', text: '#f3e9ff', glow: '#bd87ff' },
+                gold: { fill: '#17140c', edge: '#ffcf53', text: '#fff5cf', glow: '#ffcf53' },
+                frost: { fill: '#0b151c', edge: '#75d5ff', text: '#ebfbff', glow: '#75d5ff' }
+            };
+            function normalizeDiceTheme(theme) {
+                return Object.prototype.hasOwnProperty.call(DICE_THEME_PRESETS, theme) ? theme : 'adaptive';
+            }
+            function diceThemeLabel(theme) {
+                const labels = { adaptive:'SISTEMA', onyx:'ÔNIX', ivory:'MARFIM', emerald:'ESMERALDA', crimson:'RUBI', amethyst:'AMETISTA', gold:'DOURADO', frost:'GELO' };
+                return labels[normalizeDiceTheme(theme)] || 'SISTEMA';
+            }
+            function getDiceThemePalette(theme) {
+                const normalized = normalizeDiceTheme(theme);
+                if (normalized === 'adaptive') {
+                    return {
+                        fill: 'rgba(12,12,16,.96)',
+                        edge: readOverlayColor('--accent', '#ffffff'),
+                        text: readOverlayColor('--main', '#e8e8e8'),
+                        glow: readOverlayColor('--accent', '#ffffff')
+                    };
+                }
+                return DICE_THEME_PRESETS[normalized] || DICE_THEME_PRESETS.onyx;
+            }
+
             function readOverlayColor(variable, fallback) {
                 return getComputedStyle(document.body).getPropertyValue(variable).trim() || fallback;
             }
@@ -491,7 +532,7 @@
             function drawTray(context, width, height) {
                 context.clearRect(0, 0, width, height);
                 const gradient = context.createRadialGradient(width / 2, height / 2, 30, width / 2, height / 2, width * .55);
-                gradient.addColorStop(0, 'rgba(0,0,0,.28)');
+                gradient.addColorStop(0, 'rgba(0,0,0,.3)');
                 gradient.addColorStop(1, 'rgba(0,0,0,0)');
                 context.fillStyle = gradient;
                 context.fillRect(0, 0, width, height);
@@ -503,6 +544,14 @@
                 context.restore();
             }
 
+            function inferPickMode(event) {
+                const values = Array.isArray(event.rolls) ? event.rolls.map(value => Number(value) || 0) : [];
+                if (!values.length) return 'highest';
+                const chosen = Number(event.chosen) || values[0];
+                const max = Math.max(...values), min = Math.min(...values);
+                return chosen === min && chosen !== max ? 'lowest' : 'highest';
+            }
+
             function drawD20(context, actor, event) {
                 const rotatedVertices = D20_GEOMETRY.vertices.map(vertex => rotateVertex(vertex, actor.rx, actor.ry, actor.rz));
                 const projectionDistance = 4.8;
@@ -510,9 +559,10 @@
                     const perspective = projectionDistance / (projectionDistance - vertex[2]);
                     return { x: vertex[0] * actor.radius * perspective, y: vertex[1] * actor.radius * perspective };
                 });
-                const accent = event.critical ? readOverlayColor('--gold', '#ffcc33') : event.failure ? readOverlayColor('--alert', '#ff2929') : readOverlayColor('--accent', '#ffffff');
-                const main = readOverlayColor('--main', '#e8e8e8');
-                const line = readOverlayColor('--line', 'rgba(255,255,255,.2)');
+                const palette = getDiceThemePalette(event.diceTheme);
+                const accent = palette.edge;
+                const main = palette.text;
+                const line = 'rgba(255,255,255,.2)';
                 const light = normalizeVector([-.65, -.8, 1]);
                 const faceData = D20_GEOMETRY.faces.map((face, index) => {
                     const a = rotatedVertices[face[0]], b = rotatedVertices[face[1]], c = rotatedVertices[face[2]];
@@ -524,12 +574,14 @@
                 }).sort((left, right) => left.depth - right.depth);
 
                 context.save();
+                context.globalAlpha = actor.fade ?? 1;
                 context.translate(actor.x, actor.y + actor.offsetY);
+                context.scale(actor.scale || 1, actor.scale || 1);
                 context.fillStyle = actor.chosen ? hexToRgba(accent, .25) : 'rgba(0,0,0,.34)';
                 context.beginPath();
                 context.ellipse(0, actor.radius * 1.12, actor.radius * .88, actor.radius * .23, 0, 0, Math.PI * 2);
                 context.fill();
-                if (actor.chosen && actor.revealed) { context.shadowBlur = 30; context.shadowColor = accent; }
+                if (actor.chosen && actor.revealed) { context.shadowBlur = 32; context.shadowColor = accent; }
 
                 faceData.forEach(faceInfo => {
                     const points = faceInfo.face.map(vertexIndex => projected[vertexIndex]);
@@ -540,28 +592,55 @@
                     context.lineTo(points[1].x, points[1].y);
                     context.lineTo(points[2].x, points[2].y);
                     context.closePath();
-                    context.fillStyle = isResultFace && actor.chosen ? hexToRgba(accent, .94) : `rgba(${Math.round(12 + 62*shade)},${Math.round(12 + 68*shade)},${Math.round(16 + 76*shade)},.96)`;
+                    context.fillStyle = isResultFace ? hexToRgba(accent, actor.chosen ? .96 : .84) : hexToRgba(palette.fill, Math.min(.99, .76 + shade * .22));
                     context.fill();
                     context.strokeStyle = isResultFace ? accent : line;
-                    context.lineWidth = isResultFace ? 2 : 1;
+                    context.lineWidth = isResultFace ? (actor.chosen ? 2.4 : 1.6) : 1;
                     context.stroke();
                     if (faceInfo.normal[2] > .04) {
                         const perspective = projectionDistance / (projectionDistance - faceInfo.center[2]);
                         const centerX = faceInfo.center[0] * actor.radius * perspective;
                         const centerY = faceInfo.center[1] * actor.radius * perspective;
+                        const edgeA = points[1].x - points[0].x;
+                        const edgeB = points[1].y - points[0].y;
+                        let angle = Math.atan2(edgeB, edgeA);
+                        if (angle > Math.PI / 2) angle -= Math.PI;
+                        if (angle < -Math.PI / 2) angle += Math.PI;
+                        const averageFaceSize = (((Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) + Math.hypot(points[1].x - points[2].x, points[1].y - points[2].y) + Math.hypot(points[2].x - points[0].x, points[2].y - points[0].y)) / 3) || actor.radius * .55);
+                        const tiltScale = Math.max(.5, Math.min(1, .48 + faceInfo.normal[2] * .52));
+                        const textSize = Math.max(9, averageFaceSize * (isResultFace ? .34 : .30));
                         context.save();
+                        context.beginPath();
+                        context.moveTo(points[0].x, points[0].y);
+                        context.lineTo(points[1].x, points[1].y);
+                        context.lineTo(points[2].x, points[2].y);
+                        context.closePath();
+                        context.clip();
                         context.translate(centerX, centerY);
-                        context.fillStyle = isResultFace && actor.chosen ? '#050505' : main;
-                        context.font = `700 ${Math.max(10, actor.radius * .29)}px Oswald, Arial, sans-serif`;
-                        context.textAlign = 'center';
-                        context.textBaseline = 'middle';
+                        context.rotate(angle);
+                        context.scale(1, tiltScale);
+                        context.fillStyle = isResultFace ? '#050505' : main;
+                        context.font = `700 ${textSize}px Oswald, Arial, sans-serif`;
+                        context.textAlign = 'center'; context.textBaseline = 'middle';
                         context.fillText(String(faceInfo.index + 1), 0, 0);
                         context.restore();
                     }
                 });
+                if (actor.chosen && actor.revealed && actor.badgeLabel) {
+                    context.save();
+                    context.fillStyle = hexToRgba(accent, .18);
+                    context.strokeStyle = accent;
+                    context.lineWidth = 1;
+                    drawRoundedRect(context, -36, -actor.radius * 1.62, 72, 20, 10);
+                    context.fill(); context.stroke();
+                    context.fillStyle = accent;
+                    context.font = `700 11px Oswald, Arial, sans-serif`;
+                    context.textAlign = 'center'; context.textBaseline = 'middle';
+                    context.fillText(actor.badgeLabel, 0, -actor.radius * 1.62 + 10);
+                    context.restore();
+                }
                 context.restore();
             }
-
 
             let diceAudioContext = null;
             function getDiceAudioContext() {
@@ -576,36 +655,41 @@
                 const context = getDiceAudioContext();
                 if (!context) return;
                 const now = context.currentTime;
-                const duration = .08 + Math.max(0, Math.min(1, strength)) * .06;
+                const safeStrength = Math.max(.18, Math.min(1.25, Number(strength) || .7));
+                const duration = .09 + safeStrength * .08;
                 const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * duration)), context.sampleRate);
                 const samples = buffer.getChannelData(0);
-                for (let index = 0; index < samples.length; index++) samples[index] = (Math.random() * 2 - 1) * Math.pow(1 - index / samples.length, 3.3);
-                const source = context.createBufferSource();
+                for (let index = 0; index < samples.length; index += 1) {
+                    const progress = index / samples.length;
+                    const envelope = Math.pow(1 - progress, outcome ? 2.3 : 3.1);
+                    samples[index] = (Math.random() * 2 - 1) * envelope;
+                }
+                const noise = context.createBufferSource();
                 const filter = context.createBiquadFilter();
                 const gain = context.createGain();
-                source.buffer = buffer;
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(outcome === 'critical' ? 1500 : outcome === 'failure' ? 520 : 900, now);
+                noise.buffer = buffer;
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(outcome === 'critical' ? 1350 : outcome === 'failure' ? 420 : 760, now);
+                filter.Q.value = 1.1;
                 gain.gain.setValueAtTime(.0001, now);
-                gain.gain.exponentialRampToValueAtTime(.06 * Math.max(.3, strength), now + .006);
+                gain.gain.exponentialRampToValueAtTime(.028 * safeStrength, now + .004);
                 gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
-                source.connect(filter); filter.connect(gain); gain.connect(context.destination);
-                source.start(now); source.stop(now + duration + .03);
+                noise.connect(filter); filter.connect(gain); gain.connect(context.destination);
+                noise.start(now); noise.stop(now + duration + .03);
                 const oscillator = context.createOscillator();
                 const oscillatorGain = context.createGain();
                 oscillator.type = outcome === 'failure' ? 'sawtooth' : 'triangle';
-                oscillator.frequency.setValueAtTime(outcome === 'critical' ? 120 : outcome === 'failure' ? 45 : 70, now);
-                oscillator.frequency.exponentialRampToValueAtTime(30, now + duration);
-                oscillatorGain.gain.setValueAtTime(.022 * Math.max(.3, strength), now);
+                oscillator.frequency.setValueAtTime(outcome === 'critical' ? 116 : outcome === 'failure' ? 48 : 82, now);
+                oscillator.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 55 : 35, now + duration);
+                oscillatorGain.gain.setValueAtTime(.011 * safeStrength, now);
                 oscillatorGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
                 oscillator.connect(oscillatorGain); oscillatorGain.connect(context.destination);
-                oscillator.start(now); oscillator.stop(now + duration + .03);
+                oscillator.start(now); oscillator.stop(now + duration + .02);
             }
-            function diceAnimationDuration(event, count) {
-                if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return 280;
-                if (event.diceSpeed === 'fast') return Math.min(1050, 500 + count * 65);
-                if (event.diceSpeed === 'cinematic') return Math.min(4300, 2250 + count * 230);
-                return Math.min(2300, 1300 + count * 110);
+            function diceAnimationProfile(event, count) {
+                if (event.diceSpeed === 'fast') return { duration: Math.min(2150, 1350 + count * 105), launchRatio: .52, settleRatio: .85, bounce: 19, chosenScale: .13, nonChosenFade: .22, linger: 420, impacts: [.18,.46,.72,.9], spinBase: .28, spinBurst: .34 };
+                if (event.diceSpeed === 'cinematic') return { duration: Math.min(4850, 3300 + count * 235), launchRatio: .64, settleRatio: .9, bounce: 31, chosenScale: .2, nonChosenFade: .34, linger: 1120, impacts: [.14,.28,.46,.66,.84,.96], spinBase: .34, spinBurst: .52 };
+                return { duration: Math.min(3450, 2350 + count * 165), launchRatio: .58, settleRatio: .87, bounce: 25, chosenScale: .16, nonChosenFade: .28, linger: 760, impacts: [.18,.38,.58,.8,.94], spinBase: .31, spinBurst: .42 };
             }
             function triggerOutcomeEffect(event) {
                 if (event.diceFx === false || (!event.critical && !event.failure)) return;
@@ -623,7 +707,7 @@
                 document.body.appendChild(effect);
                 const bodyClass = type === 'critical' ? 'obs-critical-pulse' : 'obs-failure-shake';
                 document.body.classList.add(bodyClass);
-                playDiceImpact(event, 1, type);
+                playDiceImpact(event, 1.05, type);
                 window.setTimeout(() => { effect.remove(); document.body.classList.remove(bodyClass); }, 1250);
             }
 
@@ -636,6 +720,7 @@
                     const height = diceCanvas.height;
                     const rows = values.length > 4 ? 2 : 1;
                     const columns = rows === 1 ? values.length : Math.ceil(values.length / 2);
+                    const pickMode = inferPickMode({ rolls: values, chosen: event.chosen });
                     const actors = values.map((value, index) => {
                         const row = rows === 1 ? 0 : Math.floor(index / columns);
                         const column = rows === 1 ? index : index % columns;
@@ -645,15 +730,16 @@
                             x: cellWidth * (column + .5), y: cellHeight * (row + .53),
                             radius: Math.min(78, Math.max(45, Math.min(cellWidth, cellHeight) * .27)),
                             rx: Math.random()*Math.PI*2, ry: Math.random()*Math.PI*2, rz: Math.random()*Math.PI*2,
-                            spinX:(.25+Math.random()*.34)*(Math.random()>.5?1:-1), spinY:(.28+Math.random()*.4)*(Math.random()>.5?1:-1), spinZ:(.18+Math.random()*.3)*(Math.random()>.5?1:-1),
+                            spinX:(.18+Math.random()*.22)*(Math.random()>.5?1:-1), spinY:(.2+Math.random()*.24)*(Math.random()>.5?1:-1), spinZ:(.14+Math.random()*.18)*(Math.random()>.5?1:-1),
                             target:targetOrientationForFace(value-1), targetFace:value-1, chosen:index===chosenIndex,
-                            phase:Math.random()*Math.PI*2, offsetY:-15, revealed:false
+                            phase:Math.random()*Math.PI*2, offsetY:-15, revealed:false, scale:1, fade:1, badgeLabel:index===chosenIndex ? (pickMode === 'lowest' ? 'MENOR' : 'MAIOR') : ''
                         };
                     });
-                    diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')}</small>`;
+                    diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')} · TEMA ${safe(diceThemeLabel(event.diceTheme))}</small>`;
                     diceStage.classList.add('visible');
-                    const duration = diceAnimationDuration(event, values.length);
-                    const impactThresholds = [.12, .3, .48, .67, .82];
+                    const profile = diceAnimationProfile(event, values.length);
+                    const duration = profile.duration;
+                    const impactThresholds = profile.impacts;
                     let impactIndex = 0;
                     let started = null;
                     function frame(timestamp) {
@@ -661,36 +747,53 @@
                         const elapsed = timestamp - started;
                         const progress = Math.min(1, elapsed / duration);
                         while (impactIndex < impactThresholds.length && progress >= impactThresholds[impactIndex]) {
-                            playDiceImpact(event, .4 + impactIndex * .1);
+                            const isFinal = impactIndex === impactThresholds.length - 1;
+                            playDiceImpact(event, (isFinal ? .95 : .42) + impactIndex * .08, isFinal ? (event.critical ? 'critical' : event.failure ? 'failure' : '') : '');
                             impactIndex += 1;
                         }
                         drawTray(diceContext, width, height);
                         actors.forEach(actor => {
-                            if (progress < .72) {
-                                const damp = 1 - progress/.72;
-                                actor.rx += actor.spinX*(1.35+damp*.7);
-                                actor.ry += actor.spinY*(1.35+damp*.7);
-                                actor.rz += actor.spinZ*(1.15+damp*.55);
-                                actor.offsetY = -Math.abs(Math.sin(elapsed/145+actor.phase))*35*damp - damp*12;
+                            if (progress < profile.launchRatio) {
+                                const phase = progress / profile.launchRatio;
+                                const damp = 1 - phase;
+                                actor.rx += actor.spinX*(1.2+damp*profile.spinBurst);
+                                actor.ry += actor.spinY*(1.22+damp*profile.spinBurst);
+                                actor.rz += actor.spinZ*(1.08+damp*(profile.spinBurst-.08));
+                                actor.offsetY = -Math.abs(Math.sin(elapsed/160 + actor.phase))*profile.bounce*damp - damp*12;
+                                actor.scale = 1; actor.fade = 1; actor.revealed = false;
                             } else {
-                                const settle = (progress-.72)/.28;
-                                actor.rx = lerpAngle(actor.rx, actor.target.rx, .14+settle*.17);
-                                actor.ry = lerpAngle(actor.ry, actor.target.ry, .14+settle*.17);
-                                actor.rz = lerpAngle(actor.rz, actor.target.rz, .16+settle*.19);
-                                actor.offsetY *= .68;
-                                actor.revealed = settle > .48;
+                                const settle = Math.max(0, Math.min(1, (progress-profile.launchRatio)/(1-profile.launchRatio)));
+                                actor.rx = lerpAngle(actor.rx, actor.target.rx, .1+settle*.13);
+                                actor.ry = lerpAngle(actor.ry, actor.target.ry, .1+settle*.13);
+                                actor.rz = lerpAngle(actor.rz, actor.target.rz, .12+settle*.16);
+                                actor.offsetY *= .6;
+                                actor.revealed = settle >= .36;
+                                const focus = Math.max(0, Math.min(1, (progress-profile.settleRatio)/(1-profile.settleRatio)));
+                                actor.scale = actor.chosen ? 1 + profile.chosenScale * focus : 1 - .08 * focus;
+                                actor.fade = actor.chosen ? 1 : 1 - profile.nonChosenFade * focus;
                             }
                             drawD20(diceContext, actor, event);
                         });
+                        if (progress >= profile.settleRatio) {
+                            const accent = event.critical ? readOverlayColor('--gold', '#ffcc33') : event.failure ? readOverlayColor('--alert', '#ff2929') : readOverlayColor('--accent', '#ffffff');
+                            const label = `${pickMode === 'lowest' ? 'MENOR' : 'MAIOR'} RESULTADO: ${event.chosen}`;
+                            diceContext.save();
+                            diceContext.fillStyle = 'rgba(0,0,0,.48)';
+                            drawRoundedRect(diceContext, width/2 - 132, height - 46, 264, 26, 11); diceContext.fill();
+                            diceContext.strokeStyle = accent; diceContext.globalAlpha = .82; diceContext.stroke();
+                            diceContext.globalAlpha = 1; diceContext.fillStyle = accent; diceContext.font = `700 16px Oswald, Arial, sans-serif`; diceContext.textAlign = 'center'; diceContext.textBaseline = 'middle'; diceContext.fillText(label, width/2, height - 33); diceContext.restore();
+                            diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')} · ${safe(label)} · TEMA ${safe(diceThemeLabel(event.diceTheme))}</small>`;
+                        }
                         if (progress < 1) requestAnimationFrame(frame);
                         else window.setTimeout(() => {
                             diceStage.classList.remove('visible');
-                            window.setTimeout(() => { diceContext.clearRect(0,0,width,height); diceStageLabel.textContent=''; resolve(); }, 190);
-                        }, 380);
+                            window.setTimeout(() => { diceContext.clearRect(0,0,width,height); diceStageLabel.textContent=''; resolve(); }, 220);
+                        }, profile.linger);
                     }
                     requestAnimationFrame(frame);
                 });
             }
+
 
             function enqueue(payload, transport = 'local') {
                 if (payload?.remoteOnly && transport !== 'remote') return;
