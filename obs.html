@@ -186,6 +186,24 @@
         @keyframes obsCardCritical { 0%{filter:brightness(1)} 35%{filter:brightness(1.8);box-shadow:0 0 90px rgba(255,204,51,.75)} 100%{filter:brightness(1)} }
         @keyframes obsCardFailure { 0%,100%{transform:translate(0)} 14%{transform:translate(-14px,5px)} 28%{transform:translate(13px,-5px)} 42%{transform:translate(-9px,-3px)} 57%{transform:translate(10px,4px)} 72%{transform:translate(-5px,2px)} 86%{transform:translate(5px,-2px)} }
 
+
+        .obs-diagnostics {
+            position: fixed; top: 14px; right: 14px; z-index: 100;
+            width: min(330px, calc(100vw - 28px)); padding: 11px 13px;
+            border: 1px solid rgba(255,255,255,.22); border-left: 3px solid var(--accent);
+            background: rgba(2,2,4,.88); box-shadow: 0 10px 34px rgba(0,0,0,.55);
+            color: var(--main); font: 11px 'Share Tech Mono', monospace; letter-spacing: 1px;
+            pointer-events: none; backdrop-filter: blur(8px);
+        }
+        .obs-diagnostics[hidden] { display: none !important; }
+        .obs-diagnostics-title { display:flex; justify-content:space-between; gap:10px; color:var(--accent); font-weight:bold; margin-bottom:8px; }
+        .obs-diagnostics-grid { display:grid; grid-template-columns: 92px 1fr; gap:5px 10px; }
+        .obs-diagnostics-label { color:var(--dim); }
+        .obs-diagnostics-value { color:var(--main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .obs-diagnostics-value.ok { color:#69f0ae; }
+        .obs-diagnostics-value.warn { color:var(--gold); }
+        .obs-diagnostics-value.error { color:var(--alert); }
+
     </style>
 </head>
 <body>
@@ -206,13 +224,31 @@
     <div id="diceStageLabel" class="dice-stage-label"></div>
     <main id="stage" aria-live="polite"></main>
     <div id="connection" class="connection">AGUARDANDO SINAL...</div>
+
+    <aside id="diagnostics" class="obs-diagnostics" hidden aria-hidden="true">
+        <div class="obs-diagnostics-title"><span>OBS // DIAGNÓSTICO</span><span id="diagVersion">--</span></div>
+        <div class="obs-diagnostics-grid">
+            <span class="obs-diagnostics-label">LOCAL</span><span id="diagLocal" class="obs-diagnostics-value">INICIANDO</span>
+            <span class="obs-diagnostics-label">REMOTO</span><span id="diagRemote" class="obs-diagnostics-value">INICIANDO</span>
+            <span class="obs-diagnostics-label">PROTOCOLO</span><span id="diagProtocol" class="obs-diagnostics-value">--</span>
+            <span class="obs-diagnostics-label">FILA</span><span id="diagQueue" class="obs-diagnostics-value">0</span>
+            <span class="obs-diagnostics-label">ÚLTIMO PACOTE</span><span id="diagPacket" class="obs-diagnostics-value">NENHUM</span>
+            <span class="obs-diagnostics-label">LATÊNCIA</span><span id="diagLatency" class="obs-diagnostics-value">--</span>
+            <span class="obs-diagnostics-label">RECUPERAÇÃO</span><span id="diagRecovery" class="obs-diagnostics-value">AGUARDANDO</span>
+            <span class="obs-diagnostics-label">ÁUDIO</span><span id="diagAudio" class="obs-diagnostics-value">NÃO INICIADO</span>
+            <span class="obs-diagnostics-label">FPS D20</span><span id="diagFps" class="obs-diagnostics-value">--</span>
+        </div>
+    </aside>
     <script>
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.28.15-obs-aligned';
+            const OVERLAY_VERSION = '2026.07.28.16-recovery-queue-debug';
             const OBS_PROTOCOL_VERSION = 3;
-            const MAX_QUEUE_SIZE = 20;
+            const DEBUG_ENABLED = params.get('debug') === '1';
+            const QUEUE_MODE = ['smart', 'latest', 'all'].includes(params.get('queue')) ? params.get('queue') : 'smart';
+            const MAX_QUEUE_SIZE = Math.min(50, Math.max(5, Number.parseInt(params.get('queueMax'), 10) || 20));
+            const EVENT_TTL_MS = Math.min(180000, Math.max(15000, (Number.parseInt(params.get('ttl'), 10) || 45) * 1000));
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
             const accessKey = String(params.get('key') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
             const defaultDuration = Math.min(15000, Math.max(2000, (Number.parseInt(params.get('duration'), 10) || 6) * 1000));
@@ -223,16 +259,30 @@
             const hudAfi = document.getElementById('hudAfi');
             const hudPortrait = document.getElementById('hudPortrait');
             const hudConditions = document.getElementById('hudConditions');
+            const diagnostics = document.getElementById('diagnostics');
             const queue = [];
             const receivedIds = new Set();
             const bootTime = Date.now();
             let active = false;
+            let activeEvent = null;
+            let activeFinish = null;
             let relaySocket = null;
             let reconnectTimer = null;
             let reconnectAttempt = 0;
-            let recoveryDone = false;
+            let recoveryRequest = null;
             let broadcastChannel = null;
             let currentPortrait = '';
+            let localStatus = 'FALLBACK STORAGE';
+            let remoteStatus = navigator.onLine === false ? 'SEM INTERNET' : 'DESCONECTADO';
+            let recoveryStatus = 'AGUARDANDO';
+            let lastPacketAt = 0;
+            let lastPacketLatency = null;
+            let lastReceivedTimestamp = 0;
+            let lastRelayMessageId = '';
+            let droppedEvents = 0;
+            let diceFps = 0;
+            let lastDiceSoundEnabled = true;
+            let diagnosticsTimer = null;
             applyLayout('standard');
 
             function safe(value) {
@@ -243,6 +293,47 @@
                 connection.textContent = text;
                 connection.classList.toggle('show', visible);
                 if (visible) window.setTimeout(() => connection.classList.remove('show'), 2500);
+                updateDiagnostics();
+            }
+
+            function formatAge(timestamp) {
+                if (!timestamp) return 'NENHUM';
+                const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+                if (seconds < 2) return 'AGORA';
+                if (seconds < 60) return `${seconds}s`;
+                return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            }
+
+            function setDiagnosticValue(id, value, state = '') {
+                const element = document.getElementById(id);
+                if (!element) return;
+                element.textContent = String(value);
+                element.className = `obs-diagnostics-value${state ? ` ${state}` : ''}`;
+            }
+
+            function updateDiagnostics() {
+                if (!DEBUG_ENABLED || !diagnostics) return;
+                diagnostics.hidden = false;
+                diagnostics.setAttribute('aria-hidden', 'false');
+                document.getElementById('diagVersion').textContent = OVERLAY_VERSION;
+                setDiagnosticValue('diagLocal', localStatus, localStatus.includes('ATIVO') ? 'ok' : 'warn');
+                setDiagnosticValue('diagRemote', remoteStatus, remoteStatus === 'CONECTADO' ? 'ok' : remoteStatus === 'CONECTANDO' ? 'warn' : 'error');
+                setDiagnosticValue('diagProtocol', `${OBS_PROTOCOL_VERSION} · ${QUEUE_MODE.toUpperCase()}`, 'ok');
+                setDiagnosticValue('diagQueue', `${queue.length}/${MAX_QUEUE_SIZE} · DESCARTADOS ${droppedEvents}`, queue.length > 5 ? 'warn' : '');
+                setDiagnosticValue('diagPacket', formatAge(lastPacketAt), lastPacketAt ? 'ok' : 'warn');
+                setDiagnosticValue('diagLatency', lastPacketLatency === null ? '--' : `${Math.max(0, Math.round(lastPacketLatency))} ms`, lastPacketLatency !== null && lastPacketLatency > 2500 ? 'warn' : '');
+                setDiagnosticValue('diagRecovery', recoveryStatus, recoveryStatus === 'OK' ? 'ok' : recoveryStatus === 'BUSCANDO' ? 'warn' : '');
+                const audioState = diceAudioContext?.state || (lastDiceSoundEnabled ? 'NÃO INICIADO' : 'DESATIVADO');
+                setDiagnosticValue('diagAudio', audioState.toUpperCase(), audioState === 'running' ? 'ok' : audioState === 'suspended' ? 'warn' : '');
+                setDiagnosticValue('diagFps', diceFps ? String(diceFps) : '--', diceFps && diceFps < 45 ? 'warn' : '');
+            }
+
+            function startDiagnostics() {
+                if (!DEBUG_ENABLED || !diagnostics) return;
+                diagnostics.hidden = false;
+                diagnostics.setAttribute('aria-hidden', 'false');
+                updateDiagnostics();
+                diagnosticsTimer = window.setInterval(updateDiagnostics, 500);
             }
 
             function applyTheme(theme) {
@@ -287,14 +378,16 @@
                         hud.portrait = validPortrait(payload.hud.portrait) ? payload.hud.portrait : '';
                     } else delete hud.portrait;
                 }
-                return {
+                const normalized = {
                     id, protocol, appVersion: String(payload.appVersion || ''), timestamp,
+                    receivedAt: Date.now(), relayTime: Math.max(0, Number(payload.__relayTime) || 0) * 1000,
+                    relayId: String(payload.__relayId || ''),
                     duration: Math.min(15000, Math.max(2000, Number(payload.duration) || defaultDuration)),
                     event: eventType, character: String(payload.character || '').slice(0, 80),
                     title: String(payload.title || 'ROLAGEM').slice(0, 120),
                     subtitle: String(payload.subtitle || 'DARK DASHBOARD').slice(0, 100),
                     message: String(payload.message || '').slice(0, 900),
-                    rolls: Array.isArray(payload.rolls) ? payload.rolls.slice(0, 30).map(Number) : [],
+                    rolls: Array.isArray(payload.rolls) ? payload.rolls.slice(0, 30).map(Number).filter(Number.isFinite) : [],
                     chosen: Number(payload.chosen) || 0, bonus: Number(payload.bonus) || 0,
                     total: Number(payload.total) || 0,
                     damage: payload.damage === null || payload.damage === undefined ? null : Math.max(0, Number(payload.damage) || 0),
@@ -308,6 +401,9 @@
                     portrait: validPortrait(payload.portrait) ? payload.portrait : (payload.portrait === '' ? '' : undefined),
                     hud
                 };
+                normalized.priority = normalized.critical || normalized.failure ? 100 : normalized.event === 'test' ? 90 : normalized.event === 'banner' ? 70 : normalized.damage !== null ? 60 : 50;
+                normalized.expiresAt = normalized.receivedAt + (normalized.priority >= 90 ? Math.max(EVENT_TTL_MS, 90000) : normalized.event === 'banner' ? Math.max(EVENT_TTL_MS, 60000) : EVENT_TTL_MS);
+                return normalized;
             }
 
             async function sendTestAck(event) {
@@ -781,8 +877,16 @@
                     const impactThresholds = profile.impacts;
                     let impactIndex = 0;
                     let started = null;
+                    let fpsWindowStarted = null;
+                    let fpsFrames = 0;
                     function frame(timestamp) {
                         if (started === null) started = timestamp;
+                        if (fpsWindowStarted === null) fpsWindowStarted = timestamp;
+                        fpsFrames += 1;
+                        if (timestamp - fpsWindowStarted >= 500) {
+                            diceFps = Math.round((fpsFrames * 1000) / Math.max(1, timestamp - fpsWindowStarted));
+                            fpsFrames = 0; fpsWindowStarted = timestamp; updateDiagnostics();
+                        }
                         const elapsed = timestamp - started;
                         const progress = Math.min(1, elapsed / duration);
                         while (impactIndex < impactThresholds.length && progress >= impactThresholds[impactIndex]) {
@@ -834,17 +938,105 @@
             }
 
 
+            function isEventExpired(event) {
+                if (!event || ['hud', 'portrait'].includes(event.event)) return false;
+                const sourceTime = event.transport === 'remote' ? (event.relayTime || event.timestamp || event.receivedAt) : event.receivedAt;
+                return Date.now() > event.expiresAt || (sourceTime > 0 && Date.now() - sourceTime > Math.max(EVENT_TTL_MS, 15000));
+            }
+
+            function dropEvent(event, reason = 'expirado') {
+                droppedEvents += 1;
+                if (DEBUG_ENABLED) console.info(`OBS descartou evento (${reason})`, event?.id || event?.event || 'desconhecido');
+                updateDiagnostics();
+            }
+
+            function markPacket(event, transport) {
+                event.transport = transport;
+                lastPacketAt = Date.now();
+                const sourceTime = transport === 'remote' ? (event.relayTime || event.timestamp || lastPacketAt) : lastPacketAt;
+                lastPacketLatency = Math.max(0, lastPacketAt - sourceTime);
+                lastReceivedTimestamp = Math.max(lastReceivedTimestamp, event.timestamp || 0, event.relayTime || 0);
+                if (event.relayId) lastRelayMessageId = event.relayId;
+                if (transport === 'remote') remoteStatus = 'CONECTADO';
+                lastDiceSoundEnabled = event.diceSound !== false;
+                updateDiagnostics();
+            }
+
+            function trimQueueForCapacity() {
+                while (queue.length > MAX_QUEUE_SIZE) {
+                    let dropIndex = 0;
+                    for (let index = 1; index < queue.length; index += 1) {
+                        const candidate = queue[index];
+                        const current = queue[dropIndex];
+                        if (candidate.priority < current.priority || (candidate.priority === current.priority && candidate.receivedAt < current.receivedAt)) dropIndex = index;
+                    }
+                    const [removed] = queue.splice(dropIndex, 1);
+                    dropEvent(removed, 'fila cheia');
+                }
+            }
+
+            function insertQueuedEvent(event) {
+                if (QUEUE_MODE === 'latest' && event.priority < 90) {
+                    for (let index = queue.length - 1; index >= 0; index -= 1) {
+                        if (queue[index].priority < 90) {
+                            const [removed] = queue.splice(index, 1);
+                            dropEvent(removed, 'substituído pelo mais recente');
+                        }
+                    }
+                } else if (QUEUE_MODE === 'smart' && event.priority < 90 && queue.length >= 6) {
+                    const replaceIndex = queue.findIndex(item => item.priority < 90 && item.event === event.event && item.character === event.character && item.title === event.title);
+                    if (replaceIndex >= 0) {
+                        const [removed] = queue.splice(replaceIndex, 1);
+                        dropEvent(removed, 'resultado repetido mais antigo');
+                    }
+                }
+                queue.push(event);
+                queue.sort((left, right) => right.priority - left.priority || left.receivedAt - right.receivedAt);
+                trimQueueForCapacity();
+            }
+
             function enqueue(payload, transport = 'local') {
                 if (payload?.remoteOnly && transport !== 'remote') return;
                 const event = normalize(payload);
                 if (!event) return;
+                markPacket(event, transport);
                 if (event.event === 'portrait') { updatePortrait(event); return; }
                 if (event.event === 'hud') { updateHud(event); return; }
-                if (queue.length >= MAX_QUEUE_SIZE) queue.shift();
-                queue.push(event);
+                if (isEventExpired(event)) { dropEvent(event, 'evento antigo'); return; }
+                insertQueuedEvent(event);
+                if (activeEvent?.event === 'banner' && event.priority >= 90 && typeof activeFinish === 'function') activeFinish(true);
                 if (!active) showNext();
+                updateDiagnostics();
             }
 
+            function prepareEventForBacklog(event) {
+                const backlog = queue.length;
+                if (event.priority >= 90 || backlog < 3) return event;
+                const adjusted = { ...event, diceSpeed: 'fast', duration: Math.min(event.duration, backlog >= 6 ? 2400 : 3200) };
+                if (event.event === 'banner') adjusted.duration = Math.min(adjusted.duration, 2200);
+                return adjusted;
+            }
+
+            function presentCard(card, event, afterDone) {
+                let finished = false;
+                let hideTimer = null;
+                let removeTimer = null;
+                const finish = immediate => {
+                    if (finished) return;
+                    finished = true;
+                    window.clearTimeout(hideTimer);
+                    window.clearTimeout(removeTimer);
+                    activeFinish = null;
+                    card.classList.remove('visible');
+                    card.classList.add('leaving');
+                    removeTimer = window.setTimeout(() => {
+                        card.remove(); activeEvent = null; afterDone();
+                    }, immediate ? 100 : 420);
+                };
+                activeFinish = finish;
+                requestAnimationFrame(() => card.classList.add('visible'));
+                hideTimer = window.setTimeout(() => finish(false), event.duration);
+            }
 
             function showResultCard(event) {
                 const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
@@ -866,31 +1058,27 @@
                         </div>
                     </div>`;
                 stage.replaceChildren(card);
-                requestAnimationFrame(() => { card.classList.add('visible'); triggerOutcomeEffect(event); });
+                requestAnimationFrame(() => triggerOutcomeEffect(event));
                 if (event.event === 'test') sendTestAck(event);
-                window.setTimeout(() => {
-                    card.classList.remove('visible');
-                    card.classList.add('leaving');
-                    window.setTimeout(() => { card.remove(); showNext(); }, 420);
-                }, event.duration);
+                presentCard(card, event, showNext);
             }
 
             async function showNext() {
-                if (!queue.length) { active = false; return; }
+                while (queue.length && isEventExpired(queue[0])) dropEvent(queue.shift(), 'venceu na fila');
+                if (!queue.length) { active = false; activeEvent = null; updateDiagnostics(); return; }
                 active = true;
-                const event = queue.shift();
+                const originalEvent = queue.shift();
+                const event = prepareEventForBacklog(originalEvent);
+                activeEvent = event;
                 applyTheme(event.theme);
                 applyLayout(event.layout);
+                updateDiagnostics();
                 if (event.event === 'banner') {
                     const card = document.createElement('section');
                     card.className = 'card';
                     card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div></div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
                     stage.replaceChildren(card);
-                    requestAnimationFrame(() => card.classList.add('visible'));
-                    window.setTimeout(() => {
-                        card.classList.remove('visible'); card.classList.add('leaving');
-                        window.setTimeout(() => { card.remove(); showNext(); }, 420);
-                    }, event.duration);
+                    presentCard(card, event, showNext);
                     return;
                 }
                 await animateDice(event);
@@ -905,6 +1093,10 @@
                     if (parsed.event !== 'message') return null;
                     const payload = JSON.parse(parsed.message);
                     if (payload?.event === 'ack') return null;
+                    if (payload && typeof payload === 'object') {
+                        payload.__relayId = String(parsed.id || '');
+                        payload.__relayTime = Math.max(0, Number(parsed.time) || 0);
+                    }
                     return payload;
                 } catch (error) { console.warn('Evento remoto inválido.', error); return null; }
             }
@@ -919,6 +1111,8 @@
                 let latestHud = null;
                 let latestPortrait = null;
                 payloads.forEach(payload => {
+                    if (payload.__relayId) lastRelayMessageId = payload.__relayId;
+                    if (payload.__relayTime) lastReceivedTimestamp = Math.max(lastReceivedTimestamp, Number(payload.__relayTime) * 1000);
                     const type = String(payload.event || '');
                     if (type === 'hud' && (!latestHud || Number(payload.timestamp || 0) > Number(latestHud.timestamp || 0))) latestHud = payload;
                     if (type === 'portrait' && (!latestPortrait || Number(payload.timestamp || 0) > Number(latestPortrait.timestamp || 0))) latestPortrait = payload;
@@ -927,22 +1121,31 @@
                 if (latestHud) enqueue(latestHud, 'remote');
             }
 
-            async function recoverPersistentStateOnce() {
-                if (recoveryDone) return;
-                recoveryDone = true;
+            async function recoverPersistentState(reason = 'reconnect') {
+                if (recoveryRequest) recoveryRequest.abort();
                 const controller = new AbortController();
+                recoveryRequest = controller;
+                recoveryStatus = 'BUSCANDO'; updateDiagnostics();
                 const timeoutId = window.setTimeout(() => controller.abort(), 9000);
                 try {
-                    const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=12h&_=${Date.now()}`;
+                    const since = lastRelayMessageId || (lastReceivedTimestamp ? String(Math.max(0, Math.floor((lastReceivedTimestamp - 5000) / 1000))) : '12h');
+                    const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=${encodeURIComponent(since)}&_=${Date.now()}`;
                     const response = await fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal });
                     if (!response.ok) {
                         if (response.status === 429) setConnection('RELAY TEMPORARIAMENTE LIMITADO // HUD AO VIVO CONTINUA', true);
                         throw new Error(`HTTP ${response.status}`);
                     }
                     processRecoveryBatch(await response.text());
+                    recoveryStatus = 'OK';
+                    if (DEBUG_ENABLED) console.info(`Recuperação OBS concluída (${reason}) desde ${since}.`);
                 } catch (error) {
-                    console.warn('Recuperação única do HUD indisponível.', error);
-                } finally { window.clearTimeout(timeoutId); }
+                    if (error?.name !== 'AbortError') console.warn('Recuperação do HUD indisponível.', error);
+                    recoveryStatus = error?.name === 'AbortError' ? 'CANCELADA' : 'FALHOU';
+                } finally {
+                    window.clearTimeout(timeoutId);
+                    if (recoveryRequest === controller) recoveryRequest = null;
+                    updateDiagnostics();
+                }
             }
 
             function closeRelaySocket() {
@@ -953,6 +1156,8 @@
                     relaySocket.close();
                 } catch (error) {}
                 relaySocket = null;
+                remoteStatus = navigator.onLine === false ? 'SEM INTERNET' : 'DESCONECTADO';
+                updateDiagnostics();
             }
 
             function scheduleReconnect() {
@@ -960,16 +1165,18 @@
                 const base = Math.min(60000, 4000 * (2 ** Math.min(reconnectAttempt, 4)));
                 const delay = base + Math.floor(Math.random() * 1200);
                 reconnectAttempt += 1;
+                remoteStatus = `RECONECTA ${Math.ceil(delay / 1000)}s`;
                 setConnection(`RECONECTANDO EM ${Math.ceil(delay / 1000)}s`, true);
                 reconnectTimer = window.setTimeout(() => {
                     reconnectTimer = null;
-                    startRelaySocket();
+                    startRelaySocket('timer');
                 }, delay);
             }
 
-            function startRelaySocket() {
-                if (navigator.onLine === false) return;
+            function startRelaySocket(reason = 'startup') {
+                if (navigator.onLine === false) { remoteStatus = 'SEM INTERNET'; updateDiagnostics(); return; }
                 closeRelaySocket();
+                remoteStatus = 'CONECTANDO';
                 setConnection('CONECTANDO OVERLAY...', true);
                 try {
                     const socket = new WebSocket(`wss://ntfy.sh/${encodeURIComponent(channel)}/ws`);
@@ -977,19 +1184,22 @@
                     socket.onopen = () => {
                         if (relaySocket !== socket) return;
                         reconnectAttempt = 0;
-                        setConnection('OVERLAY CONECTADO // SESSÃO SEGURA', true);
-                        recoverPersistentStateOnce();
+                        remoteStatus = 'CONECTADO';
+                        setConnection('OVERLAY CONECTADO // CANAL AUTENTICADO', true);
+                        recoverPersistentState(reason);
                     };
                     socket.onmessage = event => parseRelayEnvelope(event.data);
                     socket.onerror = () => { if (relaySocket === socket) socket.close(); };
                     socket.onclose = () => {
                         if (relaySocket !== socket) return;
                         relaySocket = null;
+                        remoteStatus = 'DESCONECTADO'; updateDiagnostics();
                         scheduleReconnect();
                     };
                 } catch (error) {
                     console.warn('WebSocket do relay indisponível.', error);
                     relaySocket = null;
+                    remoteStatus = 'ERRO'; updateDiagnostics();
                     scheduleReconnect();
                 }
             }
@@ -1004,19 +1214,28 @@
                 try {
                     broadcastChannel = new BroadcastChannel(`dark-obs-${channel}`);
                     broadcastChannel.addEventListener('message', event => enqueue(event.data, 'local'));
-                } catch (error) { console.warn(error); }
+                    localStatus = 'BROADCAST ATIVO';
+                } catch (error) { console.warn(error); localStatus = 'STORAGE FALLBACK'; }
             }
             window.addEventListener('storage', event => {
                 if (event.key !== 'DarkObsLastEvent' || !event.newValue) return;
                 try { enqueue(JSON.parse(event.newValue), 'local'); } catch (error) { console.warn(error); }
             });
-            window.addEventListener('online', () => { reconnectAttempt = 0; startRelaySocket(); });
+            window.addEventListener('online', () => { reconnectAttempt = 0; remoteStatus = 'CONECTANDO'; startRelaySocket('online'); });
             window.addEventListener('offline', () => {
+                if (recoveryRequest) recoveryRequest.abort();
                 closeRelaySocket();
+                remoteStatus = 'SEM INTERNET'; recoveryStatus = 'AGUARDANDO REDE';
                 setConnection('SEM INTERNET — ÚLTIMO HUD PRESERVADO', true);
             });
-            window.addEventListener('beforeunload', closeRelaySocket);
-            startRelaySocket();
+            window.addEventListener('beforeunload', () => {
+                closeRelaySocket();
+                if (recoveryRequest) recoveryRequest.abort();
+                if (diagnosticsTimer) window.clearInterval(diagnosticsTimer);
+            });
+            startDiagnostics();
+            updateDiagnostics();
+            startRelaySocket('startup');
         })();
     </script>
 </body>
