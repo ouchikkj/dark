@@ -1839,6 +1839,7 @@
     let combatMacros = [];
     let editingMacroId = null;
     let obsSettings = { enabled: false, channel: '', accessKey: '', duration: 6000, showName: true, hudEnabled: true, hudConditions: true, hudPortrait: true, layout: 'standard' };
+    let diceSettings = { enabled: true, sound: true, speed: 'normal', effects: true, theme: 'adaptive' };
     let obsBroadcastChannel = null;
     let obsPortraitThumbnail = '';
     let obsPortraitSource = '';
@@ -1866,7 +1867,7 @@
     let profilesIndex = null;
     let defaultPanelState = null;
 
-    const APP_VERSION = '2026.07.27.11-stability';
+    const APP_VERSION = '2026.07.27.12-dice-controls';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -2264,6 +2265,11 @@
             character: obsSettings.showName ? characterName.slice(0, 80) : '',
             theme: getCurrentThemeName(),
             layout: sanitizeObsLayout(obsSettings.layout),
+            dice3d: diceSettings.enabled !== false,
+            diceSound: diceSettings.sound !== false,
+            diceSpeed: ['fast', 'normal', 'cinematic'].includes(diceSettings.speed) ? diceSettings.speed : 'normal',
+            diceFx: diceSettings.effects !== false,
+            diceTheme: ddNormalizeDiceTheme(diceSettings.theme),
             channel: ensureObsChannel(),
             accessKey: ensureObsAccessKey(),
             profileId: activeProfileId || '',
@@ -2708,6 +2714,12 @@
         return String(modernName || legacyName || fallback).trim().slice(0, 60) || fallback;
     }
 
+
+    const DD_DICE_THEME_LIST = ['adaptive', 'onyx', 'ivory', 'emerald', 'crimson', 'amethyst', 'gold', 'frost'];
+    function ddNormalizeDiceTheme(theme) {
+        return DD_DICE_THEME_LIST.includes(theme) ? theme : 'adaptive';
+    }
+
     function loadGlobalObsSettings(fallback = null) {
         const stored = safeReadJson(GLOBAL_SETTINGS_KEY, null);
         const source = stored?.obs && typeof stored.obs === 'object' ? stored.obs : fallback;
@@ -2723,12 +2735,27 @@
             obsSettings.hudPortrait = source.hudPortrait !== false;
             obsSettings.layout = sanitizeObsLayout(source.layout);
         }
+        const diceSource = stored?.dice && typeof stored.dice === 'object' ? stored.dice : fallback?.dice;
+        if (diceSource && typeof diceSource === 'object') {
+            diceSettings.enabled = diceSource.enabled !== false;
+            diceSettings.sound = diceSource.sound !== false;
+            diceSettings.effects = diceSource.effects !== false;
+            diceSettings.speed = ['fast', 'normal', 'cinematic'].includes(diceSource.speed) ? diceSource.speed : 'normal';
+            diceSettings.theme = ddNormalizeDiceTheme(diceSource.theme);
+        }
         ensureObsChannel(); ensureObsAccessKey();
         writeGlobalObsSettings();
     }
 
     function writeGlobalObsSettings() {
-        return safeWriteJson(GLOBAL_SETTINGS_KEY, { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } });
+        const stored = safeReadJson(GLOBAL_SETTINGS_KEY, null);
+        return safeWriteJson(GLOBAL_SETTINGS_KEY, {
+            ...(stored && typeof stored === 'object' ? stored : {}),
+            version: 3,
+            appVersion: APP_VERSION,
+            obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() },
+            dice: { ...diceSettings }
+        });
     }
 
     function recoverInterruptedSave() {
@@ -2754,7 +2781,7 @@
         const updatedIndex = cloneProfileData(profilesIndex);
         const profile = updatedIndex.profiles.find(item => item.id === profileId);
         if (profile) profile.updatedAt = Date.now();
-        const globalSettings = { version: 2, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() } };
+        const globalSettings = { version: 3, appVersion: APP_VERSION, obs: { ...obsSettings, channel: ensureObsChannel(), accessKey: ensureObsAccessKey() }, dice: { ...diceSettings } };
         const marker = { version: 2, profileId, timestamp: Date.now(), globalSettings };
         if (!safeWriteJson(SAVE_COMMIT_KEY, marker)) return false;
         const profileOk = safeWriteJson(profileDataKey(profileId), cleanData);
@@ -3839,9 +3866,11 @@
         const skillSelect = document.getElementById('diceSkillSelect'); if (skillSelect?.parentElement) skillSelect.parentElement.style.display = 'none';
         const description = document.getElementById('diceModalDesc'); if (description) description.innerText = 'ANÁLISE DE COMBATE';
         modal.style.display = 'flex'; playSfx('roll');
-        ddAnimate3DDiceRoll({ rolls: d20Rolls, chosenIndex, resultArea, title: `MACRO // ${macro.nome}`, subtitle: `ATAQUE ${macro.attr}${disadvantage ? ' · DESVANTAGEM' : ''}` }).then(() => {
+        ddAnimate3DDiceRoll({ rolls: d20Rolls, chosenIndex, resultArea, title: `MACRO // ${macro.nome}`, subtitle: `ATAQUE ${macro.attr}${disadvantage ? ' · DESVANTAGEM' : ''}`, chooseMode: disadvantage ? 'lowest' : 'highest', outcome: isCritical ? 'critical' : isFailure ? 'failure' : '' }).then(() => {
             if (!document.body.contains(resultArea)) return;
-            playSfx('alert'); resultArea.innerHTML = finalResult;
+            playSfx('alert');
+            ddMountDiceResultSummary(resultArea, finalResult);
+            ddTriggerDiceOutcomeEffect(isCritical ? 'critical' : isFailure ? 'failure' : '');
             sendObsEvent({ event: 'macro', title: `MACRO // ${macro.nome}`, subtitle: `ATAQUE ${macro.attr}`, rolls: d20Rolls, chosen: chosenD20, bonus: skillBonus, total: hitTotal, critical: isCritical, failure: isFailure, damage: Math.max(0, damageTotal), damageRolls, damageDetail, peCost: effectivePeCost, peRemaining: remainingPe });
         });
     }
@@ -5209,6 +5238,20 @@
             .dd-dice3d-title { color: var(--text-main); font-weight: bold; }
             .dd-dice3d-hint { color: var(--gold-color); font-size: .68rem; opacity: .92; }
             .dd-dice3d-badge { position:absolute; top:10px; right:10px; z-index:2; border:1px solid var(--border-color); background: rgba(0,0,0,.45); padding:5px 8px; font-size:.66rem; letter-spacing:1.6px; color:var(--gold-color); }
+            .dd-dice-outcome-fx { position:fixed; inset:0; z-index:10050; pointer-events:none; overflow:hidden; }
+            .dd-dice-outcome-fx::before { content:''; position:absolute; inset:-15%; opacity:0; }
+            .dd-dice-outcome-fx.critical::before { background:radial-gradient(circle, rgba(255,224,90,.55), rgba(255,190,0,.12) 35%, transparent 70%); animation:ddCriticalFlash .9s ease-out forwards; }
+            .dd-dice-outcome-fx.failure::before { background:repeating-linear-gradient(90deg, transparent 0 9px, rgba(255,0,45,.18) 10px 12px); animation:ddFailureGlitch .72s steps(7,end) forwards; }
+            .dd-dice-particle { position:absolute; left:50%; top:50%; width:5px; height:18px; background:var(--gold-color); box-shadow:0 0 12px currentColor; transform-origin:50% 260px; animation:ddParticleBurst .95s cubic-bezier(.12,.72,.24,1) forwards; }
+            .dd-dice-outcome-fx.failure .dd-dice-particle { width:18px; height:3px; background:var(--alert-color); color:var(--alert-color); animation-name:ddFailureShard; }
+            body.dd-dice-critical-pulse .modal-content { animation:ddCriticalCardPulse .75s ease-out; }
+            body.dd-dice-failure-shake .modal-content { animation:ddFailureShake .55s steps(6,end); }
+            @keyframes ddCriticalFlash { 0%{opacity:0;transform:scale(.55)} 25%{opacity:1} 100%{opacity:0;transform:scale(1.2)} }
+            @keyframes ddFailureGlitch { 0%{opacity:0;transform:translateX(0)} 25%{opacity:.8;transform:translateX(-12px)} 50%{opacity:.45;transform:translateX(14px)} 75%{opacity:.75;transform:translateX(-5px)} 100%{opacity:0;transform:translateX(0)} }
+            @keyframes ddParticleBurst { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scale(.25)} 18%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-250px) scale(1)} }
+            @keyframes ddFailureShard { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scaleX(.2)} 22%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-210px) scaleX(1.6)} }
+            @keyframes ddCriticalCardPulse { 0%{filter:brightness(1)} 35%{filter:brightness(1.75);box-shadow:0 0 55px rgba(255,204,51,.6)} 100%{filter:brightness(1)} }
+            @keyframes ddFailureShake { 0%,100%{transform:translate(0)} 20%{transform:translate(-8px,3px)} 40%{transform:translate(8px,-3px)} 60%{transform:translate(-5px,-2px)} 80%{transform:translate(5px,2px)} }
         `;
         document.head.appendChild(style);
     }
@@ -5282,15 +5325,144 @@
         ddD20EulerCache.set(target, best);
         return best;
     }
-    function ddGetDicePalette(isChosen = false) {
-        const styles = getComputedStyle(document.body);
-        const accent = styles.getPropertyValue('--menu-accent').trim() || styles.getPropertyValue('--glow').trim() || '#e0e0e0';
-        const text = styles.getPropertyValue('--text-main').trim() || '#f2f2f2';
-        const border = styles.getPropertyValue('--border-color').trim() || '#333333';
-        const alert = styles.getPropertyValue('--alert-color').trim() || '#ff3344';
-        const dark = 'rgba(10, 10, 12, 0.96)';
-        return { fill: isChosen ? ddHexToRgba(accent, 0.96) : dark, edge: isChosen ? accent : border, text: isChosen ? '#080808' : text, glow: isChosen ? ddHexToRgba(accent, 0.22) : 'rgba(255,255,255,0.08)', chosenOutline: isChosen ? accent : alert, shadow: isChosen ? ddHexToRgba(accent, 0.32) : 'rgba(0,0,0,0.35)' };
+
+    function ddPrimeD20Orientations() {
+        if (ddPrimeD20Orientations.done) return;
+        ddPrimeD20Orientations.done = true;
+        const warm = () => { for (let face = 0; face < 20; face += 1) ddGetTargetEulerForFace(face); };
+        if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 1200 });
+        else window.setTimeout(warm, 80);
     }
+    ddPrimeD20Orientations();
+
+    const DD_DICE_THEME_PRESETS = {
+        adaptive: null,
+        onyx: { base: '#121318', edge: '#d6d9e4', text: '#f5f7ff', glow: '#ffffff' },
+        ivory: { base: '#f1eadf', edge: '#8d7256', text: '#221b16', glow: '#e0b980' },
+        emerald: { base: '#0d1714', edge: '#37d39a', text: '#e8fff8', glow: '#37d39a' },
+        crimson: { base: '#180c10', edge: '#ff4a67', text: '#ffecef', glow: '#ff4a67' },
+        amethyst: { base: '#15101b', edge: '#bd87ff', text: '#f3e9ff', glow: '#bd87ff' },
+        gold: { base: '#17140c', edge: '#ffcf53', text: '#fff5cf', glow: '#ffcf53' },
+        frost: { base: '#0b151c', edge: '#75d5ff', text: '#ebfbff', glow: '#75d5ff' }
+    };
+    function ddGetDiceThemeMeta(themeName = diceSettings.theme) {
+        const key = ddNormalizeDiceTheme(themeName);
+        const names = {
+            adaptive: 'SISTEMA', onyx: 'ÔNIX', ivory: 'MARFIM', emerald: 'ESMERALDA',
+            crimson: 'RUBI', amethyst: 'AMETISTA', gold: 'DOURADO', frost: 'GELO'
+        };
+        return { key, label: names[key] || 'SISTEMA' };
+    }
+    function ddGetDicePalette(isChosen = false, themeName = diceSettings.theme) {
+        const theme = ddNormalizeDiceTheme(themeName);
+        if (theme === 'adaptive') {
+            const styles = getComputedStyle(document.body);
+            const accent = styles.getPropertyValue('--menu-accent').trim() || styles.getPropertyValue('--glow').trim() || '#e0e0e0';
+            const text = styles.getPropertyValue('--text-main').trim() || '#f2f2f2';
+            const border = styles.getPropertyValue('--border-color').trim() || '#333333';
+            const alert = styles.getPropertyValue('--alert-color').trim() || '#ff3344';
+            const dark = 'rgba(10, 10, 12, 0.96)';
+            return { base: '#101014', fill: isChosen ? ddHexToRgba(accent, 0.96) : dark, edge: isChosen ? accent : border, text: isChosen ? '#080808' : text, glow: isChosen ? ddHexToRgba(accent, 0.28) : 'rgba(255,255,255,0.08)', chosenOutline: isChosen ? accent : alert, shadow: isChosen ? ddHexToRgba(accent, 0.32) : 'rgba(0,0,0,0.35)' };
+        }
+        const preset = DD_DICE_THEME_PRESETS[theme] || DD_DICE_THEME_PRESETS.onyx;
+        return {
+            base: preset.base,
+            fill: isChosen ? ddHexToRgba(preset.edge, 0.96) : ddHexToRgba(preset.base, 0.98),
+            edge: preset.edge,
+            text: isChosen ? '#090909' : preset.text,
+            glow: ddHexToRgba(preset.glow, isChosen ? 0.34 : 0.18),
+            chosenOutline: preset.edge,
+            shadow: ddHexToRgba(preset.glow, isChosen ? 0.28 : 0.22)
+        };
+    }
+
+
+    function ddPlayDiceImpact(strength = 0.7, outcome = '') {
+        if (isMuted || diceSettings.sound === false) return;
+        const context = getAudioContext();
+        if (!context) return;
+        if (context.state === 'suspended') context.resume().catch(() => {});
+        const now = context.currentTime;
+        const safeStrength = Math.max(.18, Math.min(1.25, Number(strength) || .7));
+        const duration = 0.09 + safeStrength * 0.08;
+        const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * duration)), context.sampleRate);
+        const samples = buffer.getChannelData(0);
+        for (let index = 0; index < samples.length; index++) {
+            const progress = index / samples.length;
+            const envelope = Math.pow(1 - progress, outcome ? 2.4 : 3.0);
+            samples[index] = (Math.random() * 2 - 1) * envelope;
+        }
+        const noise = context.createBufferSource();
+        const filter = context.createBiquadFilter();
+        const gain = context.createGain();
+        noise.buffer = buffer;
+        filter.type = 'bandpass';
+        filter.Q.value = outcome === 'critical' ? 1.3 : 1.1;
+        filter.frequency.setValueAtTime(outcome === 'critical' ? 1350 : outcome === 'failure' ? 410 : 760, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.03 * safeStrength, now + .004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        noise.connect(filter); filter.connect(gain); gain.connect(context.destination);
+        noise.start(now); noise.stop(now + duration + .03);
+        const oscillator = context.createOscillator();
+        const oscillatorGain = context.createGain();
+        oscillator.type = outcome === 'failure' ? 'sawtooth' : 'triangle';
+        oscillator.frequency.setValueAtTime(outcome === 'critical' ? 118 : outcome === 'failure' ? 50 : 82, now);
+        oscillator.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 55 : 36, now + duration);
+        oscillatorGain.gain.setValueAtTime(0.012 * safeStrength, now);
+        oscillatorGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        oscillator.connect(oscillatorGain); oscillatorGain.connect(context.destination);
+        oscillator.start(now); oscillator.stop(now + duration + .02);
+    }
+
+    function ddTriggerDiceOutcomeEffect(type) {
+        if (!type || diceSettings.effects === false) return;
+        const effect = document.createElement('div');
+        effect.className = `dd-dice-outcome-fx ${type}`;
+        const particleCount = type === 'critical' ? 34 : 24;
+        for (let index = 0; index < particleCount; index++) {
+            const particle = document.createElement('span');
+            particle.className = 'dd-dice-particle';
+            particle.style.setProperty('--angle', `${(360 / particleCount) * index + Math.random() * 10}deg`);
+            particle.style.animationDelay = `${Math.random() * .12}s`;
+            effect.appendChild(particle);
+        }
+        document.body.appendChild(effect);
+        const bodyClass = type === 'critical' ? 'dd-dice-critical-pulse' : 'dd-dice-failure-shake';
+        document.body.classList.add(bodyClass);
+        ddPlayDiceImpact(1.05, type);
+        window.setTimeout(() => { effect.remove(); document.body.classList.remove(bodyClass); }, 1180);
+    }
+
+    function ddGetDiceModeProfile(count) {
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        if (reduced) return { duration: 420, launchRatio: .42, settleRatio: .82, bounce: 10, chosenScale: .08, nonChosenFade: .18, linger: 120, impacts: [.32, .7, .92], spinBase: .22, spinBurst: .22 };
+        if (diceSettings.speed === 'fast') return { duration: Math.min(2100, 1320 + count * 110), launchRatio: .52, settleRatio: .84, bounce: 19, chosenScale: .13, nonChosenFade: .22, linger: 420, impacts: [.2, .48, .72, .9], spinBase: .28, spinBurst: .34 };
+        if (diceSettings.speed === 'cinematic') return { duration: Math.min(4800, 3250 + count * 240), launchRatio: .64, settleRatio: .89, bounce: 31, chosenScale: .2, nonChosenFade: .34, linger: 1050, impacts: [.14, .28, .46, .66, .84, .96], spinBase: .34, spinBurst: .52 };
+        return { duration: Math.min(3400, 2250 + count * 180), launchRatio: .58, settleRatio: .86, bounce: 25, chosenScale: .16, nonChosenFade: .28, linger: 760, impacts: [.18, .38, .58, .8, .94], spinBase: .31, spinBurst: .42 };
+    }
+
+    function ddInferPickMode(rolls, chosenIndex, explicitMode = 'auto') {
+        if (explicitMode === 'highest' || explicitMode === 'lowest') return explicitMode;
+        const values = Array.isArray(rolls) ? rolls.map(value => Number(value) || 0) : [];
+        if (!values.length) return 'highest';
+        const chosen = values[Math.max(0, Math.min(values.length - 1, Number(chosenIndex) || 0))];
+        const max = Math.max(...values), min = Math.min(...values);
+        return chosen === min && chosen !== max ? 'lowest' : 'highest';
+    }
+
+    function ddMountDiceResultSummary(resultArea, html) {
+        if (!resultArea) return;
+        const shell = resultArea.querySelector('#ddDice3dShell');
+        const existing = resultArea.querySelector('.dd-dice-result-summary');
+        if (existing) existing.remove();
+        const wrapper = document.createElement('div');
+        wrapper.className = 'dd-dice-result-summary';
+        wrapper.style.marginTop = '12px';
+        wrapper.innerHTML = html;
+        if (shell) shell.appendChild(wrapper); else resultArea.appendChild(wrapper);
+    }
+
     function ddDraw3DD20(ctx, actor) {
         const rotatedVertices = DD_D20_GEOMETRY.vertices.map(vertex => ddRotateVertex(vertex, actor.rx, actor.ry, actor.rz));
         const projectionDistance = 4.8;
@@ -5312,76 +5484,171 @@
             return { face, index, normal, lightPower, averageZ, center3, centerProjection };
         }).sort((left, right) => left.averageZ - right.averageZ);
         ctx.save();
+        ctx.globalAlpha = actor.fade ?? 1;
         ctx.translate(actor.x, actor.y + actor.offsetY);
-        const shadowScale = ddClamp((actor.radius / 42) * (1 + Number(actor.highlight) * 0.05), 0.8, 1.55);
+        ctx.scale(actor.scale || 1, actor.scale || 1);
+        const shadowScale = ddClamp((actor.radius / 42) * (1 + Number(actor.highlight) * 0.06), 0.8, 1.6);
         ctx.fillStyle = palette.shadow;
         ctx.beginPath();
-        ctx.ellipse(0, actor.radius * 1.12, actor.radius * 0.9 * shadowScale, actor.radius * 0.25 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, actor.radius * 1.14, actor.radius * 0.9 * shadowScale, actor.radius * 0.25 * shadowScale, 0, 0, Math.PI * 2);
         ctx.fill();
-        if (actor.highlightPulse > 0.02) { ctx.shadowBlur = 28; ctx.shadowColor = palette.glow; }
+        if (actor.highlightPulse > 0.02) { ctx.shadowBlur = 34; ctx.shadowColor = palette.glow; }
         faceData.forEach(faceDataItem => {
             const points = faceDataItem.face.map(vertexIndex => projected[vertexIndex]);
-            const shade = 0.26 + faceDataItem.lightPower * 0.78;
-            const fillAlpha = actor.highlight ? 0.94 : 0.92;
-            const outlineColor = faceDataItem.index === actor.targetFace ? palette.chosenOutline : palette.edge;
-            ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y); ctx.lineTo(points[1].x, points[1].y); ctx.lineTo(points[2].x, points[2].y); ctx.closePath();
-            ctx.fillStyle = faceDataItem.index === actor.targetFace && actor.revealed ? ddHexToRgba(outlineColor, fillAlpha) : `rgba(${Math.round(18 + 40 * shade)}, ${Math.round(18 + 42 * shade)}, ${Math.round(20 + 46 * shade)}, ${fillAlpha})`;
+            const shade = 0.24 + faceDataItem.lightPower * 0.82;
+            const fillAlpha = actor.highlight ? 0.96 : 0.92;
+            const isResultFace = faceDataItem.index === actor.targetFace && actor.revealed;
+            const outlineColor = isResultFace ? palette.chosenOutline : palette.edge;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y); ctx.lineTo(points[1].x, points[1].y); ctx.lineTo(points[2].x, points[2].y); ctx.closePath();
+            ctx.fillStyle = isResultFace ? ddHexToRgba(outlineColor, actor.highlight ? .98 : .88) : ddHexToRgba(palette.base || '#101014', Math.min(.99, .76 + shade * .18));
             ctx.fill();
-            ctx.strokeStyle = outlineColor; ctx.lineWidth = faceDataItem.index === actor.targetFace && actor.revealed ? 1.6 : 1; ctx.stroke();
+            ctx.strokeStyle = outlineColor;
+            ctx.lineWidth = isResultFace ? (actor.highlight ? 2.2 : 1.5) : 1;
+            ctx.stroke();
             if (faceDataItem.normal[2] > 0.04) {
                 const cx = faceDataItem.center3[0] * actor.radius * faceDataItem.centerProjection;
                 const cy = faceDataItem.center3[1] * actor.radius * faceDataItem.centerProjection;
-                ctx.save(); ctx.translate(cx, cy); ctx.fillStyle = faceDataItem.index === actor.targetFace && actor.revealed ? '#080808' : palette.text; ctx.font = `bold ${Math.max(10, actor.radius * 0.30)}px Inter, Arial, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(faceDataItem.index + 1), 0, 0); ctx.restore();
+                const edgeA = points[1].x - points[0].x;
+                const edgeB = points[1].y - points[0].y;
+                let angle = Math.atan2(edgeB, edgeA);
+                if (angle > Math.PI / 2) angle -= Math.PI;
+                if (angle < -Math.PI / 2) angle += Math.PI;
+                const averageFaceSize = (((Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) + Math.hypot(points[1].x - points[2].x, points[1].y - points[2].y) + Math.hypot(points[2].x - points[0].x, points[2].y - points[0].y)) / 3) || actor.radius * 0.55);
+                const tiltScale = ddClamp(0.48 + faceDataItem.normal[2] * 0.52, 0.5, 1);
+                const textSize = Math.max(9, averageFaceSize * (isResultFace ? 0.34 : 0.30));
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y); ctx.lineTo(points[1].x, points[1].y); ctx.lineTo(points[2].x, points[2].y); ctx.closePath();
+                ctx.clip();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+                ctx.scale(1, tiltScale);
+                ctx.fillStyle = isResultFace ? '#080808' : palette.text;
+                ctx.font = `bold ${textSize}px Inter, Arial, sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(String(faceDataItem.index + 1), 0, 0);
+                ctx.restore();
             }
         });
+        if (actor.highlight && actor.revealed && actor.badgeLabel) {
+            ctx.save();
+            ctx.fillStyle = ddHexToRgba(palette.edge, .18);
+            ctx.strokeStyle = palette.edge;
+            ctx.lineWidth = 1;
+            const badgeWidth = Math.max(66, actor.badgeLabel.length * 7.6);
+            const badgeHeight = 20;
+            const badgeY = -actor.radius * 1.62;
+            if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(-badgeWidth / 2, badgeY, badgeWidth, badgeHeight, 9); }
+            else { ctx.beginPath(); ctx.rect(-badgeWidth / 2, badgeY, badgeWidth, badgeHeight); }
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = palette.edge;
+            ctx.font = 'bold 11px Inter, Arial, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(actor.badgeLabel, 0, badgeY + badgeHeight / 2 + .5);
+            ctx.restore();
+        }
         ctx.restore();
     }
     function ddDrawDiceTray(ctx, width, height) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, height); gradient.addColorStop(0, 'rgba(255,255,255,0.05)'); gradient.addColorStop(1, 'rgba(0,0,0,0.55)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2; const padding = 18; ctx.beginPath(); ctx.roundRect(padding, padding, width - padding * 2, height - padding * 2, 16); ctx.stroke();
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, 'rgba(255,255,255,0.05)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.58)');
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2; const padding = 18;
+        ctx.beginPath(); ctx.roundRect(padding, padding, width - padding * 2, height - padding * 2, 16); ctx.stroke();
         ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 1;
         for (let x = 30; x < width; x += 34) { ctx.beginPath(); ctx.moveTo(x, 28); ctx.lineTo(x, height - 28); ctx.stroke(); }
         for (let y = 30; y < height; y += 34) { ctx.beginPath(); ctx.moveTo(28, y); ctx.lineTo(width - 28, y); ctx.stroke(); }
     }
-    function ddAnimate3DDiceRoll({ rolls, chosenIndex = 0, resultArea, title = 'ROLAGEM', subtitle = '' }) {
+    function ddAnimate3DDiceRoll({ rolls, chosenIndex = 0, resultArea, title = 'ROLAGEM', subtitle = '', chooseMode = 'auto', outcome = '' }) {
         ddEnsure3DDiceStyles();
         return new Promise(resolve => {
-            if (!resultArea) { resolve(); return; }
+            if (!resultArea || diceSettings.enabled === false) { resolve(); return; }
             const safeRolls = Array.isArray(rolls) && rolls.length ? rolls.slice(0, 8) : [ddRollSecureDie(20)];
-            const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
             const count = safeRolls.length;
             const rows = count > 4 ? 2 : 1;
             const columns = rows === 1 ? count : Math.ceil(count / 2);
             const canvasWidth = 640;
-            const canvasHeight = rows === 1 ? 280 : 390;
+            const canvasHeight = rows === 1 ? 300 : 410;
+            const pickMode = ddInferPickMode(safeRolls, chosenIndex, chooseMode);
+            const diceThemeMeta = ddGetDiceThemeMeta(diceSettings.theme);
+            const highlightValue = safeRolls[Math.max(0, Math.min(safeRolls.length - 1, Number(chosenIndex) || 0))] || safeRolls[0];
             resultArea.style.display = 'block';
-            resultArea.innerHTML = `<div class="dd-dice3d-shell" id="ddDice3dShell"><div class="dd-dice3d-badge">D20 3D</div><canvas class="dd-dice3d-canvas" id="ddDice3dCanvas" width="${canvasWidth}" height="${canvasHeight}"></canvas><div class="dd-dice3d-caption"><span class="dd-dice3d-title">${escapeHTML(title)}</span><span>${escapeHTML(subtitle || 'ANIMAÇÃO TÁTICA')}</span><span class="dd-dice3d-hint">CLIQUE PARA ACELERAR</span></div></div>`;
+            resultArea.innerHTML = `<div class="dd-dice3d-shell" id="ddDice3dShell"><div class="dd-dice3d-badge">D20 3D // ${escapeHTML(diceThemeMeta.label)}</div><canvas class="dd-dice3d-canvas" id="ddDice3dCanvas" width="${canvasWidth}" height="${canvasHeight}"></canvas><div class="dd-dice3d-caption" id="ddDice3dCaption"><span class="dd-dice3d-title">${escapeHTML(title)}</span><span id="ddDice3dModeText">${escapeHTML(subtitle || 'ANIMAÇÃO TÁTICA')}</span><span class="dd-dice3d-hint">CLIQUE PARA ACELERAR</span></div></div>`;
             const canvas = document.getElementById('ddDice3dCanvas'); const shell = document.getElementById('ddDice3dShell'); const context = canvas?.getContext('2d');
             if (!canvas || !context) { resolve(); return; }
             let skip = false; shell.addEventListener('click', () => { skip = true; }, { once: true });
-            const duration = prefersReduced ? 350 : Math.min(2400, 1150 + count * 170);
+            const profile = ddGetDiceModeProfile(count);
+            const duration = profile.duration;
+            const impactThresholds = profile.impacts;
+            let impactIndex = 0;
             const actors = safeRolls.map((value, index) => {
-                const row = rows === 1 ? 0 : Math.floor(index / columns); const column = rows === 1 ? index : index % columns; const cellWidth = canvasWidth / columns; const cellHeight = canvasHeight / rows; const x = cellWidth * (column + 0.5); const y = cellHeight * (row + 0.55); const target = ddGetTargetEulerForFace((Number(value) || 1) - 1);
-                return { value: Number(value) || 1, targetFace: (Number(value) || 1) - 1, x, y, radius: Math.min(62, Math.max(42, Math.min(cellWidth, cellHeight) * 0.26)), rx: Math.random() * Math.PI * 2, ry: Math.random() * Math.PI * 2, rz: Math.random() * Math.PI * 2, target, offsetY: -10, highlight: index === chosenIndex ? 1 : 0, highlightPulse: 0, phase: Math.random() * Math.PI * 2, spinX: (Math.random() * 0.35 + 0.28) * (Math.random() > 0.5 ? 1 : -1), spinY: (Math.random() * 0.40 + 0.32) * (Math.random() > 0.5 ? 1 : -1), spinZ: (Math.random() * 0.30 + 0.20) * (Math.random() > 0.5 ? 1 : -1), revealed: false };
+                const row = rows === 1 ? 0 : Math.floor(index / columns); const column = rows === 1 ? index : index % columns; const cellWidth = canvasWidth / columns; const cellHeight = canvasHeight / rows; const x = cellWidth * (column + 0.5); const y = cellHeight * (row + 0.56); const target = ddGetTargetEulerForFace((Number(value) || 1) - 1);
+                return { value: Number(value) || 1, targetFace: (Number(value) || 1) - 1, x, y, radius: Math.min(64, Math.max(42, Math.min(cellWidth, cellHeight) * 0.25)), rx: Math.random() * Math.PI * 2, ry: Math.random() * Math.PI * 2, rz: Math.random() * Math.PI * 2, target, offsetY: -12, highlight: index === chosenIndex ? 1 : 0, highlightPulse: 0, phase: Math.random() * Math.PI * 2, spinX: (Math.random() * 0.22 + profile.spinBase) * (Math.random() > 0.5 ? 1 : -1), spinY: (Math.random() * 0.24 + profile.spinBase + .03) * (Math.random() > 0.5 ? 1 : -1), spinZ: (Math.random() * 0.18 + profile.spinBase - .05) * (Math.random() > 0.5 ? 1 : -1), revealed: false, scale: 1, fade: 1, badgeLabel: index === chosenIndex ? (pickMode === 'lowest' ? 'MENOR' : 'MAIOR') : '' };
             });
             let startTime = null;
             function drawFrame(timestamp) {
                 if (startTime === null) startTime = timestamp;
-                const elapsed = timestamp - startTime; const progress = skip ? 1 : Math.min(1, elapsed / duration);
-                context.clearRect(0, 0, canvasWidth, canvasHeight); ddDrawDiceTray(context, canvasWidth, canvasHeight);
+                const elapsed = timestamp - startTime;
+                const progress = skip ? 1 : Math.min(1, elapsed / duration);
+                while (impactIndex < impactThresholds.length && progress >= impactThresholds[impactIndex]) {
+                    const isFinalImpact = impactIndex === impactThresholds.length - 1;
+                    ddPlayDiceImpact((isFinalImpact ? .95 : .42) + impactIndex * .08, isFinalImpact ? outcome : '');
+                    impactIndex += 1;
+                }
+                context.clearRect(0, 0, canvasWidth, canvasHeight);
+                ddDrawDiceTray(context, canvasWidth, canvasHeight);
                 actors.forEach(actor => {
-                    if (progress < 0.72) {
-                        const phase = progress / 0.72; const damp = 1 - phase; actor.rx += actor.spinX * (1.4 + damp * 0.6); actor.ry += actor.spinY * (1.4 + damp * 0.6); actor.rz += actor.spinZ * (1.2 + damp * 0.5); actor.offsetY = -Math.abs(Math.sin((elapsed / 150) + actor.phase)) * (32 * damp) - damp * 10;
+                    if (progress < profile.launchRatio) {
+                        const phase = progress / profile.launchRatio;
+                        const damp = 1 - phase;
+                        actor.rx += actor.spinX * (1.25 + damp * profile.spinBurst);
+                        actor.ry += actor.spinY * (1.28 + damp * profile.spinBurst);
+                        actor.rz += actor.spinZ * (1.10 + damp * (profile.spinBurst - .08));
+                        actor.offsetY = -Math.abs(Math.sin((elapsed / 165) + actor.phase)) * (profile.bounce * damp) - damp * 12;
+                        actor.scale = 1; actor.fade = 1; actor.revealed = false;
                     } else {
-                        const settle = (progress - 0.72) / 0.28; actor.rx = ddLerpAngle(actor.rx, actor.target.rx, 0.14 + settle * 0.14); actor.ry = ddLerpAngle(actor.ry, actor.target.ry, 0.14 + settle * 0.14); actor.rz = ddLerpAngle(actor.rz, actor.target.rz, 0.16 + settle * 0.16); actor.offsetY *= 0.72; actor.revealed = settle > 0.55;
+                        const settle = (progress - profile.launchRatio) / (1 - profile.launchRatio);
+                        const ease = ddClamp(settle, 0, 1);
+                        actor.rx = ddLerpAngle(actor.rx, actor.target.rx, .1 + ease * .13);
+                        actor.ry = ddLerpAngle(actor.ry, actor.target.ry, .1 + ease * .13);
+                        actor.rz = ddLerpAngle(actor.rz, actor.target.rz, .12 + ease * .16);
+                        actor.offsetY *= .6;
+                        actor.revealed = ease >= .36;
+                        const focus = ddClamp((progress - profile.settleRatio) / (1 - profile.settleRatio), 0, 1);
+                        actor.scale = actor.highlight ? 1 + profile.chosenScale * focus : 1 - (.08 * focus);
+                        actor.fade = actor.highlight ? 1 : 1 - profile.nonChosenFade * focus;
                     }
-                    actor.highlightPulse = actor.highlight ? (progress > 0.82 ? 1 + Math.sin(timestamp / 110) * 0.12 : 0.08) : 0; ddDraw3DD20(context, actor);
+                    actor.highlightPulse = actor.highlight ? (progress > profile.settleRatio ? 1 + Math.sin(timestamp / 110) * 0.14 : 0.12) : 0;
+                    ddDraw3DD20(context, actor);
                 });
-                if (progress < 1) window.requestAnimationFrame(drawFrame); else resolve();
+                if (progress >= profile.settleRatio) {
+                    const emphasis = ddClamp((progress - profile.settleRatio) / (1 - profile.settleRatio), 0, 1);
+                    context.save();
+                    context.textAlign = 'center'; context.textBaseline = 'middle';
+                    context.fillStyle = 'rgba(0,0,0,.46)';
+                    const panelWidth = 235, panelHeight = 24;
+                    const panelX = (canvasWidth - panelWidth) / 2, panelY = canvasHeight - 36;
+                    if (context.roundRect) { context.beginPath(); context.roundRect(panelX, panelY, panelWidth, panelHeight, 10); }
+                    else { context.beginPath(); context.rect(panelX, panelY, panelWidth, panelHeight); }
+                    context.fill();
+                    context.strokeStyle = ddGetDicePalette(true).edge;
+                    context.globalAlpha = .5 + emphasis * .5;
+                    context.stroke();
+                    context.globalAlpha = 1;
+                    context.fillStyle = ddGetDicePalette(true).edge;
+                    context.font = `bold ${13 + emphasis * 1.2}px Inter, Arial, sans-serif`;
+                    context.fillText(`${pickMode === 'lowest' ? 'MENOR' : 'MAIOR'} RESULTADO DESTACADO: ${highlightValue}`, canvasWidth / 2, panelY + panelHeight / 2 + .5);
+                    context.restore();
+                }
+                if (progress < 1) window.requestAnimationFrame(drawFrame);
+                else window.setTimeout(resolve, profile.linger);
             }
             window.requestAnimationFrame(drawFrame);
         });
     }
+
 
     function abrirRolador(attr) {
         playSfx('click'); let active = getActiveConditions(); let effAttr = getEffectiveAttributes()[attr]; let penalty = 0;
@@ -5412,6 +5679,7 @@
     }
     
 
+
     function executarRolagem() {
         playSfx('roll');
         const btnRoll = document.getElementById('btnExecRoll');
@@ -5433,13 +5701,16 @@
         const total = chosenDie + bonus;
         const rollsText = rolls.join(' | ');
         const bonusLine = bonus > 0 ? `<div style="margin-top: 10px; color: var(--text-main);">BÔNUS DE PERÍCIA (${escapeHTML(skillName)}): +${bonus}</div>` : '';
+        const modeText = isDisadvantage ? 'MENOR RESULTADO DESTACADO' : 'MAIOR RESULTADO DESTACADO';
         const disadvText = isDisadvantage ? `<div style="margin-top: 5px; color: var(--alert-color); font-size: 0.8rem;">(DESVANTAGEM APLICADA: MENOR RESULTADO)</div>` : '';
         const title = bonus > 0 ? `${currentRollData.attr} // ${skillName}` : currentRollData.attr;
         const subtitle = isDisadvantage ? 'ROLAGEM COM DESVANTAGEM' : (bonus > 0 ? 'TESTE DE PERÍCIA' : 'TESTE DE ATRIBUTO');
-        ddAnimate3DDiceRoll({ rolls, chosenIndex, resultArea, title, subtitle }).then(() => {
+        const outcome = chosenDie === 20 ? 'critical' : chosenDie === 1 ? 'failure' : '';
+        ddAnimate3DDiceRoll({ rolls, chosenIndex, resultArea, title, subtitle, chooseMode: isDisadvantage ? 'lowest' : 'highest', outcome }).then(() => {
             if (!document.body.contains(resultArea)) return;
-            resultArea.innerHTML = `<div class="dice-result-box"><div class="dice-array">DADOS ROLADOS: [ ${rollsText} ]</div><div>DADO ESCOLHIDO: <span class="dice-highest">${chosenDie}</span></div>${disadvText}${bonusLine}<div class="dice-total">RESULTADO FINAL: ${total}</div></div>`;
+            ddMountDiceResultSummary(resultArea, `<div class="dice-result-box"><div class="dice-array">DADOS ROLADOS: [ ${rollsText} ]</div><div>${modeText}: <span class="dice-highest">${chosenDie}</span></div>${disadvText}${bonusLine}<div class="dice-total">RESULTADO FINAL: ${total}</div></div>`);
             sendObsEvent({ event: 'roll', title, subtitle, rolls, chosen: chosenDie, bonus, total, critical: chosenDie === 20, failure: chosenDie === 1, damage: null });
+            ddTriggerDiceOutcomeEffect(outcome);
             playSfx('alert'); btnRoll.disabled = false; btnRoll.innerHTML = '[ NOVA ROLAGEM ]';
         });
     }
@@ -6307,7 +6578,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 </script>
 
 <script id="ddEnhancementScript">(() => {
-    const DD_VERSION = '2026.07.27.11-stability';
+    const DD_VERSION = '2026.07.27.12-dice-controls';
     const DD_DB_NAME = 'DarkDashboardStorage';
     const DD_DB_VERSION = 1;
     const DD_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -6581,29 +6852,13 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     }
 
     function ddCreateSupportPanel() {
-        if (document.getElementById('panel-dd-support')) return;
-        const panel = document.createElement('div'); panel.id = 'panel-dd-support'; panel.className = 'panel';
-        panel.innerHTML = `<span class="panel-title">PROTEÇÕES & AÇÕES DO TURNO</span><div class="panel-controls hide-in-combat"><button class="minimize-btn" onclick="toggleMinimize(this)">_</button><button class="drag-handle">⠿</button></div><div class="panel-content">
-          <div class="dd-field-grid">
-            <label>VIDA TEMPORÁRIA<input id="ddTempHp" type="number" min="0" value="0"></label>
-            <label>REDUÇÃO GERAL<input id="ddDrGeneral" type="number" min="0" value="0"></label>
-            <label>REDUÇÃO FÍSICA<input id="ddDrPhysical" type="number" min="0" value="0"></label>
-            <label>REDUÇÃO PARANORMAL<input id="ddDrParanormal" type="number" min="0" value="0"></label>
-            <label style="grid-column:span 2;">VULNERABILIDADE A TIPOS<input id="ddVulnerabilityTypes" type="text" placeholder="Ex.: fogo, paranormal"></label>
-            <label>MULTIPLICADOR<input id="ddVulnerabilityMultiplier" type="number" min="1" max="5" step=".5" value="2"></label>
-            <label><button class="sys-btn" type="button" onclick="ddOpenResourceModal('vd')" style="width:100%; margin-top:20px;">APLICAR DANO / CURA</button></label>
-          </div>
-          <div style="margin-top:18px; border-top:1px dashed var(--border-color); padding-top:13px;"><span class="options-label">AÇÕES DO TURNO</span><div class="dd-action-tracker"><button id="ddActionStandard" class="sys-btn dd-action-btn available" onclick="ddToggleTurnAction('standard')">AÇÃO PADRÃO</button><button id="ddActionMovement" class="sys-btn dd-action-btn available" onclick="ddToggleTurnAction('movement')">MOVIMENTO</button><button id="ddActionReaction" class="sys-btn dd-action-btn available" onclick="ddToggleTurnAction('reaction')">REAÇÃO</button></div><div class="appearance-summary">As ações são restauradas ao avançar o turno. Macros podem consumir automaticamente a ação configurada.</div></div>
-        </div>`;
-        const pag2 = document.getElementById('pag2'); const background = document.getElementById('panel-background');
-        if (pag2) pag2.insertBefore(panel, background || null);
-        panel.querySelectorAll('input').forEach(input => input.addEventListener('change', () => { ddUpdateResourceSummaries(); autoSalvarOtimizado(); }));
+        document.getElementById('panel-dd-support')?.remove();
     }
 
     function ddEnhanceMacroForm() {
         const form = document.getElementById('macroName')?.parentElement; if (!form || document.getElementById('macroAmmoCurrent')) return;
         const wrapper = document.createElement('div'); wrapper.className = 'dd-field-grid hide-in-combat'; wrapper.style.cssText = 'grid-template-columns:repeat(4,minmax(100px,1fr)); margin:0 0 12px;';
-        wrapper.innerHTML = `<label>MUNIÇÃO ATUAL<input type="number" id="macroAmmoCurrent" min="0" placeholder="SEM LIMITE"></label><label>CAPACIDADE<input type="number" id="macroAmmoCapacity" min="0" placeholder="0"></label><label>RESERVA<input type="number" id="macroAmmoReserve" min="0" placeholder="0"></label><label>CONSUMO / ATAQUE<input type="number" id="macroAmmoCost" min="0" value="0"></label><label>AÇÃO CONSUMIDA<select id="macroActionType"><option value="standard">PADRÃO</option><option value="movement">MOVIMENTO</option><option value="reaction">REAÇÃO</option><option value="free">LIVRE</option></select></label><label style="display:flex;align-items:center;gap:8px;margin-top:19px;"><input type="checkbox" id="macroFavorite" style="width:auto;"> FAVORITA</label>`;
+        wrapper.innerHTML = `<label>MUNIÇÃO ATUAL<input type="number" id="macroAmmoCurrent" min="0" placeholder="SEM LIMITE"></label><label>CAPACIDADE<input type="number" id="macroAmmoCapacity" min="0" placeholder="0"></label><label>RESERVA<input type="number" id="macroAmmoReserve" min="0" placeholder="0"></label><label>CONSUMO / ATAQUE<input type="number" id="macroAmmoCost" min="0" value="0"></label><label style="display:flex;align-items:center;gap:8px;margin-top:19px;"><input type="checkbox" id="macroFavorite" style="width:auto;"> FAVORITA</label>`;
         form.parentElement.insertBefore(wrapper, form.nextSibling);
     }
 
@@ -6620,6 +6875,85 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         group.innerHTML = `<span class="options-label">SEGURANÇA, DIAGNÓSTICO E OFFLINE</span><div class="dd-menu-tools"><button class="sys-btn" onclick="ddOpenSnapshots()">VERSÕES AUTOMÁTICAS</button><button class="sys-btn" onclick="ddExportFullBackup()">BACKUP DE TODOS</button><button class="sys-btn" onclick="document.getElementById('ddFullBackupInput').click()">IMPORTAR BACKUP</button><button class="sys-btn" onclick="ddOpenValidator()">VERIFICAR FICHA</button><button class="sys-btn" onclick="ddOpenRollHistory()">ROLAGENS</button><button class="sys-btn" id="ddInstallButton" onclick="ddInstallApp()" disabled>INSTALAR APP</button></div><div id="ddStorageMeter" class="dd-storage-meter"><span></span></div><div id="ddStorageText" class="dd-storage-text">CALCULANDO ARMAZENAMENTO...</div>`;
         const firstObs = Array.from(list.querySelectorAll('.options-group')).find(el => el.textContent.includes('INTEGRAÇÃO OBS'));
         list.insertBefore(group, firstObs || null);
+    }
+
+
+    function ddUpdateDiceSettingsUi() {
+        const enabled = document.getElementById('ddDice3dToggle');
+        const sound = document.getElementById('ddDiceSoundToggle');
+        const effects = document.getElementById('ddDiceEffectsToggle');
+        if (enabled) { enabled.classList.toggle('active', diceSettings.enabled !== false); enabled.textContent = `D20 3D: ${diceSettings.enabled !== false ? 'LIGADO' : 'DESLIGADO'}`; }
+        if (sound) { sound.classList.toggle('active', diceSettings.sound !== false); sound.textContent = `SOM DE IMPACTO: ${diceSettings.sound !== false ? 'LIGADO' : 'DESLIGADO'}`; }
+        if (effects) { effects.classList.toggle('active', diceSettings.effects !== false); effects.textContent = `EFEITOS CRÍTICOS: ${diceSettings.effects !== false ? 'LIGADOS' : 'DESLIGADOS'}`; }
+        ['fast', 'normal', 'cinematic'].forEach(speed => document.getElementById(`ddDiceSpeed_${speed}`)?.classList.toggle('active', diceSettings.speed === speed));
+        DD_DICE_THEME_LIST.forEach(theme => document.getElementById(`ddDiceTheme_${theme}`)?.classList.toggle('active', ddNormalizeDiceTheme(diceSettings.theme) === theme));
+        const themeLabel = document.getElementById('ddDiceThemeLabel');
+        if (themeLabel) themeLabel.textContent = `TEMA ATUAL: ${ddGetDiceThemeMeta(diceSettings.theme).label}`;
+        document.body.dataset.diceTheme = ddNormalizeDiceTheme(diceSettings.theme);
+    }
+
+    function ddSetDiceEnabled(value = null) {
+        diceSettings.enabled = value === null ? diceSettings.enabled === false : Boolean(value);
+        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
+    }
+    function ddSetDiceSound(value = null) {
+        diceSettings.sound = value === null ? diceSettings.sound === false : Boolean(value);
+        ddUpdateDiceSettingsUi(); writeGlobalObsSettings();
+        if (diceSettings.sound) ddPlayDiceImpact(.7);
+        else playSfx('click');
+    }
+    function ddSetDiceEffects(value = null) {
+        diceSettings.effects = value === null ? diceSettings.effects === false : Boolean(value);
+        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
+    }
+    function ddSetDiceSpeed(speed) {
+        diceSettings.speed = ['fast', 'normal', 'cinematic'].includes(speed) ? speed : 'normal';
+        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
+    }
+
+    function ddSetDiceTheme(theme) {
+        diceSettings.theme = ddNormalizeDiceTheme(theme);
+        document.body.dataset.diceTheme = diceSettings.theme;
+        ddUpdateDiceSettingsUi(); writeGlobalObsSettings(); playSfx('click');
+    }
+
+    function ddEnhanceDiceSettings() {
+        const list = document.getElementById('customizationMenuList');
+        if (!list || document.getElementById('ddDiceSettingsGroup')) return;
+        const group = document.createElement('div');
+        group.id = 'ddDiceSettingsGroup';
+        group.className = 'options-group';
+        group.innerHTML = `<span class="options-label">DADO D20 3D</span>
+            <div class="options-row">
+                <button id="ddDice3dToggle" class="sys-btn" onclick="ddSetDiceEnabled()">D20 3D: LIGADO</button>
+                <button id="ddDiceSoundToggle" class="sys-btn" onclick="ddSetDiceSound()">SOM DE IMPACTO: LIGADO</button>
+                <button id="ddDiceEffectsToggle" class="sys-btn" onclick="ddSetDiceEffects()">EFEITOS CRÍTICOS: LIGADOS</button>
+            </div>
+            <span class="options-label" style="margin-top:14px;">VELOCIDADE DA ANIMAÇÃO</span>
+            <div class="options-row">
+                <button id="ddDiceSpeed_fast" class="sys-btn" onclick="ddSetDiceSpeed('fast')">RÁPIDO</button>
+                <button id="ddDiceSpeed_normal" class="sys-btn" onclick="ddSetDiceSpeed('normal')">NORMAL</button>
+                <button id="ddDiceSpeed_cinematic" class="sys-btn" onclick="ddSetDiceSpeed('cinematic')">CINEMATOGRÁFICO</button>
+            </div>
+            <span class="options-label" style="margin-top:14px;">TEMAS DO DADO</span>
+            <div class="appearance-summary" id="ddDiceThemeLabel">TEMA ATUAL: SISTEMA</div>
+            <div class="options-row" style="flex-wrap:wrap;">
+                <button id="ddDiceTheme_adaptive" class="sys-btn" onclick="ddSetDiceTheme('adaptive')">SISTEMA</button>
+                <button id="ddDiceTheme_onyx" class="sys-btn" onclick="ddSetDiceTheme('onyx')">ÔNIX</button>
+                <button id="ddDiceTheme_ivory" class="sys-btn" onclick="ddSetDiceTheme('ivory')">MARFIM</button>
+                <button id="ddDiceTheme_emerald" class="sys-btn" onclick="ddSetDiceTheme('emerald')">ESMERALDA</button>
+            </div>
+            <div class="options-row" style="flex-wrap:wrap; margin-top:8px;">
+                <button id="ddDiceTheme_crimson" class="sys-btn" onclick="ddSetDiceTheme('crimson')">RUBI</button>
+                <button id="ddDiceTheme_amethyst" class="sys-btn" onclick="ddSetDiceTheme('amethyst')">AMETISTA</button>
+                <button id="ddDiceTheme_gold" class="sys-btn" onclick="ddSetDiceTheme('gold')">DOURADO</button>
+                <button id="ddDiceTheme_frost" class="sys-btn" onclick="ddSetDiceTheme('frost')">GELO</button>
+            </div>
+            <div class="appearance-summary">As escolhas também são enviadas ao overlay do OBS. O botão geral de áudio da ficha continua tendo prioridade sobre o som do dado.</div>`;
+        const displayModeGroup = Array.from(list.querySelectorAll('.options-group')).find(element => element.textContent.includes('MODO DE EXIBIÇÃO'));
+        if (displayModeGroup) displayModeGroup.insertAdjacentElement('afterend', group);
+        else list.appendChild(group);
+        ddUpdateDiceSettingsUi();
     }
 
     function ddEnhanceBoardControls() {
@@ -6784,17 +7118,17 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         element.innerHTML = `CARGA: <span style="color:${color}">ATUAL [ ${current} ]</span> | NORMAL [ ${normal} ] | MÁXIMA [ ${max} ]`; element.style.borderColor = color;
     };
 
-    limparFormularioMacro = function() { ddOriginals.limparFormularioMacro(); ['macroAmmoCurrent','macroAmmoCapacity','macroAmmoReserve','macroAmmoCost'].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === 'macroAmmoCost' ? '0' : ''; }); const action = document.getElementById('macroActionType'); if (action) action.value = 'standard'; const fav = document.getElementById('macroFavorite'); if (fav) fav.checked = false; };
+    limparFormularioMacro = function() { ddOriginals.limparFormularioMacro(); ['macroAmmoCurrent','macroAmmoCapacity','macroAmmoReserve','macroAmmoCost'].forEach(id => { const el = document.getElementById(id); if (el) el.value = id === 'macroAmmoCost' ? '0' : ''; }); const fav = document.getElementById('macroFavorite'); if (fav) fav.checked = false; };
     adicionarMacro = function() {
         const editing = editingMacroId; const beforeLength = combatMacros.length;
-        const extra = { ammoCurrent:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCurrent')?.value,10)||0), ammoCapacity:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCapacity')?.value,10)||0), ammoReserve:Math.max(0,Number.parseInt(document.getElementById('macroAmmoReserve')?.value,10)||0), ammoCost:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCost')?.value,10)||0), actionType:document.getElementById('macroActionType')?.value || 'standard', favorite:Boolean(document.getElementById('macroFavorite')?.checked) };
+        const extra = { ammoCurrent:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCurrent')?.value,10)||0), ammoCapacity:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCapacity')?.value,10)||0), ammoReserve:Math.max(0,Number.parseInt(document.getElementById('macroAmmoReserve')?.value,10)||0), ammoCost:Math.max(0,Number.parseInt(document.getElementById('macroAmmoCost')?.value,10)||0), favorite:Boolean(document.getElementById('macroFavorite')?.checked) };
         ddOriginals.adicionarMacro();
         const macro = editing ? combatMacros.find(item => item.id === editing) : combatMacros.length > beforeLength ? combatMacros[combatMacros.length - 1] : null;
         if (!macro) return; Object.assign(macro, extra); if (macro.ammoCapacity > 0 && macro.ammoCurrent > macro.ammoCapacity) macro.ammoCurrent = macro.ammoCapacity;
         renderMacros(); salvarLocalData({ label:editing ? 'MACRO EDITADA' : 'MACRO ADICIONADA' }); ddRenderFavorites();
     };
     iniciarEdicaoMacro = function(id) { ddOriginals.iniciarEdicaoMacro(id); const macro = combatMacros.find(item => item.id === id); if (!macro) return;
-        const values = { macroAmmoCurrent:macro.ammoCurrent ?? '', macroAmmoCapacity:macro.ammoCapacity ?? '', macroAmmoReserve:macro.ammoReserve ?? '', macroAmmoCost:macro.ammoCost ?? 0, macroActionType:macro.actionType || 'standard' };
+        const values = { macroAmmoCurrent:macro.ammoCurrent ?? '', macroAmmoCapacity:macro.ammoCapacity ?? '', macroAmmoReserve:macro.ammoReserve ?? '', macroAmmoCost:macro.ammoCost ?? 0 };
         Object.entries(values).forEach(([key,value]) => { const element = document.getElementById(key); if (element) element.value = String(value); }); const fav = document.getElementById('macroFavorite'); if (fav) fav.checked = Boolean(macro.favorite);
     };
     renderMacros = function() {
@@ -6802,7 +7136,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         combatMacros.forEach((macro,index) => { const item = items[index]; if (!item) return; const info = item.firstElementChild; const actions = item.lastElementChild;
             const extra = document.createElement('div'); extra.className = 'dd-macro-extra'; const capacity = Math.max(0,Number(macro.ammoCapacity)||0); const current = Math.max(0,Number(macro.ammoCurrent)||0); const reserve = Math.max(0,Number(macro.ammoReserve)||0); const cost = Math.max(0,Number(macro.ammoCost)||0);
             if (capacity > 0 || cost > 0) { const ammo = document.createElement('span'); ammo.textContent = `MUNIÇÃO ${current}/${capacity || '∞'} · RESERVA ${reserve} · CONSUMO ${cost}`; if (current < cost) ammo.classList.add('dd-ammo-low'); extra.appendChild(ammo); }
-            const action = document.createElement('span'); action.textContent = `AÇÃO: ${(macro.actionType || 'standard').toUpperCase()}`; extra.appendChild(action); info?.appendChild(extra);
+            info?.appendChild(extra);
             if (capacity > 0) { const reload = document.createElement('button'); reload.className = 'sys-btn'; reload.style.cssText = 'padding:2px 7px;font-size:.67rem;color:var(--gold-color);border-color:var(--gold-color);'; reload.textContent = 'RECARREGAR'; reload.addEventListener('click', () => ddReloadMacro(macro.id)); actions?.insertBefore(reload, actions.firstChild); }
             const star = document.createElement('button'); star.className = `dd-favorite-star${macro.favorite ? ' active' : ''}`; star.textContent = '★'; star.title = 'Favoritar macro'; star.addEventListener('click', () => ddToggleMacroFavorite(macro.id)); actions?.appendChild(star);
         });
@@ -6813,10 +7147,9 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     rolarMacro = function(id) { const macro = combatMacros.find(item => item.id === id); if (!macro) return;
         const active = getActiveConditions(); const basePe = Math.max(0,Number.parseInt(macro.peCost,10)||0); const costPe = basePe > 0 && active.cond_alquebrado ? basePe+1 : basePe; const currentPe = Math.max(0,Number.parseInt(document.getElementById('pe_atual')?.value,10)||0); if (costPe > currentPe) { ddOriginals.rolarMacro(id); return; }
         const ammoCost = Math.max(0,Number(macro.ammoCost)||0); const ammoCurrent = Math.max(0,Number(macro.ammoCurrent)||0); if (ammoCost > ammoCurrent) { ddToast(`Munição insuficiente para ${macro.nome}.`, 'error'); return; }
-        if (!ddConsumeAction(macro.actionType || 'standard')) return;
         if (ammoCost > 0) macro.ammoCurrent = ammoCurrent - ammoCost; ddPendingRollRepeat = { type:'macro', id }; renderMacros(); salvarLocalData({ skipHistory:true, label:`ATAQUE: ${macro.nome}` }); ddOriginals.rolarMacro(id);
     };
-    nextTurn = function() { ddOriginals.nextTurn(); ddResetTurnActions(false); salvarLocalData({ skipHistory:true, label:'PRÓXIMO TURNO' }); };
+    nextTurn = function() { ddOriginals.nextTurn(); salvarLocalData({ skipHistory:true, label:'PRÓXIMO TURNO' }); };
 
     function ddEnhanceSkillFavorites() {
         document.querySelectorAll('.skill-row').forEach(row => {
@@ -7162,11 +7495,11 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     }
 
     Object.assign(window,{
-        ddOpenResourceModal,ddCloseResourceModal,ddApplyResourceModal,ddToggleTurnAction,ddOpenCommandPalette,ddCloseCommandPalette,
+        ddOpenResourceModal,ddCloseResourceModal,ddApplyResourceModal,ddOpenCommandPalette,ddCloseCommandPalette,
         ddOpenRollHistory,ddCloseRollHistory,ddClearRollHistory,ddOpenValidator,ddCloseValidator,ddOpenSnapshots,ddCloseSnapshots,ddCreateManualSnapshot,
         ddExportFullBackup,ddImportFullBackup,ddInstallApp,ddExportBoard,ddImportBoard,ddExportBoardPng,ddFitBoard,ddRenameBoardNode,ddDuplicateBoardNode,
         ddCycleBoardCategory,ddSelectAllBoardNodes,ddDeleteBoardLink,ddAdjustItem,ddUseItem,ddRechargeItem,ddToggleItemFavorite,ddReloadMacro,ddToggleMacroFavorite,
-        deleteBoardNote
+        deleteBoardNote,ddSetDiceEnabled,ddSetDiceSound,ddSetDiceEffects,ddSetDiceSpeed,ddSetDiceTheme
     });
 
     ddInjectStaticUi();
@@ -7175,16 +7508,15 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     ddEnhanceMacroForm();
     ddEnhanceItemForm();
     ddEnhanceMenu();
+    ddEnhanceDiceSettings();
     ddEnhanceBoardControls();
     ddEnhanceSkillFavorites();
-    ddBindDynamicPanelDrag(document.getElementById('panel-dd-support'));
-    ddRenderTurnActions();
     ddUpdateResourceSummaries();
     ddRenderFavorites();
     ddRegisterPwa();
 
     window.addEventListener('load',()=>{
-        ddEnhanceSkillFavorites();ddRenderFavorites();ddRenderTurnActions();ddUpdateResourceSummaries();ddUpdateStorageStatus();ddRegisterPwa();
+        ddEnhanceSkillFavorites();ddEnhanceDiceSettings();ddRenderFavorites();ddUpdateResourceSummaries();ddUpdateStorageStatus();ddRegisterPwa();
         document.addEventListener('input',event=>{if(['vd_atual','san_atual','pe_atual','ddTempHp','ddDrGeneral','ddDrPhysical','ddDrParanormal'].includes(event.target?.id))ddUpdateResourceSummaries();});
         window.setTimeout(()=>{const current=collectCurrentData();ddSaveSnapshot(current,'VERSÃO INICIAL DA SESSÃO',false);ddCleanupOrphanAttachments();},1500);
     },{once:true});
