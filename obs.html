@@ -171,6 +171,20 @@
             #diceCanvas { width: 98vw; height: 56vh; }
             .dice-stage-label { top: 18vh; width: 92vw; }
         }
+        .obs-outcome-fx { position:fixed; inset:0; z-index:40; pointer-events:none; overflow:hidden; }
+        .obs-outcome-fx::before { content:''; position:absolute; inset:-18%; opacity:0; }
+        .obs-outcome-fx.critical::before { background:radial-gradient(circle, rgba(255,228,88,.68), rgba(255,183,0,.15) 38%, transparent 72%); animation:obsCriticalFlash 1s ease-out forwards; }
+        .obs-outcome-fx.failure::before { background:repeating-linear-gradient(90deg, transparent 0 12px, rgba(255,0,35,.24) 13px 16px); animation:obsFailureGlitch .85s steps(8,end) forwards; }
+        .obs-outcome-particle { position:absolute; left:50%; top:50%; width:6px; height:25px; background:var(--gold); box-shadow:0 0 18px currentColor; transform-origin:50% 350px; animation:obsParticleBurst 1.1s cubic-bezier(.1,.72,.22,1) forwards; }
+        .obs-outcome-fx.failure .obs-outcome-particle { width:26px; height:4px; background:var(--alert); color:var(--alert); animation-name:obsFailureShard; }
+        body.obs-critical-pulse .card { animation:obsCardCritical 1s ease-out forwards; }
+        body.obs-failure-shake .card { animation:obsCardFailure .72s steps(7,end); }
+        @keyframes obsCriticalFlash { 0%{opacity:0;transform:scale(.5)} 22%{opacity:1} 100%{opacity:0;transform:scale(1.3)} }
+        @keyframes obsFailureGlitch { 0%{opacity:0;transform:translateX(0)} 20%{opacity:.9;transform:translateX(-20px)} 40%{opacity:.42;transform:translateX(18px)} 60%{opacity:.8;transform:translateX(-9px)} 80%{opacity:.5;transform:translateX(7px)} 100%{opacity:0;transform:translateX(0)} }
+        @keyframes obsParticleBurst { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scale(.2)} 18%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-340px) scale(1.2)} }
+        @keyframes obsFailureShard { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scaleX(.2)} 20%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-290px) scaleX(1.8)} }
+        @keyframes obsCardCritical { 0%{filter:brightness(1)} 35%{filter:brightness(1.8);box-shadow:0 0 90px rgba(255,204,51,.75)} 100%{filter:brightness(1)} }
+        @keyframes obsCardFailure { 0%,100%{transform:translate(0)} 14%{transform:translate(-14px,5px)} 28%{transform:translate(13px,-5px)} 42%{transform:translate(-9px,-3px)} 57%{transform:translate(10px,4px)} 72%{transform:translate(-5px,2px)} 86%{transform:translate(5px,-2px)} }
 
     </style>
 </head>
@@ -196,7 +210,7 @@
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.27.4-d20-3d';
+            const OVERLAY_VERSION = '2026.07.27.5-dice-controls';
             const OBS_PROTOCOL_VERSION = 3;
             const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
@@ -286,6 +300,10 @@
                     damage: payload.damage === null || payload.damage === undefined ? null : Math.max(0, Number(payload.damage) || 0),
                     critical: Boolean(payload.critical), failure: Boolean(payload.failure),
                     theme: String(payload.theme || 'default'), layout: String(payload.layout || 'standard'),
+                    dice3d: payload.dice3d !== false,
+                    diceSound: payload.diceSound !== false,
+                    diceSpeed: ['fast', 'normal', 'cinematic'].includes(payload.diceSpeed) ? payload.diceSpeed : 'normal',
+                    diceFx: payload.diceFx !== false,
                     portrait: validPortrait(payload.portrait) ? payload.portrait : (payload.portrait === '' ? '' : undefined),
                     hud
                 };
@@ -544,9 +562,74 @@
                 context.restore();
             }
 
+
+            let diceAudioContext = null;
+            function getDiceAudioContext() {
+                const Constructor = window.AudioContext || window.webkitAudioContext;
+                if (!Constructor) return null;
+                if (!diceAudioContext) diceAudioContext = new Constructor();
+                if (diceAudioContext.state === 'suspended') diceAudioContext.resume().catch(() => {});
+                return diceAudioContext;
+            }
+            function playDiceImpact(event, strength = .7, outcome = '') {
+                if (event?.diceSound === false) return;
+                const context = getDiceAudioContext();
+                if (!context) return;
+                const now = context.currentTime;
+                const duration = .08 + Math.max(0, Math.min(1, strength)) * .06;
+                const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * duration)), context.sampleRate);
+                const samples = buffer.getChannelData(0);
+                for (let index = 0; index < samples.length; index++) samples[index] = (Math.random() * 2 - 1) * Math.pow(1 - index / samples.length, 3.3);
+                const source = context.createBufferSource();
+                const filter = context.createBiquadFilter();
+                const gain = context.createGain();
+                source.buffer = buffer;
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(outcome === 'critical' ? 1500 : outcome === 'failure' ? 520 : 900, now);
+                gain.gain.setValueAtTime(.0001, now);
+                gain.gain.exponentialRampToValueAtTime(.06 * Math.max(.3, strength), now + .006);
+                gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+                source.connect(filter); filter.connect(gain); gain.connect(context.destination);
+                source.start(now); source.stop(now + duration + .03);
+                const oscillator = context.createOscillator();
+                const oscillatorGain = context.createGain();
+                oscillator.type = outcome === 'failure' ? 'sawtooth' : 'triangle';
+                oscillator.frequency.setValueAtTime(outcome === 'critical' ? 120 : outcome === 'failure' ? 45 : 70, now);
+                oscillator.frequency.exponentialRampToValueAtTime(30, now + duration);
+                oscillatorGain.gain.setValueAtTime(.022 * Math.max(.3, strength), now);
+                oscillatorGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+                oscillator.connect(oscillatorGain); oscillatorGain.connect(context.destination);
+                oscillator.start(now); oscillator.stop(now + duration + .03);
+            }
+            function diceAnimationDuration(event, count) {
+                if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return 280;
+                if (event.diceSpeed === 'fast') return Math.min(1050, 500 + count * 65);
+                if (event.diceSpeed === 'cinematic') return Math.min(4300, 2250 + count * 230);
+                return Math.min(2300, 1300 + count * 110);
+            }
+            function triggerOutcomeEffect(event) {
+                if (event.diceFx === false || (!event.critical && !event.failure)) return;
+                const type = event.critical ? 'critical' : 'failure';
+                const effect = document.createElement('div');
+                effect.className = `obs-outcome-fx ${type}`;
+                const count = type === 'critical' ? 34 : 24;
+                for (let index = 0; index < count; index++) {
+                    const particle = document.createElement('span');
+                    particle.className = 'obs-outcome-particle';
+                    particle.style.setProperty('--angle', `${index * 360 / count + Math.random() * 9}deg`);
+                    particle.style.animationDelay = `${Math.random() * .14}s`;
+                    effect.appendChild(particle);
+                }
+                document.body.appendChild(effect);
+                const bodyClass = type === 'critical' ? 'obs-critical-pulse' : 'obs-failure-shake';
+                document.body.classList.add(bodyClass);
+                playDiceImpact(event, 1, type);
+                window.setTimeout(() => { effect.remove(); document.body.classList.remove(bodyClass); }, 1250);
+            }
+
             function animateDice(event) {
                 return new Promise(resolve => {
-                    if (!diceContext || !event.rolls.length) { resolve(); return; }
+                    if (!diceContext || !event.rolls.length || event.dice3d === false) { resolve(); return; }
                     const values = event.rolls.slice(0, 8).map(value => Math.max(1, Math.min(20, Number(value) || 1)));
                     const chosenIndex = Math.max(0, values.indexOf(Math.max(1, Math.min(20, Number(event.chosen) || values[0]))));
                     const width = diceCanvas.width;
@@ -569,12 +652,18 @@
                     });
                     diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')}</small>`;
                     diceStage.classList.add('visible');
-                    const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 350 : Math.min(2300, 1300 + values.length * 110);
+                    const duration = diceAnimationDuration(event, values.length);
+                    const impactThresholds = [.12, .3, .48, .67, .82];
+                    let impactIndex = 0;
                     let started = null;
                     function frame(timestamp) {
                         if (started === null) started = timestamp;
                         const elapsed = timestamp - started;
                         const progress = Math.min(1, elapsed / duration);
+                        while (impactIndex < impactThresholds.length && progress >= impactThresholds[impactIndex]) {
+                            playDiceImpact(event, .4 + impactIndex * .1);
+                            impactIndex += 1;
+                        }
                         drawTray(diceContext, width, height);
                         actors.forEach(actor => {
                             if (progress < .72) {
@@ -635,7 +724,7 @@
                         </div>
                     </div>`;
                 stage.replaceChildren(card);
-                requestAnimationFrame(() => card.classList.add('visible'));
+                requestAnimationFrame(() => { card.classList.add('visible'); triggerOutcomeEffect(event); });
                 if (event.event === 'test') sendTestAck(event);
                 window.setTimeout(() => {
                     card.classList.remove('visible');
