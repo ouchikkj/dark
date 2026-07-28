@@ -125,7 +125,7 @@
             padding: 24px 30px 22px; box-shadow: 0 18px 55px rgba(0,0,0,.75), 0 0 28px color-mix(in srgb, var(--accent) 22%, transparent);
             opacity: 0; transform: translateY(55px) scale(.97); filter: blur(8px);
         }
-        .card.visible { animation: enter .52s cubic-bezier(.18,.86,.3,1.15) forwards; }
+        .card.visible { opacity:1; transform:translateY(0) scale(1); filter:blur(0); animation: enter .52s cubic-bezier(.18,.86,.3,1.15) forwards; }
         .card.leaving { animation: leave .38s ease-in forwards; }
         .card.critical { border-color: var(--gold); border-left-color: var(--gold); }
         .card.failure { border-color: var(--alert); border-left-color: var(--alert); }
@@ -210,7 +210,7 @@
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.27.5-dice-controls';
+            const OVERLAY_VERSION = '2026.07.28.15-obs-aligned';
             const OBS_PROTOCOL_VERSION = 3;
             const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
@@ -437,26 +437,45 @@
                 return current + difference * amount;
             }
 
+            function measureFaceReadability(faceIndex, rx, ry, rz) {
+                const face = D20_GEOMETRY.faces[faceIndex];
+                const rotated = face.map(vertexIndex => rotateVertex(D20_GEOMETRY.vertices[vertexIndex], rx, ry, rz));
+                const normal = rotateVertex(D20_FACE_NORMALS[faceIndex], rx, ry, rz);
+                const center = rotated.reduce((accumulator, vertex) => [
+                    accumulator[0] + vertex[0], accumulator[1] + vertex[1], accumulator[2] + vertex[2]
+                ], [0, 0, 0]).map(value => value / 3);
+                const edgeX = rotated[1][0] - rotated[0][0];
+                const edgeY = rotated[1][1] - rotated[0][1];
+                let angle = Math.atan2(edgeY, edgeX);
+                if (angle > Math.PI / 2) angle -= Math.PI;
+                if (angle < -Math.PI / 2) angle += Math.PI;
+                const upright = 1 - Math.min(1, Math.abs(angle) / (Math.PI / 2));
+                return { normal, center, upright };
+            }
+
             function targetOrientationForFace(faceIndex) {
                 const target = Math.max(0, Math.min(19, Number(faceIndex) || 0));
                 if (d20OrientationCache.has(target)) return d20OrientationCache.get(target);
-                const normal = D20_FACE_NORMALS[target];
                 let best = { score: -Infinity, rx: 0, ry: 0, rz: 0 };
                 const evaluate = (rx, ry, rz) => {
-                    const rotated = rotateVertex(normal, rx, ry, rz);
-                    const score = rotated[2] * 1.6 - Math.abs(rotated[0]) * .18 - Math.abs(rotated[1]) * .18;
+                    const reading = measureFaceReadability(target, rx, ry, rz);
+                    const score = reading.normal[2] * 3.3 + reading.upright * 1.4
+                        - Math.abs(reading.center[0]) * .28 - Math.abs(reading.center[1]) * .24;
                     if (score > best.score) best = { score, rx, ry, rz };
                 };
-                for (let attempt = 0; attempt < 600; attempt += 1) {
+                for (let attempt = 0; attempt < 1800; attempt += 1) {
                     evaluate(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
                 }
-                let step = .34;
-                while (step > .018) {
+                let step = .28;
+                while (step > .008) {
                     let improved = false;
                     const previous = { ...best };
-                    [-step, 0, step].forEach(dx => [-step, 0, step].forEach(dy => [-step, 0, step].forEach(dz => evaluate(previous.rx + dx, previous.ry + dy, previous.rz + dz))));
-                    if (best.score > previous.score) improved = true;
-                    if (!improved) step *= .55;
+                    [-step, 0, step].forEach(dx => [-step, 0, step].forEach(dy => [-step, 0, step].forEach(dz => {
+                        const before = best.score;
+                        evaluate(previous.rx + dx, previous.ry + dy, previous.rz + dz);
+                        if (best.score > before) improved = true;
+                    })));
+                    if (!improved) step *= .62;
                 }
                 d20OrientationCache.set(target, best);
                 return best;
@@ -655,41 +674,61 @@
                 const context = getDiceAudioContext();
                 if (!context) return;
                 const now = context.currentTime;
-                const safeStrength = Math.max(.18, Math.min(1.25, Number(strength) || .7));
-                const duration = .09 + safeStrength * .08;
+                const safeStrength = Math.max(.18, Math.min(1.15, Number(strength) || .7));
+                const duration = .11 + safeStrength * .09;
+                const master = context.createGain();
+                master.gain.setValueAtTime(.0001, now);
+                master.gain.linearRampToValueAtTime(.9, now + .01);
+                master.connect(context.destination);
                 const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * duration)), context.sampleRate);
                 const samples = buffer.getChannelData(0);
                 for (let index = 0; index < samples.length; index += 1) {
                     const progress = index / samples.length;
-                    const envelope = Math.pow(1 - progress, outcome ? 2.3 : 3.1);
+                    const envelope = Math.pow(1 - progress, outcome ? 2.2 : 2.8);
                     samples[index] = (Math.random() * 2 - 1) * envelope;
                 }
                 const noise = context.createBufferSource();
-                const filter = context.createBiquadFilter();
-                const gain = context.createGain();
+                const noiseFilter = context.createBiquadFilter();
+                const noiseGain = context.createGain();
                 noise.buffer = buffer;
-                filter.type = 'bandpass';
-                filter.frequency.setValueAtTime(outcome === 'critical' ? 1350 : outcome === 'failure' ? 420 : 760, now);
-                filter.Q.value = 1.1;
-                gain.gain.setValueAtTime(.0001, now);
-                gain.gain.exponentialRampToValueAtTime(.028 * safeStrength, now + .004);
-                gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
-                noise.connect(filter); filter.connect(gain); gain.connect(context.destination);
+                noiseFilter.type = outcome === 'failure' ? 'bandpass' : 'lowpass';
+                noiseFilter.Q.value = outcome === 'critical' ? .9 : 1.1;
+                noiseFilter.frequency.setValueAtTime(outcome === 'critical' ? 980 : outcome === 'failure' ? 520 : 760, now);
+                noiseGain.gain.setValueAtTime(.0001, now);
+                noiseGain.gain.linearRampToValueAtTime((outcome === 'critical' ? .026 : .02) * safeStrength, now + .006);
+                noiseGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+                noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(master);
                 noise.start(now); noise.stop(now + duration + .03);
-                const oscillator = context.createOscillator();
-                const oscillatorGain = context.createGain();
-                oscillator.type = outcome === 'failure' ? 'sawtooth' : 'triangle';
-                oscillator.frequency.setValueAtTime(outcome === 'critical' ? 116 : outcome === 'failure' ? 48 : 82, now);
-                oscillator.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 55 : 35, now + duration);
-                oscillatorGain.gain.setValueAtTime(.011 * safeStrength, now);
-                oscillatorGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
-                oscillator.connect(oscillatorGain); oscillatorGain.connect(context.destination);
-                oscillator.start(now); oscillator.stop(now + duration + .02);
+                const body = context.createOscillator();
+                const bodyFilter = context.createBiquadFilter();
+                const bodyGain = context.createGain();
+                body.type = outcome === 'failure' ? 'triangle' : 'sine';
+                body.frequency.setValueAtTime(outcome === 'critical' ? 140 : outcome === 'failure' ? 72 : 92, now);
+                body.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 78 : outcome === 'failure' ? 46 : 58, now + duration);
+                bodyFilter.type = 'lowpass';
+                bodyFilter.frequency.setValueAtTime(outcome === 'critical' ? 900 : 720, now);
+                bodyGain.gain.setValueAtTime(.0001, now);
+                bodyGain.gain.linearRampToValueAtTime((outcome === 'critical' ? .022 : .016) * safeStrength, now + .01);
+                bodyGain.gain.exponentialRampToValueAtTime(.0001, now + duration + .02);
+                body.connect(bodyFilter); bodyFilter.connect(bodyGain); bodyGain.connect(master);
+                body.start(now); body.stop(now + duration + .03);
+                if (outcome === 'critical' || outcome === 'failure') {
+                    const accent = context.createOscillator();
+                    const accentGain = context.createGain();
+                    accent.type = outcome === 'critical' ? 'triangle' : 'sawtooth';
+                    accent.frequency.setValueAtTime(outcome === 'critical' ? 520 : 180, now + .012);
+                    accent.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 360 : 120, now + .18);
+                    accentGain.gain.setValueAtTime(.0001, now);
+                    accentGain.gain.linearRampToValueAtTime(outcome === 'critical' ? .012 : .008, now + .02);
+                    accentGain.gain.exponentialRampToValueAtTime(.0001, now + .2);
+                    accent.connect(accentGain); accentGain.connect(master);
+                    accent.start(now + .01); accent.stop(now + .22);
+                }
             }
             function diceAnimationProfile(event, count) {
-                if (event.diceSpeed === 'fast') return { duration: Math.min(2150, 1350 + count * 105), launchRatio: .52, settleRatio: .85, bounce: 19, chosenScale: .13, nonChosenFade: .22, linger: 420, impacts: [.18,.46,.72,.9], spinBase: .28, spinBurst: .34 };
-                if (event.diceSpeed === 'cinematic') return { duration: Math.min(4850, 3300 + count * 235), launchRatio: .64, settleRatio: .9, bounce: 31, chosenScale: .2, nonChosenFade: .34, linger: 1120, impacts: [.14,.28,.46,.66,.84,.96], spinBase: .34, spinBurst: .52 };
-                return { duration: Math.min(3450, 2350 + count * 165), launchRatio: .58, settleRatio: .87, bounce: 25, chosenScale: .16, nonChosenFade: .28, linger: 760, impacts: [.18,.38,.58,.8,.94], spinBase: .31, spinBurst: .42 };
+                if (event.diceSpeed === 'fast') return { duration: Math.min(2350, 1480 + count * 130), launchRatio: .54, settleRatio: .85, bounce: 18, chosenScale: .13, nonChosenFade: .22, linger: 500, impacts: [.22,.5,.74,.92], spinBase: .27, spinBurst: .32 };
+                if (event.diceSpeed === 'cinematic') return { duration: Math.min(5600, 3780 + count * 280), launchRatio: .66, settleRatio: .9, bounce: 30, chosenScale: .2, nonChosenFade: .34, linger: 1220, impacts: [.16,.32,.5,.7,.86,.97], spinBase: .33, spinBurst: .5 };
+                return { duration: Math.min(3900, 2660 + count * 210), launchRatio: .6, settleRatio: .87, bounce: 24, chosenScale: .16, nonChosenFade: .28, linger: 860, impacts: [.2,.42,.62,.82,.95], spinBase: .3, spinBurst: .4 };
             }
             function triggerOutcomeEffect(event) {
                 if (event.diceFx === false || (!event.critical && !event.failure)) return;
@@ -707,7 +746,7 @@
                 document.body.appendChild(effect);
                 const bodyClass = type === 'critical' ? 'obs-critical-pulse' : 'obs-failure-shake';
                 document.body.classList.add(bodyClass);
-                playDiceImpact(event, 1.05, type);
+                playDiceImpact(event, type === 'critical' ? .92 : .88, type);
                 window.setTimeout(() => { effect.remove(); document.body.classList.remove(bodyClass); }, 1250);
             }
 
