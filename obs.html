@@ -150,6 +150,28 @@
         @keyframes enter { 0%{opacity:0;transform:translateY(55px) scale(.97);filter:blur(8px)} 55%{opacity:1;filter:blur(0)} 100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)} }
         @keyframes leave { to{opacity:0;transform:translateY(-35px) scale(.98);filter:blur(7px)} }
         @media (max-width:700px) { .card{padding:18px 20px}.title{font-size:23px}.content{grid-template-columns:1fr;gap:12px}.result-wrap{justify-content:flex-end}.result{font-size:52px} }
+
+
+        /* D20 3D // animação de rolagem no OBS */
+        #diceStage {
+            position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0; transition: opacity .18s ease;
+        }
+        #diceStage.visible { opacity: 1; }
+        #diceCanvas { width: min(960px, 94vw); height: min(560px, 66vh); display: block; }
+        .dice-stage-label {
+            position: fixed; left: 50%; top: 13vh; transform: translateX(-50%); z-index: 21;
+            color: var(--main); font-family: 'Oswald', sans-serif; font-size: clamp(18px, 2.2vw, 31px);
+            letter-spacing: 4px; text-transform: uppercase; text-align: center; text-shadow: 0 3px 18px rgba(0,0,0,.9);
+            opacity: 0; transition: opacity .18s ease;
+        }
+        #diceStage.visible + .dice-stage-label { opacity: 1; }
+        .dice-stage-label small { display: block; margin-top: 5px; color: var(--dim); font: 12px 'Share Tech Mono', monospace; letter-spacing: 2px; }
+        @media (max-width:700px) {
+            #diceCanvas { width: 98vw; height: 56vh; }
+            .dice-stage-label { top: 18vh; width: 92vw; }
+        }
+
     </style>
 </head>
 <body>
@@ -165,13 +187,16 @@
         </div>
         <div id="hudConditions" class="hud-conditions"></div>
     </aside>
+
+    <div id="diceStage" aria-hidden="true"><canvas id="diceCanvas" width="960" height="560"></canvas></div>
+    <div id="diceStageLabel" class="dice-stage-label"></div>
     <main id="stage" aria-live="polite"></main>
     <div id="connection" class="connection">AGUARDANDO SINAL...</div>
     <script>
         (() => {
             'use strict';
             const params = new URLSearchParams(location.search);
-            const OVERLAY_VERSION = '2026.07.19.3-safe';
+            const OVERLAY_VERSION = '2026.07.27.4-d20-3d';
             const OBS_PROTOCOL_VERSION = 3;
             const MAX_QUEUE_SIZE = 20;
             const channel = String(params.get('channel') || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
@@ -334,6 +359,250 @@
                 persistentHud.classList.add('visible');
             }
 
+
+            /* =========================================================
+               D20 3D ANIMADO // sem dependências externas
+               ========================================================= */
+            const diceStage = document.getElementById('diceStage');
+            const diceCanvas = document.getElementById('diceCanvas');
+            const diceStageLabel = document.getElementById('diceStageLabel');
+            const diceContext = diceCanvas.getContext('2d');
+            const D20_GEOMETRY = (() => {
+                const phi = (1 + Math.sqrt(5)) / 2;
+                const rawVertices = [
+                    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+                    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+                    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+                ];
+                const vertices = rawVertices.map(vertex => {
+                    const length = Math.hypot(vertex[0], vertex[1], vertex[2]) || 1;
+                    return [vertex[0] / length, vertex[1] / length, vertex[2] / length];
+                });
+                const faces = [
+                    [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
+                    [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
+                    [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+                    [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]
+                ];
+                return { vertices, faces };
+            })();
+            const D20_FACE_NORMALS = D20_GEOMETRY.faces.map(face => {
+                const centroid = face.reduce((accumulator, vertexIndex) => {
+                    const vertex = D20_GEOMETRY.vertices[vertexIndex];
+                    return [accumulator[0] + vertex[0], accumulator[1] + vertex[1], accumulator[2] + vertex[2]];
+                }, [0, 0, 0]).map(value => value / 3);
+                return normalizeVector(centroid);
+            });
+            const d20OrientationCache = new Map();
+
+            function normalizeVector(vector) {
+                const length = Math.hypot(vector[0], vector[1], vector[2]) || 1;
+                return [vector[0] / length, vector[1] / length, vector[2] / length];
+            }
+
+            function rotateVertex(vertex, rx, ry, rz) {
+                let [x, y, z] = vertex;
+                let cosine = Math.cos(rx), sine = Math.sin(rx);
+                [y, z] = [y * cosine - z * sine, y * sine + z * cosine];
+                cosine = Math.cos(ry); sine = Math.sin(ry);
+                [x, z] = [x * cosine + z * sine, -x * sine + z * cosine];
+                cosine = Math.cos(rz); sine = Math.sin(rz);
+                [x, y] = [x * cosine - y * sine, x * sine + y * cosine];
+                return [x, y, z];
+            }
+
+            function lerpAngle(current, target, amount) {
+                let difference = (target - current + Math.PI) % (Math.PI * 2);
+                if (difference < 0) difference += Math.PI * 2;
+                difference -= Math.PI;
+                return current + difference * amount;
+            }
+
+            function targetOrientationForFace(faceIndex) {
+                const target = Math.max(0, Math.min(19, Number(faceIndex) || 0));
+                if (d20OrientationCache.has(target)) return d20OrientationCache.get(target);
+                const normal = D20_FACE_NORMALS[target];
+                let best = { score: -Infinity, rx: 0, ry: 0, rz: 0 };
+                const evaluate = (rx, ry, rz) => {
+                    const rotated = rotateVertex(normal, rx, ry, rz);
+                    const score = rotated[2] * 1.6 - Math.abs(rotated[0]) * .18 - Math.abs(rotated[1]) * .18;
+                    if (score > best.score) best = { score, rx, ry, rz };
+                };
+                for (let attempt = 0; attempt < 600; attempt += 1) {
+                    evaluate(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+                }
+                let step = .34;
+                while (step > .018) {
+                    let improved = false;
+                    const previous = { ...best };
+                    [-step, 0, step].forEach(dx => [-step, 0, step].forEach(dy => [-step, 0, step].forEach(dz => evaluate(previous.rx + dx, previous.ry + dy, previous.rz + dz))));
+                    if (best.score > previous.score) improved = true;
+                    if (!improved) step *= .55;
+                }
+                d20OrientationCache.set(target, best);
+                return best;
+            }
+
+            function readOverlayColor(variable, fallback) {
+                return getComputedStyle(document.body).getPropertyValue(variable).trim() || fallback;
+            }
+
+            function hexToRgba(value, alpha) {
+                const hex = String(value || '').trim().replace('#', '');
+                if (!/^[0-9a-fA-F]{3,6}$/.test(hex)) return `rgba(255,255,255,${alpha})`;
+                const normalized = hex.length === 3 ? hex.split('').map(character => character + character).join('') : hex;
+                const number = Number.parseInt(normalized, 16);
+                return `rgba(${(number >> 16) & 255},${(number >> 8) & 255},${number & 255},${alpha})`;
+            }
+
+            function drawRoundedRect(context, x, y, width, height, radius) {
+                const r = Math.min(radius, width / 2, height / 2);
+                context.beginPath();
+                context.moveTo(x + r, y);
+                context.lineTo(x + width - r, y);
+                context.quadraticCurveTo(x + width, y, x + width, y + r);
+                context.lineTo(x + width, y + height - r);
+                context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+                context.lineTo(x + r, y + height);
+                context.quadraticCurveTo(x, y + height, x, y + height - r);
+                context.lineTo(x, y + r);
+                context.quadraticCurveTo(x, y, x + r, y);
+                context.closePath();
+            }
+
+            function drawTray(context, width, height) {
+                context.clearRect(0, 0, width, height);
+                const gradient = context.createRadialGradient(width / 2, height / 2, 30, width / 2, height / 2, width * .55);
+                gradient.addColorStop(0, 'rgba(0,0,0,.28)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, width, height);
+                context.save();
+                context.strokeStyle = 'rgba(255,255,255,.12)';
+                context.lineWidth = 2;
+                drawRoundedRect(context, 35, 35, width - 70, height - 70, 28);
+                context.stroke();
+                context.restore();
+            }
+
+            function drawD20(context, actor, event) {
+                const rotatedVertices = D20_GEOMETRY.vertices.map(vertex => rotateVertex(vertex, actor.rx, actor.ry, actor.rz));
+                const projectionDistance = 4.8;
+                const projected = rotatedVertices.map(vertex => {
+                    const perspective = projectionDistance / (projectionDistance - vertex[2]);
+                    return { x: vertex[0] * actor.radius * perspective, y: vertex[1] * actor.radius * perspective };
+                });
+                const accent = event.critical ? readOverlayColor('--gold', '#ffcc33') : event.failure ? readOverlayColor('--alert', '#ff2929') : readOverlayColor('--accent', '#ffffff');
+                const main = readOverlayColor('--main', '#e8e8e8');
+                const line = readOverlayColor('--line', 'rgba(255,255,255,.2)');
+                const light = normalizeVector([-.65, -.8, 1]);
+                const faceData = D20_GEOMETRY.faces.map((face, index) => {
+                    const a = rotatedVertices[face[0]], b = rotatedVertices[face[1]], c = rotatedVertices[face[2]];
+                    const ab = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
+                    const ac = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
+                    const normal = normalizeVector([ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]]);
+                    const center = [(a[0]+b[0]+c[0])/3, (a[1]+b[1]+c[1])/3, (a[2]+b[2]+c[2])/3];
+                    return { face, index, normal, center, depth:center[2], light:Math.max(0, normal[0]*light[0]+normal[1]*light[1]+normal[2]*light[2]) };
+                }).sort((left, right) => left.depth - right.depth);
+
+                context.save();
+                context.translate(actor.x, actor.y + actor.offsetY);
+                context.fillStyle = actor.chosen ? hexToRgba(accent, .25) : 'rgba(0,0,0,.34)';
+                context.beginPath();
+                context.ellipse(0, actor.radius * 1.12, actor.radius * .88, actor.radius * .23, 0, 0, Math.PI * 2);
+                context.fill();
+                if (actor.chosen && actor.revealed) { context.shadowBlur = 30; context.shadowColor = accent; }
+
+                faceData.forEach(faceInfo => {
+                    const points = faceInfo.face.map(vertexIndex => projected[vertexIndex]);
+                    const shade = .18 + faceInfo.light * .34;
+                    const isResultFace = faceInfo.index === actor.targetFace && actor.revealed;
+                    context.beginPath();
+                    context.moveTo(points[0].x, points[0].y);
+                    context.lineTo(points[1].x, points[1].y);
+                    context.lineTo(points[2].x, points[2].y);
+                    context.closePath();
+                    context.fillStyle = isResultFace && actor.chosen ? hexToRgba(accent, .94) : `rgba(${Math.round(12 + 62*shade)},${Math.round(12 + 68*shade)},${Math.round(16 + 76*shade)},.96)`;
+                    context.fill();
+                    context.strokeStyle = isResultFace ? accent : line;
+                    context.lineWidth = isResultFace ? 2 : 1;
+                    context.stroke();
+                    if (faceInfo.normal[2] > .04) {
+                        const perspective = projectionDistance / (projectionDistance - faceInfo.center[2]);
+                        const centerX = faceInfo.center[0] * actor.radius * perspective;
+                        const centerY = faceInfo.center[1] * actor.radius * perspective;
+                        context.save();
+                        context.translate(centerX, centerY);
+                        context.fillStyle = isResultFace && actor.chosen ? '#050505' : main;
+                        context.font = `700 ${Math.max(10, actor.radius * .29)}px Oswald, Arial, sans-serif`;
+                        context.textAlign = 'center';
+                        context.textBaseline = 'middle';
+                        context.fillText(String(faceInfo.index + 1), 0, 0);
+                        context.restore();
+                    }
+                });
+                context.restore();
+            }
+
+            function animateDice(event) {
+                return new Promise(resolve => {
+                    if (!diceContext || !event.rolls.length) { resolve(); return; }
+                    const values = event.rolls.slice(0, 8).map(value => Math.max(1, Math.min(20, Number(value) || 1)));
+                    const chosenIndex = Math.max(0, values.indexOf(Math.max(1, Math.min(20, Number(event.chosen) || values[0]))));
+                    const width = diceCanvas.width;
+                    const height = diceCanvas.height;
+                    const rows = values.length > 4 ? 2 : 1;
+                    const columns = rows === 1 ? values.length : Math.ceil(values.length / 2);
+                    const actors = values.map((value, index) => {
+                        const row = rows === 1 ? 0 : Math.floor(index / columns);
+                        const column = rows === 1 ? index : index % columns;
+                        const cellWidth = width / columns;
+                        const cellHeight = height / rows;
+                        return {
+                            x: cellWidth * (column + .5), y: cellHeight * (row + .53),
+                            radius: Math.min(78, Math.max(45, Math.min(cellWidth, cellHeight) * .27)),
+                            rx: Math.random()*Math.PI*2, ry: Math.random()*Math.PI*2, rz: Math.random()*Math.PI*2,
+                            spinX:(.25+Math.random()*.34)*(Math.random()>.5?1:-1), spinY:(.28+Math.random()*.4)*(Math.random()>.5?1:-1), spinZ:(.18+Math.random()*.3)*(Math.random()>.5?1:-1),
+                            target:targetOrientationForFace(value-1), targetFace:value-1, chosen:index===chosenIndex,
+                            phase:Math.random()*Math.PI*2, offsetY:-15, revealed:false
+                        };
+                    });
+                    diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')}</small>`;
+                    diceStage.classList.add('visible');
+                    const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 350 : Math.min(2300, 1300 + values.length * 110);
+                    let started = null;
+                    function frame(timestamp) {
+                        if (started === null) started = timestamp;
+                        const elapsed = timestamp - started;
+                        const progress = Math.min(1, elapsed / duration);
+                        drawTray(diceContext, width, height);
+                        actors.forEach(actor => {
+                            if (progress < .72) {
+                                const damp = 1 - progress/.72;
+                                actor.rx += actor.spinX*(1.35+damp*.7);
+                                actor.ry += actor.spinY*(1.35+damp*.7);
+                                actor.rz += actor.spinZ*(1.15+damp*.55);
+                                actor.offsetY = -Math.abs(Math.sin(elapsed/145+actor.phase))*35*damp - damp*12;
+                            } else {
+                                const settle = (progress-.72)/.28;
+                                actor.rx = lerpAngle(actor.rx, actor.target.rx, .14+settle*.17);
+                                actor.ry = lerpAngle(actor.ry, actor.target.ry, .14+settle*.17);
+                                actor.rz = lerpAngle(actor.rz, actor.target.rz, .16+settle*.19);
+                                actor.offsetY *= .68;
+                                actor.revealed = settle > .48;
+                            }
+                            drawD20(diceContext, actor, event);
+                        });
+                        if (progress < 1) requestAnimationFrame(frame);
+                        else window.setTimeout(() => {
+                            diceStage.classList.remove('visible');
+                            window.setTimeout(() => { diceContext.clearRect(0,0,width,height); diceStageLabel.textContent=''; resolve(); }, 190);
+                        }, 380);
+                    }
+                    requestAnimationFrame(frame);
+                });
+            }
+
             function enqueue(payload, transport = 'local') {
                 if (payload?.remoteOnly && transport !== 'remote') return;
                 const event = normalize(payload);
@@ -345,24 +614,8 @@
                 if (!active) showNext();
             }
 
-            function showNext() {
-                if (!queue.length) { active = false; return; }
-                active = true;
-                const event = queue.shift();
-                applyTheme(event.theme);
-                applyLayout(event.layout);
-                if (event.event === 'banner') {
-                    const card = document.createElement('section');
-                    card.className = 'card';
-                    card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div></div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
-                    stage.replaceChildren(card);
-                    requestAnimationFrame(() => card.classList.add('visible'));
-                    window.setTimeout(() => {
-                        card.classList.remove('visible'); card.classList.add('leaving');
-                        window.setTimeout(() => { card.remove(); showNext(); }, 420);
-                    }, event.duration);
-                    return;
-                }
+
+            function showResultCard(event) {
                 const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
                 const bonus = event.bonus ? ` ${event.bonus > 0 ? '+' : ''}${event.bonus}` : '';
                 const rolls = event.rolls.length ? `[ ${event.rolls.join(' | ')} ]` : '[ -- ]';
@@ -385,9 +638,32 @@
                 requestAnimationFrame(() => card.classList.add('visible'));
                 if (event.event === 'test') sendTestAck(event);
                 window.setTimeout(() => {
-                    card.classList.remove('visible'); card.classList.add('leaving');
+                    card.classList.remove('visible');
+                    card.classList.add('leaving');
                     window.setTimeout(() => { card.remove(); showNext(); }, 420);
                 }, event.duration);
+            }
+
+            async function showNext() {
+                if (!queue.length) { active = false; return; }
+                active = true;
+                const event = queue.shift();
+                applyTheme(event.theme);
+                applyLayout(event.layout);
+                if (event.event === 'banner') {
+                    const card = document.createElement('section');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div></div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
+                    stage.replaceChildren(card);
+                    requestAnimationFrame(() => card.classList.add('visible'));
+                    window.setTimeout(() => {
+                        card.classList.remove('visible'); card.classList.add('leaving');
+                        window.setTimeout(() => { card.remove(); showNext(); }, 420);
+                    }, event.duration);
+                    return;
+                }
+                await animateDice(event);
+                showResultCard(event);
             }
 
             function extractRelayPayload(envelope) {
