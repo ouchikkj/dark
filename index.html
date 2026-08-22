@@ -484,6 +484,7 @@
             .page { display: block !important; opacity: 1 !important; animation: none !important; page-break-after: auto; }
             .page + .page { break-before: page; page-break-before: always; }
             .panel.collapsed .panel-content { display: block !important; }
+            .panel::before { display: none !important; }
 
             .panel {
                 border: .35mm solid #000 !important; background: #fff !important;
@@ -940,7 +941,9 @@
             .attribute-radar-card { width: 100%; }
         }
 
-        .panel { background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); border: 1px solid var(--border-color); border-radius: 2px; padding: 35px 30px 30px 30px; margin-bottom: 25px; position: relative; transition: 0.2s ease-in-out; }
+        .panel { background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 2px; padding: 35px 30px 30px 30px; margin-bottom: 25px; position: relative; transition: 0.2s ease-in-out; }
+        /* blur em pseudo-elemento: backdrop-filter no .panel recortava o .panel-title que sai pra fora da borda */
+        .panel::before { content:''; position:absolute; inset:0; backdrop-filter: blur(5px); z-index:-1; border-radius:inherit; pointer-events:none; }
         body.theme-light .panel { background: var(--panel-bg); }
         .panel:hover { border-color: var(--dim-text); }
         .panel-title { position: absolute; top: -12px; left: 20px; background: var(--bg-color); padding: 2px 15px; font-size: 0.8rem; letter-spacing: 4px; color: var(--text-main); border: 1px solid var(--border-color); font-weight: normal; }
