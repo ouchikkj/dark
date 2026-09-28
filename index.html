@@ -1254,6 +1254,65 @@
             .box.filled { background: Highlight !important; }
         }
 
+
+/* Session tools: explainable values, timed conditions and mobile actions. */
+.dd-calculation { margin-top:12px; padding:10px 12px; border:1px solid var(--border-color); background:var(--panel-bg); text-align:left; min-width:0; }
+.dd-calculation summary { cursor:pointer; font-size:.85rem; color:var(--text-main); min-height:30px; display:list-item; align-content:center; }
+.dd-calculation-body, .dd-help { font-family:'Segoe UI',sans-serif; font-size:.9rem; line-height:1.55; letter-spacing:normal; text-transform:none; color:var(--text-main); overflow-wrap:anywhere; }
+.dd-calculation-body p { margin:8px 0; }
+.dd-help { opacity:.85; margin:8px 0 14px; }
+#ddCalculations { grid-column:1/-1; }
+.dd-formula-row { padding:9px 0; border-bottom:1px solid var(--border-color); }
+.dd-formula-row:last-child { border-bottom:0; }
+.dd-formula-row strong { display:block; margin-bottom:3px; }
+#ddConditionTimers { margin-bottom:22px; padding:14px; border:1px solid var(--border-color); background:var(--panel-bg); }
+.dd-timer-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.dd-timer-toolbar button, .dd-timed-condition button { min-height:44px; transform:none!important; }
+.dd-timed-condition { padding:14px 0; border-top:1px solid var(--border-color); }
+.dd-timed-condition h4 { margin:0 0 10px; font-size:.95rem; }
+.dd-timer-fields { display:grid; grid-template-columns:minmax(120px,1fr) minmax(80px,.6fr); gap:10px; }
+.dd-timer-fields label { font-family:'Segoe UI',sans-serif; font-size:.85rem; letter-spacing:normal; }
+.dd-timer-fields input,.dd-timer-fields select { display:block; width:100%; min-height:44px; margin-top:5px; font-size:.9rem!important; }
+.dd-timer-source { grid-column:1/-1; }
+#ddConditionNotice { font-size:.9rem; line-height:1.5; color:var(--gold-color); }
+#ddMobileFavoritesModal { z-index:11000; }
+.dd-favorites-sheet { width:min(560px,100%); max-height:85dvh; overflow:auto; }
+#ddMobileFavoritesList { display:grid; gap:10px; margin:16px 0; }
+#ddMobileFavoritesList button { text-align:left; min-height:58px; padding:12px; white-space:normal; overflow-wrap:anywhere; transform:none!important; color:var(--text-main); }
+#ddMobileFavoritesList small { display:block; font-family:'Segoe UI',sans-serif; font-size:.8rem; margin-top:5px; line-height:1.4; }
+#ddCloseFavorites { width:100%; min-height:44px; }
+@media (max-width:900px) {
+  body { padding-bottom:90px; }
+  .dd-mobile-bar { display:grid; position:fixed; left:0; right:0; bottom:0; z-index:10002; grid-template-columns:repeat(6,minmax(0,1fr)); background:var(--panel-bg); border-top:1px solid var(--border-color); padding:6px 6px max(6px,env(safe-area-inset-bottom)); gap:5px; }
+  .dd-mobile-bar button { min-height:44px; min-width:0; padding:8px 3px; font-size:.7rem; transform:none!important; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #ddMobileFavoritesModal { align-items:flex-end; padding:12px; }
+  .dd-favorites-sheet { margin:0!important; border-radius:16px 16px 0 0; padding-bottom:max(16px,env(safe-area-inset-bottom)); }
+}
+@media (max-width:420px) {
+  .dd-mobile-bar { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  body { padding-bottom:140px!important; }
+}
+@media print { #ddConditionTimers,#ddMobileFavoritesModal,#ddCalculations,.dd-calculation { display:none!important; } }
+
+
+.board-controls {max-width:calc(100% - 40px);flex-wrap:wrap;gap:8px;}
+.board-drop-hint {top:auto!important;bottom:16px;max-width:calc(100% - 40px);pointer-events:none;}
+.board-controls .sys-btn {min-height:40px;padding:8px 10px;font-size:.72rem;white-space:nowrap;}
+#ddEvidenceFilter {width:auto;max-width:200px;}
+.dd-evidence {flex-shrink:0;width:100%;min-height:32px;font-size:12px!important;letter-spacing:normal;background:var(--panel-bg);border:0;border-bottom:1px solid var(--border-color);}
+.board-note[data-evidence="fact"] {border-left:4px solid #69d89c;}
+.board-note[data-evidence="hypothesis"] {border-left:4px dashed #ffc66b;}
+.dd-link-label {cursor:pointer;pointer-events:all;}
+.dd-link-label:focus rect {stroke:white;stroke-width:3;}
+.dd-relations-content {width:min(720px,94vw);max-height:90dvh;overflow:auto;text-align:left;}
+.dd-relation-fields {display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.dd-relation-fields select,#ddEvidenceFilter {min-height:44px;font-size:.85rem;}
+#ddRelationNote {min-height:75px;margin-top:8px;font-size:1rem;}
+.dd-relation-row {padding:12px 0;border-top:1px solid var(--border-color);overflow-wrap:anywhere;}
+.dd-relation-row button,.dd-relations-content>button {min-height:44px;margin:4px;}
+#ddRelationList {margin:20px 0;font-family:'Segoe UI',sans-serif;line-height:1.5;}
+#ddRelationError {color:var(--gold-color);}
+@media(max-width:600px){.board-controls {flex-wrap:nowrap;overflow-x:auto;}.board-controls>* {flex-shrink:0;}.dd-relation-fields {grid-template-columns:1fr;}.dd-relations-content {padding:18px!important;}.dd-evidence {min-height:44px;}}
 </style></head>
 <body>
 
@@ -2926,6 +2985,8 @@
     }
 
     function resetCharacterRuntimeState() {
+        ddConditionClock = {round:1, effects:{}};
+        ddCloseMobileFavorites();
         document.querySelectorAll('.container input[id], .container textarea[id], .container select[id]').forEach(element => {
             if (NON_PROFILE_CONTROL_IDS.has(element.id) || element.type === 'file') return;
             if (element.id.startsWith('macro') || element.id.startsWith('newItem') || element.id.startsWith('init') || element.id === 'diceSkillSelect') return;
@@ -3802,9 +3863,17 @@
             const details = document.createElement('span');
             details.style.cssText = 'font-size:0.8rem; color:var(--dim-text);';
             const macroPeCost = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
-            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} | PE: ${macroPeCost} ]`;
+            details.dataset.macroCostId = String(macro.id);
+            details.textContent = ` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'Padrão'} | PE: ${ddExplainPe(macro).total}${ddExplainPe(macro).extra?' (base '+macroPeCost+' + 1)':''} ]`;
 
             info.append(name, details);
+            const explanation = document.createElement('details');
+            explanation.className = 'dd-calculation';
+            explanation.dataset.macroExplanationId = String(macro.id);
+            const summary = document.createElement('summary'); summary.textContent = 'Como este ataque é calculado';
+            const body = document.createElement('div'); body.className = 'dd-calculation-body';
+            explanation.append(summary, body); info.appendChild(explanation);
+            ddFillMacroExplanation(explanation, macro);
 
             const actions = document.createElement('div');
             actions.style.cssText = 'display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;';
@@ -3842,25 +3911,22 @@
         if (!resultArea || !modal || !currentPeInput) return;
         const activeConds = getActiveConditions();
         const basePeCost = Math.max(0, Number.parseInt(macro.peCost, 10) || 0);
-        const effectivePeCost = basePeCost > 0 && activeConds.cond_alquebrado ? basePeCost + 1 : basePeCost;
+        const effectivePeCost = ddExplainPe(macro).total;
         const currentPe = Math.max(0, Number.parseInt(currentPeInput.value, 10) || 0);
         if (effectivePeCost > currentPe) { abrirModalCustom(`PE INSUFICIENTE // A macro exige ${effectivePeCost} PE, mas você possui ${currentPe}.`, false, false, function(){}); return; }
         const remainingPe = currentPe - effectivePeCost;
         if (effectivePeCost > 0) { currentPeInput.value = String(remainingPe); atualizarCalculos(); salvarLocalData(); }
         const effectiveAttributes = getEffectiveAttributes();
         const effectiveAttribute = Number(effectiveAttributes[macro.attr]) || 0;
-        let penalty = 0;
-        if (activeConds.cond_abalado) penalty += 1;
-        if (activeConds.cond_apavorado) penalty += 2;
-        if (['FOR', 'DES', 'VIG'].includes(macro.attr)) { if (activeConds.cond_debilitado || activeConds.cond_exausto) penalty += 2; else if (activeConds.cond_fraco || activeConds.cond_fatigado) penalty += 1; if (activeConds.cond_cego && ['FOR', 'DES'].includes(macro.attr)) penalty += 2; }
-        if (['INT', 'APA'].includes(macro.attr)) { if (activeConds.cond_esmorecido) penalty += 2; else if (activeConds.cond_frustrado) penalty += 1; }
-        const finalDiceNumber = effectiveAttribute - penalty;
+        const rollCalculation = ddExplainRoll(macro.attr);
+        const finalDiceNumber = rollCalculation.net;
         const diceToRoll = finalDiceNumber > 0 ? finalDiceNumber : Math.abs(finalDiceNumber) + 2;
         const disadvantage = finalDiceNumber <= 0;
         const d20Rolls = Array.from({ length: Math.max(1, diceToRoll) }, () => ddRollSecureDie(20));
         const chosenD20 = disadvantage ? Math.min(...d20Rolls) : Math.max(...d20Rolls);
         const chosenIndex = Math.max(0, d20Rolls.indexOf(chosenD20));
         const skillBonus = Number.parseInt(macro.skill, 10) || 0;
+        ddShowRollExplanation(rollCalculation, skillBonus, ddExplainPe(macro));
         const hitTotal = chosenD20 + skillBonus;
         const isCritical = chosenD20 === 20;
         const isFailure = chosenD20 === 1;
@@ -4250,7 +4316,13 @@
     function addInitiative(isEnemy) { let name = document.getElementById('initName').value.trim() || (isEnemy ? "HOSTIL" : "ALIADO"); initList.push({ id: Date.now(), name: name, isEnemy: isEnemy }); document.getElementById('initName').value = ''; playSfx('box'); renderInitiative(); salvarLocalData(); }
     function removeInitiative(id) { initList = initList.filter(i => i.id !== id); if (activeTurnIndex >= initList.length) activeTurnIndex = 0; playSfx('click'); renderInitiative(); salvarLocalData(); }
     function clearInitiative() { initList = []; activeTurnIndex = -1; playSfx('alert'); renderInitiative(); salvarLocalData(); }
-    function nextTurn() { if(initList.length === 0) return; activeTurnIndex++; if(activeTurnIndex >= initList.length) activeTurnIndex = 0; playSfx('box'); renderInitiative(); salvarLocalData(); }
+    function nextTurn() {
+        if (!initList.length) return;
+        const previous = activeTurnIndex;
+        activeTurnIndex = (activeTurnIndex + 1) % initList.length;
+        if (previous >= 0 && activeTurnIndex === 0) ddAdvanceConditionRound(false);
+        playSfx('box'); renderInitiative(); salvarLocalData({label:'PRÓXIMO TURNO'});
+    }
     function renderInitiative() {
         const container = document.getElementById('initListContainer');
         if (!container) return;
@@ -4584,7 +4656,8 @@
         if (!isLinkingMode) { isLinkingMode = true; linkingStartId = id; note.classList.add('linking'); return; }
         if (id !== linkingStartId) {
             const exists = boardLinks.some(link => (link.from === linkingStartId && link.to === id) || (link.from === id && link.to === linkingStartId));
-            if (!exists) boardLinks.push({ from: linkingStartId, to: id });
+            const from=linkingStartId;
+            setTimeout(()=>window.ddOpenRelations(from,id),0);
         }
         document.getElementById(linkingStartId)?.classList.remove('linking'); isLinkingMode = false; linkingStartId = null; document.getElementById('tempLinkLine')?.remove(); drawBoardLines(); salvarLocalData();
     }
@@ -5757,12 +5830,11 @@
 
 
     function abrirRolador(attr) {
-        playSfx('click'); let active = getActiveConditions(); let effAttr = getEffectiveAttributes()[attr]; let penalty = 0;
-        if (active.cond_abalado) penalty += 1; if (active.cond_apavorado) penalty += 2;
-        if (attr === 'FOR' || attr === 'DES' || attr === 'VIG') { if (active.cond_debilitado || active.cond_exausto) penalty += 2; else if (active.cond_fraco || active.cond_fatigado) penalty += 1; if (active.cond_cego && (attr === 'FOR' || attr === 'DES')) penalty += 2; }
-        if (attr === 'INT' || attr === 'APA') { if (active.cond_esmorecido) penalty += 2; else if (active.cond_frustrado) penalty += 1; }
-        let numDice = effAttr - penalty; currentRollData.attr = attr; currentRollData.numDice = numDice;
-        let headerText = `ROLANDO: ${attr}`; if(penalty > 0) headerText += ` [ PENALIDADE ATIVA: -${penalty} ]`; document.getElementById('diceModalDesc').innerText = headerText;
+        playSfx('click');
+        const calculation = ddExplainRoll(attr);
+        currentRollData.attr = attr; currentRollData.numDice = calculation.net;
+        document.getElementById('diceModalDesc').innerText = `ROLANDO: ${attr}`;
+        ddShowRollExplanation(calculation, 0);
         let skillOptions = `<option value="0">-- SOMENTE ATRIBUTO (+0) --</option>`;
         document.querySelectorAll('.skill-row').forEach(row => { let nomePericia = row.querySelector('span').innerText; let valSelect = row.querySelector('.skill-val'); if (valSelect) { let valorStr = valSelect.value; if (["+5", "+7", "+10"].includes(valorStr)) { let valInt = parseInt(valorStr.replace('+', '')); skillOptions += `<option value="${valInt}">${nomePericia} (${valorStr})</option>`; } } });
         document.getElementById('diceSkillSelect').innerHTML = skillOptions; document.getElementById('diceResultArea').style.display = 'none'; document.getElementById('diceResultArea').innerHTML = '';
@@ -5797,6 +5869,7 @@
         const isDisadvantage = finalDice <= 0;
         const bonusSelect = document.getElementById('diceSkillSelect');
         const bonus = Number.parseInt(bonusSelect?.value || '0', 10) || 0;
+        ddShowRollExplanation(ddExplainRoll(currentRollData.attr), bonus);
         const skillName = bonusSelect?.options?.[bonusSelect.selectedIndex]?.text?.replace(/ \(\+\d+\)/, '') || 'ATRIBUTO';
         const resultArea = document.getElementById('diceResultArea');
         if (!resultArea) return;
@@ -6057,6 +6130,187 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         });
     }
 
+    // The same operands are used by explanations and by the existing roll engine.
+    let ddConditionClock = {round:1, effects:{}};
+    function ddConditionName(id) {
+        return document.getElementById(id)?.closest('.cond-item')?.querySelector('.cond-label')?.textContent || id;
+    }
+    function ddExplainPe(macro) {
+        const base = Math.max(0, parseInt(macro.peCost,10)||0);
+        const extra = base > 0 && getActiveConditions().cond_alquebrado ? 1 : 0;
+        return {base,extra,total:base+extra};
+    }
+    function ddExplainRoll(attr) {
+        const base = document.querySelectorAll(`#attr-${attr} .box.filled`).length || 1;
+        const effective = Number(getEffectiveAttributes()[attr]) || 0;
+        const active = getActiveConditions(), penalties = [];
+        const add = (id,value) => penalties.push({id,label:ddConditionName(id),value});
+        if (active.cond_abalado) add('cond_abalado',1);
+        if (active.cond_apavorado) add('cond_apavorado',2);
+        if (['FOR','DES','VIG'].includes(attr)) {
+            if (active.cond_debilitado || active.cond_exausto) add(active.cond_debilitado?'cond_debilitado':'cond_exausto',2);
+            else if (active.cond_fraco || active.cond_fatigado) add(active.cond_fraco?'cond_fraco':'cond_fatigado',1);
+            if (active.cond_cego && ['FOR','DES'].includes(attr)) add('cond_cego',2);
+        }
+        if (['INT','APA'].includes(attr)) {
+            if (active.cond_esmorecido) add('cond_esmorecido',2);
+            else if (active.cond_frustrado) add('cond_frustrado',1);
+        }
+        const penalty = penalties.reduce((sum,p)=>sum+p.value,0), net = effective-penalty;
+        return {attr,base,effective,penalties,net,dice:net>0?net:Math.abs(net)+2,pick:net>0?'maior':'menor'};
+    }
+    function ddRollExplanationText(c,bonus=0) {
+        const injury = c.effective !== c.base ? ` → ${c.effective} por Lesionado (metade, arredondada para baixo)` : '';
+        const penalties = c.penalties.map(p=>` − ${p.value} (${p.label})`).join('');
+        return `${c.attr}: ${c.base}${injury}${penalties} = ${c.net}. Rola ${c.dice}d20 e usa o ${c.pick} resultado${c.net<=0?' (saldo zero ou negativo: |saldo| + 2 dados)':''}. Bônus de perícia: ${bonus>=0?'+':''}${bonus}, somado ao dado escolhido.`;
+    }
+    function ddPeExplanationText(cost) {
+        return `PE: ${cost.base} base${cost.extra?' + 1 por Alquebrado':''} = ${cost.total}${cost.base===0?' (ações sem custo continuam gratuitas)':''}.`;
+    }
+    function ddShowRollExplanation(calculation,bonus=0,cost=null) {
+        let node=document.getElementById('ddRollExplanation');
+        if (!node) { node=document.createElement('p'); node.id='ddRollExplanation'; node.className='dd-help'; document.getElementById('diceModalDesc')?.after(node); }
+        node.textContent=ddRollExplanationText(calculation,bonus)+(cost?' '+ddPeExplanationText(cost):'');
+    }
+    function ddFillMacroExplanation(node,macro) {
+        const body=node.querySelector('.dd-calculation-body'); if(!body)return;
+        const cost=ddExplainPe(macro);
+        body.textContent=ddRollExplanationText(ddExplainRoll(macro.attr),parseInt(macro.skill,10)||0)+' '+ddPeExplanationText(cost)+` Dano: ${macro.dmg || '0'}; crítico: ${macro.crit || 'x2'}.`;
+    }
+    function ddRefreshMacroExplanations() {
+        document.querySelectorAll('[data-macro-explanation-id]').forEach(node=>{
+            const macro=combatMacros.find(m=>String(m.id)===node.dataset.macroExplanationId);
+            if(macro)ddFillMacroExplanation(node,macro);
+        });
+        document.querySelectorAll('[data-macro-cost-id]').forEach(node=>{
+            const macro=combatMacros.find(m=>String(m.id)===node.dataset.macroCostId); if(!macro)return;
+            const cost=ddExplainPe(macro);
+            node.textContent=` [ Atq: ${macro.attr} +${macro.skill} | Dano: ${macro.dmg} | Crítico: ${macro.crit || 'x2'} | PE: ${cost.total}${cost.extra?' (base '+cost.base+' + 1)':''} ]`;
+        });
+    }
+    function ddDefensePenalties(active) {
+        const parts=[], names=ids=>ids.filter(id=>active[id]).map(ddConditionName).join(', ');
+        const helpless=names(['cond_indefeso','cond_paralisado','cond_inconsciente']);
+        const unaware=names(['cond_desprevenido','cond_cego','cond_atordoado','cond_agarrado','cond_surpreendido']);
+        const vulnerable=names(['cond_vulneravel','cond_enredado','cond_exausto','cond_fatigado']);
+        if(helpless)parts.push({label:`Indefeso: ${helpless}`,value:-10});
+        else if(unaware)parts.push({label:`Desprevenido: ${unaware}`,value:-5});
+        if(vulnerable)parts.push({label:`Vulnerável: ${vulnerable}`,value:-5});
+        return parts;
+    }
+    function ddRenderCalculations(c) {
+        let details=document.getElementById('ddCalculations');
+        if(!details){
+            details=document.createElement('details'); details.id='ddCalculations'; details.className='dd-calculation';
+            const summary=document.createElement('summary'); summary.textContent='Entender defesa e recursos';
+            const body=document.createElement('div'); body.className='dd-calculation-body'; details.append(summary,body);
+            document.querySelector('#panel-vitals .panel-content')?.appendChild(details);
+        }
+        const rows=[
+            ['Vida máxima',`3 × (VIG ${c.base_vig} + FOR ${c.base_for}) + ${c.prog_multiplier} × ${c.prog_vd} de progressão + (${c.b_vd}) de bônus = ${c.vd_max}`],
+            ['Sanidade máxima',`3 × (VIG ${c.base_vig} + INT ${c.base_int}) + ${c.prog_multiplier} × ${c.prog_san} de progressão + (${c.b_san}) de bônus = ${c.san_max}`],
+            ['Energia máxima',`DES ${c.base_des} + VIG ${c.base_vig} + ${c.prog_multiplier} × ${c.prog_pe} de progressão + (${c.b_pe}) de bônus = ${c.pe_max}`],
+            ['Defesa',`12 base + VIG efetivo ${c.effAttrs.VIG} + (${c.b_def}) de bônus${c.defensePenalties.map(p=>` − ${Math.abs(p.value)} (${p.label})`).join('')} = ${c.def_total}`]
+        ];
+        const body=details.querySelector('.dd-calculation-body'); body.replaceChildren();
+        rows.forEach(([label,text])=>{const row=document.createElement('div');row.className='dd-formula-row';const title=document.createElement('strong');title.textContent=label;row.append(title,document.createTextNode(text));body.appendChild(row);});
+        const note=document.createElement('p');
+        note.textContent=`Progressão: AFI ÷ 5, arredondado para baixo. Recursos máximos limitados entre 1 e ${MAX_RESOURCE_VALUE}; defesa entre −9999 e 99999. Lesionado reduz FOR, DES e VIG efetivos à metade. Indefeso substitui Desprevenido; Vulnerável é somado uma vez. Marcadores manuais não alteram estes cálculos.`;
+        body.appendChild(note);
+    }
+    function ddNormalizeConditionClock(raw) {
+        const effects={};
+        document.querySelectorAll('.cond-checkbox[id]').forEach(cb=>{
+            const item=raw?.effects?.[cb.id]; if(!item || typeof item!=='object')return;
+            const mode=['rounds','scene','manual'].includes(item.mode)?item.mode:'manual';
+            effects[cb.id]={mode,remaining:clampInteger(item.remaining,1,999,1),source:String(item.source||'').slice(0,160)};
+        });
+        return {round:clampInteger(raw?.round,1,999999,1),effects};
+    }
+    function ddConditionAnnouncement(text) {
+        const notice=document.getElementById('ddConditionNotice');if(notice)notice.textContent=text;
+        const live=document.getElementById('ddA11yLive');if(live)live.textContent=text;
+    }
+    function ddAdvanceConditionRound(save=true) {
+        ddConditionClock.round++;
+        const expired=[];
+        Object.entries(ddConditionClock.effects).forEach(([id,effect])=>{
+            const cb=document.getElementById(id);
+            if(!cb?.checked){delete ddConditionClock.effects[id];return;}
+            if(effect.mode==='rounds' && --effect.remaining<=0){cb.checked=false;expired.push(ddConditionName(id));delete ddConditionClock.effects[id];}
+        });
+        atualizarCalculos();ddRenderConditionTimers();
+        ddConditionAnnouncement(expired.length?`Encerradas: ${expired.join(', ')}.`:`Rodada ${ddConditionClock.round}. Durações atualizadas.`);
+        if(save)salvarLocalData({label:'AVANÇAR RODADA E CONDIÇÕES'});
+    }
+    function ddEndConditionScene() {
+        const expired=[];
+        Object.entries(ddConditionClock.effects).forEach(([id,effect])=>{
+            if(effect.mode!=='scene')return;
+            const cb=document.getElementById(id);if(cb?.checked){cb.checked=false;expired.push(ddConditionName(id));}
+            delete ddConditionClock.effects[id];
+        });
+        atualizarCalculos();ddRenderConditionTimers();
+        ddConditionAnnouncement(expired.length?`Fim da cena: ${expired.join(', ')} encerradas.`:'Nenhuma condição com duração de cena.');
+        salvarLocalData({label:'ENCERRAR CONDIÇÕES DA CENA'});
+    }
+    function ddRenderConditionTimers() {
+        const list=document.getElementById('ddTimedConditionList');if(!list)return;
+        document.getElementById('ddConditionNotice').textContent='';
+        document.getElementById('ddConditionRound').textContent=`RODADA ${ddConditionClock.round}`;
+        const active=Array.from(document.querySelectorAll('.cond-checkbox:checked'));
+        Object.keys(ddConditionClock.effects).forEach(id=>{if(!document.getElementById(id)?.checked)delete ddConditionClock.effects[id];});
+        list.replaceChildren();
+        if(!active.length){const empty=document.createElement('p');empty.className='dd-help';empty.textContent='Ative uma condição abaixo para definir sua duração e origem.';list.appendChild(empty);return;}
+        active.forEach(cb=>{
+            const effect=ddConditionClock.effects[cb.id] ||= {mode:'manual',remaining:1,source:''};
+            const row=document.createElement('div');row.className='dd-timed-condition';row.dataset.conditionId=cb.id;
+            const title=document.createElement('h4');title.textContent=ddConditionName(cb.id)+(cb.id.startsWith('marker_')?' · marcador manual':'');row.appendChild(title);
+            const fields=document.createElement('div');fields.className='dd-timer-fields';
+            const modeLabel=document.createElement('label');modeLabel.textContent='Duração';
+            const mode=document.createElement('select');mode.setAttribute('aria-label',`Duração de ${ddConditionName(cb.id)}`);
+            [['manual','Sem prazo'],['rounds','Rodadas'],['scene','Até o fim da cena']].forEach(([value,label])=>{const option=new Option(label,value);mode.add(option);});mode.value=effect.mode;
+            const amountLabel=document.createElement('label');amountLabel.textContent='Restantes';
+            const amount=document.createElement('input');amount.type='number';amount.min='1';amount.max='999';amount.step='1';amount.value=effect.remaining;amount.disabled=effect.mode!=='rounds';amount.setAttribute('aria-label',`Rodadas restantes de ${ddConditionName(cb.id)}`);
+            mode.addEventListener('change',()=>{effect.mode=mode.value;amount.disabled=mode.value!=='rounds';salvarLocalData({label:'DURAÇÃO DE CONDIÇÃO'});});
+            amount.addEventListener('change',()=>{effect.remaining=clampInteger(amount.value,1,999,1);amount.value=effect.remaining;salvarLocalData({label:'DURAÇÃO DE CONDIÇÃO'});});
+            modeLabel.appendChild(mode);amountLabel.appendChild(amount);fields.append(modeLabel,amountLabel);
+            const sourceLabel=document.createElement('label');sourceLabel.className='dd-timer-source';sourceLabel.textContent='Origem (opcional)';
+            const source=document.createElement('input');source.type='text';source.maxLength=160;source.placeholder='Ex.: ritual do inimigo';source.value=effect.source;source.setAttribute('aria-label',`Origem de ${ddConditionName(cb.id)}`);
+            source.addEventListener('input',()=>{effect.source=source.value;autoSalvarOtimizado();});sourceLabel.appendChild(source);fields.appendChild(sourceLabel);row.appendChild(fields);list.appendChild(row);
+        });
+    }
+    function ddCloseMobileFavorites() {const modal=document.getElementById('ddMobileFavoritesModal');if(modal)modal.style.display='none';}
+    function ddRenderMobileFavorites(entries) {
+        const list=document.getElementById('ddMobileFavoritesList');if(!list)return;
+        list.replaceChildren();
+        if(!entries.length){const empty=document.createElement('p');empty.className='dd-help';empty.textContent='Você ainda não tem favoritos. Use a estrela ★ ao lado de um ataque, item ou perícia.';list.appendChild(empty);}
+        entries.forEach(entry=>{
+            const button=document.createElement('button');button.type='button';button.className='sys-btn';button.textContent=entry.label;
+            if(entry.detail){const detail=document.createElement('small');detail.textContent=entry.detail;button.appendChild(detail);}
+            button.addEventListener('click',()=>{ddCloseMobileFavorites();entry.action();});list.appendChild(button);
+        });
+    }
+    function ddInitializeSessionTools() {
+        const panel=document.createElement('section');panel.id='ddConditionTimers';panel.setAttribute('aria-label','Duração das condições');
+        panel.innerHTML='<div class="dd-timer-toolbar"><strong id="ddConditionRound">RODADA 1</strong><button type="button" class="sys-btn" id="ddAdvanceRound">AVANÇAR RODADA</button><button type="button" class="sys-btn" id="ddEndScene">ENCERRAR CENA</button></div><p class="dd-help">Cada volta do radar ao primeiro participante desconta 1 rodada. Sem radar, use Avançar rodada. Não use os dois para a mesma rodada. Até o fim da cena exige Encerrar cena. O desfazer recupera condições encerradas.</p><div id="ddConditionNotice" role="status" aria-live="polite"></div><div id="ddTimedConditionList"></div>';
+        document.querySelector('#panel-conditions .panel-content')?.prepend(panel);
+        document.getElementById('ddAdvanceRound').addEventListener('click',()=>ddAdvanceConditionRound());
+        document.getElementById('ddEndScene').addEventListener('click',ddEndConditionScene);
+        document.querySelectorAll('.cond-checkbox').forEach(cb=>cb.addEventListener('change',()=>{
+            if(!cb.checked)delete ddConditionClock.effects[cb.id];
+            atualizarCalculos();ddRenderConditionTimers();ddRefreshMacroExplanations();salvarLocalData({label:'CONDIÇÃO ALTERADA'});
+        }));
+        document.getElementById('ddMobileFavoritesButton')?.addEventListener('click',()=>{
+            // Rebuild through the existing renderer so items and macros stay current.
+            renderMacros();document.getElementById('ddMobileFavoritesModal').style.display='flex';
+        });
+        document.getElementById('ddCloseFavorites')?.addEventListener('click',ddCloseMobileFavorites);
+        document.getElementById('ddMobileFavoritesModal')?.addEventListener('click',event=>{if(event.target.id==='ddMobileFavoritesModal')ddCloseMobileFavorites();});
+        document.getElementById('diceSkillSelect')?.addEventListener('change',()=>ddShowRollExplanation(ddExplainRoll(currentRollData.attr),parseInt(document.getElementById('diceSkillSelect').value,10)||0));
+        ddRenderConditionTimers();
+    }
+
     function getActiveConditions() { let active = {}; document.querySelectorAll('.cond-checkbox').forEach(cb => { active[cb.id] = cb.checked; }); return active; }
     function getEffectiveAttributes() {
         let base_for = document.querySelectorAll('#attr-FOR .box.filled').length || 1; let base_des = document.querySelectorAll('#attr-DES .box.filled').length || 1; let base_vig = document.querySelectorAll('#attr-VIG .box.filled').length || 1; let base_int = document.querySelectorAll('#attr-INT .box.filled').length || 1; let base_sab = document.querySelectorAll('#attr-SAB .box.filled').length || 1; let base_apa = document.querySelectorAll('#attr-APA .box.filled').length || 1;
@@ -6124,15 +6378,20 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         if (classe === 'brutalista') { prog_vd = 7; prog_san = 3; prog_pe = 2; } else if (classe === 'paranormalista') { prog_vd = 2; prog_san = 5; prog_pe = 6; } else if (classe === 'tecnico') { prog_vd = 4; prog_san = 6; prog_pe = 3; }
         let prog_multiplier = Math.floor(afi_val / 5);
         let vd_max = clampInteger((3 * (base_vig + base_for)) + (prog_multiplier * prog_vd) + b_vd, 1, MAX_RESOURCE_VALUE, 1); let san_max = clampInteger((3 * (base_vig + base_int)) + (prog_multiplier * prog_san) + b_san, 1, MAX_RESOURCE_VALUE, 1); let pe_max = clampInteger((base_des + base_vig) + (prog_multiplier * prog_pe) + b_pe, 1, MAX_RESOURCE_VALUE, 1);
+        document.getElementById('vd_max').value = vd_max;
+        document.getElementById('san_max').value = san_max;
+        document.getElementById('pe_max').value = pe_max;
         let condsAtivas = getActiveConditions(); let effAttrs = getEffectiveAttributes();
-        let penDefesa = 0; let isDesprevenido = condsAtivas.cond_desprevenido || condsAtivas.cond_cego || condsAtivas.cond_atordoado || condsAtivas.cond_agarrado || condsAtivas.cond_surpreendido; let isIndefeso = condsAtivas.cond_indefeso || condsAtivas.cond_paralisado || condsAtivas.cond_inconsciente; let isVulneravel = condsAtivas.cond_vulneravel || condsAtivas.cond_enredado || condsAtivas.cond_exausto || condsAtivas.cond_fatigado;
-        if (isIndefeso) penDefesa -= 10; else if (isDesprevenido) penDefesa -= 5; if (isVulneravel) penDefesa -= 5;
+        const defensePenalties = ddDefensePenalties(condsAtivas);
+        const penDefesa = defensePenalties.reduce((total, part) => total + part.value, 0);
         let def_total = clampInteger(12 + effAttrs.VIG + b_def + penDefesa, -9999, 99999, 0);
         document.getElementById('vd_bonus_display').innerText = b_vd !== 0 ? (b_vd > 0 ? `[+${b_vd}]` : `[${b_vd}]`) : ""; document.getElementById('san_bonus_display').innerText = b_san !== 0 ? (b_san > 0 ? `[+${b_san}]` : `[${b_san}]`) : ""; document.getElementById('pe_bonus_display').innerText = b_pe !== 0 ? (b_pe > 0 ? `[+${b_pe}]` : `[${b_pe}]`) : ""; document.getElementById('def_bonus_display').innerText = b_def !== 0 ? (b_def > 0 ? `[+${b_def}]` : `[${b_def}]`) : "";
         document.getElementById('vd_max').value = vd_max; document.getElementById('san_max').value = san_max; document.getElementById('pe_max').value = pe_max;
         let defInput = document.getElementById('def_val'); if(defInput) defInput.value = def_total;
         let vd_atual = document.getElementById('vd_atual'); let san_atual = document.getElementById('san_atual'); let pe_atual = document.getElementById('pe_atual');
         if (!vd_atual.value) vd_atual.value = vd_max; if (!san_atual.value) san_atual.value = san_max; if (!pe_atual.value) pe_atual.value = pe_max;
+        ddRenderCalculations({base_for,base_des,base_vig,base_int,prog_multiplier,prog_vd,prog_san,prog_pe,b_vd,b_san,b_pe,b_def,vd_max,san_max,pe_max,def_total,effAttrs,defensePenalties});
+        ddRefreshMacroExplanations();
         atualizarStatusVDSAN(); atualizarCarga(); aplicarTracosClasse(classe, subclasse, base_int); renderizarHabilidades(classe, subclasse, afi_val); updatePortraitHUD(); updateAttributeRadar();
         const menu = document.getElementById('gameMenuOverlay'); if(menu.classList.contains('active')) updateMenuHUD();
     }
@@ -6638,7 +6897,8 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
                 writeActiveProfileData(saved);
             }
             location.reload(); 
-        } else if (tipo === 'ficha') { 
+        } else if (tipo === 'ficha') {
+            ddConditionClock = {round:1, effects:{}}; 
             document.querySelectorAll('.container input[type="text"], .container input[type="number"], .container input[type="hidden"], .container textarea').forEach(el => el.value = ""); 
             document.querySelectorAll('.container input[type="checkbox"]').forEach(el => el.checked = false); 
             document.querySelectorAll('.boxes').forEach(container => { if (container.id.startsWith('attr-')) fillAttributes(container, 1); else Array.from(container.children).forEach(box => box.classList.remove('filled')); }); 
@@ -6656,7 +6916,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
             combatMacros = []; limparFormularioMacro(); renderMacros();
                 resetBoardView();
             
-            atualizarCalculos(); playSfx('lock');
+            atualizarCalculos(); ddRenderConditionTimers(); playSfx('lock');
             safeWriteJson(profileHistoryKey(), []);
             salvarLocalData({ skipHistory: true, label: 'FICHA REDEFINIDA' });
             renderActionHistory([]);
@@ -6685,7 +6945,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 </script>
 
 <script id="ddEnhancementScript">(() => {
-    const DD_VERSION = '2026.07.28.15-critical-effect-return';
+    const DD_VERSION = '2026.09.28-session-tools';
     const DD_DB_NAME = 'DarkDashboardStorage';
     const DD_DB_VERSION = 1;
     const DD_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -6925,10 +7185,19 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 <div id="ddBoardContextMenu" class="dd-context-menu" style="display:none;"></div>
 <div id="ddOfflineIndicator" class="dd-offline-indicator">ONLINE</div>
 <div id="ddFavoriteBar" class="dd-favorite-bar"></div>
+<div id="ddMobileFavoritesModal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ddFavoritesTitle">
+  <div class="modal-content dd-favorites-sheet">
+    <div class="modal-header" id="ddFavoritesTitle">MINHAS AÇÕES</div>
+    <p class="dd-help">Toque para usar. Marque ★ em ataques, itens e perícias para trazê-los aqui.</p>
+    <div id="ddMobileFavoritesList"></div>
+    <button type="button" class="sys-btn" id="ddCloseFavorites" data-dd-cancel>FECHAR</button>
+  </div>
+</div>
 <div id="ddMobileBar" class="dd-mobile-bar">
   <button class="sys-btn dd-mobile-resource" data-dd-bind="ddbind_186">VD <span id="ddMobileVd">--</span></button>
   <button class="sys-btn dd-mobile-resource" data-dd-bind="ddbind_187">SAN <span id="ddMobileSan">--</span></button>
   <button class="sys-btn dd-mobile-resource" data-dd-bind="ddbind_188">PE <span id="ddMobilePe">--</span></button>
+  <button type="button" class="sys-btn" id="ddMobileFavoritesButton" aria-haspopup="dialog" aria-controls="ddMobileFavoritesModal">★ AÇÕES</button>
   <button class="sys-btn" data-dd-bind="ddbind_189">QUADRO</button>
   <button class="sys-btn" data-dd-bind="ddbind_190">MENU</button>
 </div>
@@ -7251,11 +7520,11 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     function ddToggleMacroFavorite(id) { const macro = combatMacros.find(item => item.id === id); if (!macro) return; macro.favorite = !macro.favorite; renderMacros(); salvarLocalData({ skipHistory:true }); }
     function ddReloadMacro(id) { const macro = combatMacros.find(item => item.id === id); if (!macro) return; const capacity = Math.max(0,Number(macro.ammoCapacity)||0); const current = Math.max(0,Number(macro.ammoCurrent)||0); const reserve = Math.max(0,Number(macro.ammoReserve)||0); const needed = Math.max(0,capacity-current); const loaded = Math.min(needed,reserve); macro.ammoCurrent = current + loaded; macro.ammoReserve = reserve - loaded; renderMacros(); salvarLocalData({ label:`RECARREGAR ${macro.nome}` }); ddToast(loaded ? `${loaded} munições carregadas.` : 'Sem munição disponível.', loaded ? 'ok' : 'warning'); }
     rolarMacro = function(id) { const macro = combatMacros.find(item => item.id === id); if (!macro) return;
-        const active = getActiveConditions(); const basePe = Math.max(0,Number.parseInt(macro.peCost,10)||0); const costPe = basePe > 0 && active.cond_alquebrado ? basePe+1 : basePe; const currentPe = Math.max(0,Number.parseInt(document.getElementById('pe_atual')?.value,10)||0); if (costPe > currentPe) { ddOriginals.rolarMacro(id); return; }
+        const active = getActiveConditions(); const basePe = Math.max(0,Number.parseInt(macro.peCost,10)||0); const costPe = ddExplainPe(macro).total; const currentPe = Math.max(0,Number.parseInt(document.getElementById('pe_atual')?.value,10)||0); if (costPe > currentPe) { ddOriginals.rolarMacro(id); return; }
         const ammoCost = Math.max(0,Number(macro.ammoCost)||0); const ammoCurrent = Math.max(0,Number(macro.ammoCurrent)||0); if (ammoCost > ammoCurrent) { ddToast(`Munição insuficiente para ${macro.nome}.`, 'error'); return; }
         if (ammoCost > 0) macro.ammoCurrent = ammoCurrent - ammoCost; ddPendingRollRepeat = { type:'macro', id }; renderMacros(); salvarLocalData({ skipHistory:true, label:`ATAQUE: ${macro.nome}` }); ddOriginals.rolarMacro(id);
     };
-    nextTurn = function() { ddOriginals.nextTurn(); salvarLocalData({ skipHistory:true, label:'PRÓXIMO TURNO' }); };
+    nextTurn = function() { ddOriginals.nextTurn(); };
 
     function ddEnhanceSkillFavorites() {
         document.querySelectorAll('.skill-row').forEach(row => {
@@ -7270,9 +7539,10 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     function ddRenderFavorites() {
         const bar = document.getElementById('ddFavoriteBar'); if (!bar) return; bar.replaceChildren();
         const entries = [];
-        combatMacros.filter(macro => macro.favorite).forEach(macro => entries.push({ label:`⚔ ${macro.nome}`, action:() => rolarMacro(macro.id) }));
-        document.querySelectorAll('.inventory-item[data-favorite="1"]').forEach(item => entries.push({ label:`▣ ${item.querySelector('.item-name')?.textContent || 'ITEM'}`, action:() => ddUseItem(item.id) }));
-        ddFavoriteSkills.forEach(id => { const select = document.getElementById(id); const row = select?.closest('.skill-row'); const label = row?.querySelector('span')?.textContent?.trim(); if (!select || !label) return; entries.push({ label:`🎲 ${label}`, action:() => ddRollFavoriteSkill(id) }); });
+        combatMacros.filter(macro => macro.favorite).forEach(macro => entries.push({ label:`⚔ ${macro.nome}`, detail:ddPeExplanationText(ddExplainPe(macro)) + (Number(macro.ammoCost)>0 ? ` Munição: ${macro.ammoCurrent || 0} disponível; usa ${macro.ammoCost}.` : ''), action:() => rolarMacro(macro.id) }));
+        document.querySelectorAll('.inventory-item[data-favorite="1"]').forEach(item => entries.push({ label:`▣ ${item.querySelector('.item-name')?.textContent || 'ITEM'}`, detail:`Quantidade: ${item.dataset.quantity || 0} · Cargas: ${item.dataset.charges || 0}`, action:() => ddUseItem(item.id) }));
+        ddFavoriteSkills.forEach(id => { const select = document.getElementById(id); const row = select?.closest('.skill-row'); const label = row?.querySelector('span')?.textContent?.trim(); if (!select || !label) return; entries.push({ label:`🎲 ${label}`, detail:`Bônus de perícia: ${select.value}`, action:() => ddRollFavoriteSkill(id) }); });
+        ddRenderMobileFavorites(entries);
         entries.slice(0,9).forEach((entry,index) => { const button = document.createElement('button'); button.className = 'sys-btn'; button.innerHTML = `<span class="dd-favorite-index">${index+1}</span>${ddEscape(entry.label)}`; button.addEventListener('click', entry.action); button._ddAction = entry.action; bar.appendChild(button); });
     }
     function ddRollFavoriteSkill(selectId) {
@@ -7313,6 +7583,88 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         if (additive && ddSelectedBoardNodes.has(id)) ddSelectedBoardNodes.delete(id); else ddSelectedBoardNodes.add(id);
         document.querySelectorAll('#boardNodes .board-note').forEach(node => node.classList.toggle('dd-selected', ddSelectedBoardNodes.has(node.id)));
     }
+    const ddRelationTypes = {related:'Relacionado a',confirms:'Confirma',contradicts:'Contradiz',suspects:'Suspeita de',seen_at:'Foi visto em',belongs_to:'Pertence a'};
+    const ddEvidenceStates = {unknown:'Não classificado',fact:'Fato confirmado',hypothesis:'Hipótese'};
+    let ddEditingRelation = -1;
+    function ddEvidenceState(value){return Object.hasOwn(ddEvidenceStates,value)?value:'unknown';}
+    function ddRelationType(value){return Object.hasOwn(ddRelationTypes,value)?value:'related';}
+    function ddNormalizeLinks(links){return (Array.isArray(links)?links:[]).filter(link=>link && typeof link.from==='string' && typeof link.to==='string' && link.from!==link.to).slice(0,1000).map(link=>({from:link.from,to:link.to,type:ddRelationType(link.type),note:String(link.note||'').slice(0,500)}));}
+    function ddNodeTitle(id){const card=document.getElementById(id);return card?.dataset.title || card?.querySelector('.board-note-title')?.textContent || id;}
+    function ddApplyEvidence(card,meta){
+        const status=ddEvidenceState(meta.evidence);card.dataset.evidence=status;
+        let select=card.querySelector('.dd-evidence');
+        if(!select){select=document.createElement('select');select.className='dd-evidence';select.setAttribute('aria-label','Classificação da pista');
+            Object.entries(ddEvidenceStates).forEach(([value,label])=>select.add(new Option(label,value)));
+            ['mousedown','touchstart','click'].forEach(type=>select.addEventListener(type,event=>event.stopPropagation()));
+            select.addEventListener('change',()=>{card.dataset.evidence=select.value;const node=boardNodes.find(n=>n.id===card.id);if(node)node.evidence=select.value;ddFilterBoard();salvarLocalData({label:'CLASSIFICAÇÃO DA PISTA'});});
+            card.querySelector('.board-note-header')?.after(select);
+        }
+        select.value=status;const node=boardNodes.find(n=>n.id===card.id);if(node)node.evidence=status;
+    }
+    function ddOpenRelations(from='',to='',index=-1){
+        ddEditingRelation=index;const link=boardLinks[index];
+        for(const id of ['ddRelationFrom','ddRelationTo']){const select=document.getElementById(id);select.replaceChildren();boardNodes.forEach(n=>select.add(new Option(ddNodeTitle(n.id),n.id)));}
+        document.getElementById('ddRelationFrom').value=link?.from||from||boardNodes[0]?.id||'';
+        document.getElementById('ddRelationTo').value=link?.to||to||boardNodes[1]?.id||'';
+        document.getElementById('ddRelationType').value=ddRelationType(link?.type);
+        document.getElementById('ddRelationNote').value=link?.note||'';
+        document.getElementById('ddRelationError').textContent='';
+        document.getElementById('ddRelationSave').textContent=index<0?'CRIAR CONEXÃO':'SALVAR ALTERAÇÕES';
+        ddRenderRelationList();document.getElementById('ddRelationsModal').style.display='flex';
+    }
+    function ddSaveRelation(){
+        const from=document.getElementById('ddRelationFrom').value,to=document.getElementById('ddRelationTo').value,type=document.getElementById('ddRelationType').value;
+        const error=document.getElementById('ddRelationError');
+        if(!from||!to||from===to){error.textContent='Escolha duas pistas diferentes.';return;}
+        if(boardLinks.some((l,i)=>i!==ddEditingRelation && l.from===from && l.to===to && ddRelationType(l.type)===type)){error.textContent='Esta conexão já existe. Edite-a na lista abaixo.';return;}
+        const link={from,to,type,note:document.getElementById('ddRelationNote').value.slice(0,500)};
+        if(ddEditingRelation>=0)boardLinks[ddEditingRelation]=link;else boardLinks.push(link);
+        drawBoardLines();salvarLocalData({label:'CONEXÃO INVESTIGATIVA'});ddEditingRelation=-1;
+        ddOpenRelations(from,to);document.getElementById('ddRelationType').value=type;document.getElementById('ddRelationNote').value=link.note;document.getElementById('ddRelationError').textContent='Conexão salva.';
+    }
+    function ddRenderRelationList(){
+        const list=document.getElementById('ddRelationList');list.replaceChildren();
+        if(!boardLinks.length){list.textContent='Nenhuma conexão. Escolha a origem, a relação e o destino acima.';return;}
+        boardLinks.forEach((link,index)=>{
+            const row=document.createElement('div');row.className='dd-relation-row';
+            const text=document.createElement('p');text.textContent=`${ddNodeTitle(link.from)} → ${ddRelationTypes[ddRelationType(link.type)]} → ${ddNodeTitle(link.to)}`;
+            row.appendChild(text);if(link.note){const note=document.createElement('p');note.className='dd-help';note.textContent=link.note;row.appendChild(note);}
+            const edit=document.createElement('button');edit.className='sys-btn';edit.textContent='EDITAR';edit.addEventListener('click',()=>ddOpenRelations('','',index));
+            const remove=document.createElement('button');remove.className='sys-btn';remove.textContent='REMOVER';remove.addEventListener('click',()=>{ddDeleteBoardLink(index);ddOpenRelations();});
+            row.append(edit,remove);list.appendChild(row);
+        });
+    }
+    function ddDrawInvestigativeLines(){
+        const svg=document.getElementById('boardLines');if(!svg)return;svg.replaceChildren();
+        const make=(tag,attrs)=>{const el=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));return el;};
+        const defs=make('defs');const marker=make('marker',{id:'ddRelationArrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});marker.appendChild(make('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:'context-stroke'}));defs.appendChild(marker);svg.appendChild(defs);
+        boardLinks.forEach((link,index)=>{
+            const a=document.getElementById(link.from),b=document.getElementById(link.to);if(!a||!b||a.style.display==='none'||b.style.display==='none')return;
+            const ax=parseFloat(a.style.left)+a.offsetWidth/2,ay=parseFloat(a.style.top)+a.offsetHeight/2,bx=parseFloat(b.style.left)+b.offsetWidth/2,by=parseFloat(b.style.top)+b.offsetHeight/2;
+            const dx=bx-ax,dy=by-ay;if(!dx&&!dy)return;
+            const edge=(w,h)=>Math.min((w/2+5)/Math.max(Math.abs(dx),.001),(h/2+5)/Math.max(Math.abs(dy),.001),.48);
+            const sa=edge(a.offsetWidth,a.offsetHeight),sb=edge(b.offsetWidth,b.offsetHeight);
+            const x1=ax+dx*sa,y1=ay+dy*sa,x2=bx-dx*sb,y2=by-dy*sb;
+            const type=ddRelationType(link.type),color=type==='confirms'?'#69d89c':type==='contradicts'?'#ff8a80':type==='suspects'?'#ffc66b':'#91bfff';
+            const line=make('line',{x1,y1,x2,y2,class:'line-link',style:`stroke:${color};opacity:.9;stroke-dasharray:${type==='suspects'?'6 5':'none'}`});
+            if(type!=='related')line.setAttribute('marker-end','url(#ddRelationArrow)');
+            line.addEventListener('click',event=>{event.stopPropagation();ddOpenRelations('','',index);});svg.appendChild(line);
+            const peers=boardLinks.filter(l=>(l.from===link.from&&l.to===link.to)||(l.from===link.to&&l.to===link.from));const lane=peers.indexOf(link)-(peers.length-1)/2;
+            const group=make('g',{class:'dd-link-label',transform:`translate(${(x1+x2)/2},${(y1+y2)/2+lane*29})`,role:'button',tabindex:0,'aria-label':`${ddNodeTitle(link.from)} ${ddRelationTypes[type]} ${ddNodeTitle(link.to)}. Editar conexão.`});
+            const width=ddRelationTypes[type].length*7.2+22;group.appendChild(make('rect',{x:-width/2,y:-13,width,height:26,rx:5,fill:'#111820',stroke:color}));
+            const label=make('text',{'text-anchor':'middle',y:4,fill:color,'font-size':12,'font-family':'sans-serif'});label.textContent=ddRelationTypes[type];group.appendChild(label);
+            const title=make('title');title.textContent=link.note||`${ddNodeTitle(link.from)} → ${ddRelationTypes[type]} → ${ddNodeTitle(link.to)}`;group.appendChild(title);
+            const open=event=>{event.stopPropagation();ddOpenRelations('','',index);};group.addEventListener('click',open);group.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();open(event);}});group.addEventListener('touchstart',event=>event.stopPropagation(),{passive:true});svg.appendChild(group);
+        });
+    }
+    function ddInitializeInvestigation(){
+        document.body.insertAdjacentHTML('beforeend',`<div id="ddRelationsModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="ddRelationTitle"><div class="modal-content dd-relations-content"><div class="modal-header" id="ddRelationTitle">CONEXÕES DA INVESTIGAÇÃO</div><p class="dd-help">Leia da origem para o destino: “Depoimento confirma Horário”. A classificação como fato ou hipótese é independente da categoria da pista.</p><div class="dd-relation-fields"><label>Origem<select id="ddRelationFrom"></select></label><label>Relação<select id="ddRelationType"></select></label><label>Destino<select id="ddRelationTo"></select></label></div><label class="dd-help">Por que estas pistas estão conectadas?<textarea id="ddRelationNote" maxlength="500" placeholder="Evidência ou justificativa (opcional)"></textarea></label><p id="ddRelationError" role="status"></p><button type="button" class="sys-btn" id="ddRelationSave">CRIAR CONEXÃO</button><button type="button" class="sys-btn" id="ddRelationNew">NOVA CONEXÃO</button><div id="ddRelationList"></div><button type="button" class="sys-btn" id="ddRelationClose" data-dd-cancel>FECHAR</button></div></div>`);
+        Object.entries(ddRelationTypes).forEach(([value,label])=>document.getElementById('ddRelationType').add(new Option(label,value)));
+        document.getElementById('ddRelationSave').addEventListener('click',ddSaveRelation);document.getElementById('ddRelationNew').addEventListener('click',()=>ddOpenRelations());document.getElementById('ddRelationClose').addEventListener('click',()=>document.getElementById('ddRelationsModal').style.display='none');
+        const controls=document.querySelector('.board-controls');const button=document.createElement('button');button.className='sys-btn';button.textContent='CONEXÕES';button.id='ddOpenRelations';button.addEventListener('click',()=>ddOpenRelations());controls.prepend(button);
+        const filter=document.createElement('select');filter.id='ddEvidenceFilter';filter.setAttribute('aria-label','Filtrar classificação das pistas');filter.add(new Option('Todas as pistas',''));Object.entries(ddEvidenceStates).forEach(([value,label])=>filter.add(new Option(label,value)));filter.addEventListener('change',ddFilterBoard);button.after(filter);
+    }
+
     function ddApplyBoardNodeMeta(card, meta = {}) {
         if (!card) return; const node = boardNodes.find(item => item.id === card.id);
         const width = ddClamp(meta.width || node?.width || card.offsetWidth || (card.dataset.nodeType === 'note' ? 250 : 380), 170, 900);
@@ -7321,6 +7673,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         const category = DD_CATEGORIES.includes(meta.category || node?.category) ? (meta.category || node.category) : 'neutro'; card.dataset.category = category;
         const title = String(meta.title || node?.title || card.querySelector('.board-note-title')?.textContent || '').slice(0,160); card.dataset.title = title; const titleEl=card.querySelector('.board-note-title'); if(titleEl) titleEl.textContent=title;
         if (node) Object.assign(node,{width,height,category,title});
+        ddApplyEvidence(card,meta);
         if (!card.querySelector('.dd-board-resize')) { const handle=document.createElement('div'); handle.className='dd-board-resize'; handle.title='Redimensionar'; handle.addEventListener('mousedown',event=>ddStartBoardResize(event,card.id)); handle.addEventListener('touchstart',event=>ddStartBoardResize(event,card.id),{passive:false}); card.appendChild(handle); }
         if (!card._ddSelectionBound) { card._ddSelectionBound=true; card.addEventListener('mousedown',event=>{ if(event.target.closest('textarea,input,button,object,.dd-board-resize')) return; ddSelectBoardNode(card.id,event.ctrlKey||event.metaKey||event.shiftKey); }); card.addEventListener('contextmenu',event=>{event.preventDefault();ddSelectBoardNode(card.id,event.ctrlKey||event.metaKey);ddShowBoardContextMenu(event.clientX,event.clientY,card.id);}); }
     }
@@ -7330,7 +7683,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     window.addEventListener('mouseup',()=>{if(ddBoardResizeState){ddBoardResizeState=null;salvarLocalData({skipHistory:true,label:'QUADRO REDIMENSIONADO'});}}); window.addEventListener('touchend',()=>{if(ddBoardResizeState){ddBoardResizeState=null;salvarLocalData({skipHistory:true,label:'QUADRO REDIMENSIONADO'});}});
 
     createBoardNodeHeader = function(nodeId,titleText) {
-        const header=document.createElement('div');header.className='board-note-header';header.addEventListener('mousedown',event=>startNoteDrag(event,nodeId));header.addEventListener('touchstart',event=>ddStartTouchNodeDrag(event,nodeId),{passive:false});
+        const header=document.createElement('div');header.className='board-note-header';header.addEventListener('mousedown',event=>{if(!event.target.closest('button'))startNoteDrag(event,nodeId);});header.addEventListener('touchstart',event=>{if(!event.target.closest('button'))ddStartTouchNodeDrag(event,nodeId);},{passive:false});
         const title=document.createElement('span');title.className='board-note-title';title.textContent=titleText;title.addEventListener('dblclick',event=>{event.stopPropagation();ddRenameBoardNode(nodeId);});
         const actions=document.createElement('div');actions.className='board-note-actions';
         const category=document.createElement('button');category.className='board-note-btn';category.title='Alterar categoria';category.textContent='◈';category.addEventListener('click',()=>ddCycleBoardCategory(nodeId));
@@ -7344,7 +7697,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         const isNew=!id;if(isNew)playSfx('box');const noteId=id||ddUid('note');const nx=x!==null?Number(x):((viewport.offsetWidth/2)-boardPanX-125)/boardScale;const ny=y!==null?Number(y):((viewport.offsetHeight/2)-boardPanY-75)/boardScale;
         const note=document.createElement('div');note.className='board-note';note.id=noteId;note.dataset.nodeType='note';note.style.left=`${Number.isFinite(nx)?nx:0}px`;note.style.top=`${Number.isFinite(ny)?ny:0}px`;
         const body=document.createElement('div');body.className='board-note-body';const textarea=document.createElement('textarea');textarea.placeholder='>_ Digite aqui...';textarea.value=String(text??'');textarea.addEventListener('input',autoSalvarOtimizado);textarea.addEventListener('mousedown',event=>event.stopPropagation());body.appendChild(textarea);
-        const title=`PISTA // ${String(noteId).replace('note_','').slice(0,8)}`;note.append(createBoardNodeHeader(noteId,title),body);document.getElementById('boardNodes')?.appendChild(note);
+        const title=`PISTA // ${String(noteId).slice(-6).toUpperCase()}`;note.append(createBoardNodeHeader(noteId,title),body);document.getElementById('boardNodes')?.appendChild(note);
         const data={id:noteId,type:'note',x:Number.isFinite(nx)?nx:0,y:Number.isFinite(ny)?ny:0,text:String(text??''),width:250,height:150,category:'neutro',title};if(isNew)boardNodes.push(data);ddApplyBoardNodeMeta(note,data);if(isNew)salvarLocalData({label:'NOVA PISTA'});return note;
     };
 
@@ -7416,18 +7769,18 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     window.addEventListener('mousemove',()=>{if(!isDraggingNode||!draggedNodeId||!ddBoardDragGroupStart||ddSelectedBoardNodes.size<2)return;const primary=document.getElementById(draggedNodeId);const start=ddBoardDragGroupStart.positions.get(draggedNodeId);if(!primary||!start)return;const dx=(Number.parseFloat(primary.style.left)||0)-start.x;const dy=(Number.parseFloat(primary.style.top)||0)-start.y;ddSelectedBoardNodes.forEach(id=>{if(id===draggedNodeId)return;const el=document.getElementById(id);const original=ddBoardDragGroupStart.positions.get(id);if(!el||!original)return;el.style.left=`${original.x+dx}px`;el.style.top=`${original.y+dy}px`;const node=boardNodes.find(item=>item.id===id);if(node){node.x=original.x+dx;node.y=original.y+dy;}});drawBoardLines();});
     window.addEventListener('mouseup',()=>{ddBoardDragGroupStart=null;});
 
-    drawBoardLines = function(){const svg=document.getElementById('boardLines');if(!svg)return;svg.replaceChildren();boardLinks.forEach((link,index)=>{const first=document.getElementById(link.from);const second=document.getElementById(link.to);if(!first||!second||first.style.display==='none'||second.style.display==='none')return;const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('x1',Number.parseFloat(first.style.left)+first.offsetWidth/2);line.setAttribute('y1',Number.parseFloat(first.style.top)+first.offsetHeight/2);line.setAttribute('x2',Number.parseFloat(second.style.left)+second.offsetWidth/2);line.setAttribute('y2',Number.parseFloat(second.style.top)+second.offsetHeight/2);line.setAttribute('class','line-link');line.dataset.linkIndex=String(index);line.addEventListener('dblclick',event=>{event.stopPropagation();ddDeleteBoardLink(index);});line.addEventListener('contextmenu',event=>{event.preventDefault();ddShowLinkContextMenu(event.clientX,event.clientY,index);});svg.appendChild(line);});};
+    drawBoardLines = ddDrawInvestigativeLines;
     function ddDeleteBoardLink(index){if(index<0||index>=boardLinks.length)return;boardLinks.splice(index,1);drawBoardLines();salvarLocalData({label:'CONEXÃO REMOVIDA'});}
 
     function ddRenameBoardNode(id){const card=document.getElementById(id);if(!card)return;const current=card.dataset.title||card.querySelector('.board-note-title')?.textContent||'';abrirModalCustom('NOVO TÍTULO DO ITEM:',true,true,value=>{if(value===false)return;const title=String(value||current).trim().slice(0,160)||current;card.dataset.title=title;const titleEl=card.querySelector('.board-note-title');if(titleEl)titleEl.textContent=title;const node=boardNodes.find(item=>item.id===id);if(node)node.title=title;salvarLocalData({label:'ITEM DO QUADRO RENOMEADO'});});}
     function ddCycleBoardCategory(id){const card=document.getElementById(id);if(!card)return;const current=DD_CATEGORIES.indexOf(card.dataset.category||'neutro');const next=DD_CATEGORIES[(current+1)%DD_CATEGORIES.length];card.dataset.category=next;const node=boardNodes.find(item=>item.id===id);if(node)node.category=next;ddToast(`Categoria: ${next.toUpperCase()}`,'ok');salvarLocalData({skipHistory:true,label:'CATEGORIA DO QUADRO'});}
-    async function ddDuplicateBoardNode(id){const card=document.getElementById(id);const source=boardNodes.find(item=>item.id===id);if(!card||!source)return;if(source.type==='note'){const clone=addBoardNote(null,source.x+35,source.y+35,card.querySelector('textarea')?.value||source.text||'');const cloneNode=boardNodes.find(item=>item.id===clone.id);Object.assign(cloneNode,{title:`${source.title||'PISTA'} · CÓPIA`,category:source.category,width:source.width,height:source.height});ddApplyBoardNodeMeta(clone,cloneNode);}else{let blob=null;const payload=card._boardPayload;if(payload?.attachmentKey)blob=(await ddGetAttachment(payload.attachmentKey))?.blob;else if(payload?.dataUrl)blob=dataUrlToBlob(payload.dataUrl);if(!blob){ddToast('Anexo original não encontrado.','error');return;}const newId=ddUid('file');const record=await ddStoreAttachment(activeProfileId,newId,blob,{fileName:source.fileName,mime:source.mime});const cloneData={...source,id:newId,x:source.x+35,y:source.y+35,attachmentKey:record.key,title:`${source.title||source.fileName} · CÓPIA`};boardNodes.push(cloneData);addBoardAttachment(cloneData,true);}drawBoardLines();salvarLocalData({label:'ITEM DO QUADRO DUPLICADO'});}
+    async function ddDuplicateBoardNode(id){const card=document.getElementById(id);const source=boardNodes.find(item=>item.id===id);if(!card||!source)return;if(source.type==='note'){const clone=addBoardNote(null,source.x+35,source.y+35,card.querySelector('textarea')?.value||source.text||'');const cloneNode=boardNodes.find(item=>item.id===clone.id);Object.assign(cloneNode,{title:`${source.title||'PISTA'} · CÓPIA`,category:source.category,evidence:source.evidence,width:source.width,height:source.height});ddApplyBoardNodeMeta(clone,cloneNode);}else{let blob=null;const payload=card._boardPayload;if(payload?.attachmentKey)blob=(await ddGetAttachment(payload.attachmentKey))?.blob;else if(payload?.dataUrl)blob=dataUrlToBlob(payload.dataUrl);if(!blob){ddToast('Anexo original não encontrado.','error');return;}const newId=ddUid('file');const record=await ddStoreAttachment(activeProfileId,newId,blob,{fileName:source.fileName,mime:source.mime});const cloneData={...source,id:newId,x:source.x+35,y:source.y+35,attachmentKey:record.key,title:`${source.title||source.fileName} · CÓPIA`};boardNodes.push(cloneData);addBoardAttachment(cloneData,true);}drawBoardLines();salvarLocalData({label:'ITEM DO QUADRO DUPLICADO'});}
     function ddBuildContextButton(label, action, danger=false){const button=document.createElement('button');button.type='button';button.textContent=label;if(danger)button.style.color='var(--alert-color)';button.addEventListener('click',action);return button;}
     function ddShowBoardContextMenu(x,y,id){ddContextTargetId=id;const menu=document.getElementById('ddBoardContextMenu');menu.replaceChildren(ddBuildContextButton('RENOMEAR',()=>ddRenameBoardNode(id)),ddBuildContextButton('DUPLICAR',()=>ddDuplicateBoardNode(id)),ddBuildContextButton('MUDAR CATEGORIA',()=>ddCycleBoardCategory(id)),ddBuildContextButton('SELECIONAR TODOS',()=>ddSelectAllBoardNodes()),ddBuildContextButton('ENQUADRAR TUDO',()=>ddFitBoard()),ddBuildContextButton('EXCLUIR',()=>deleteBoardNote(id),true));menu.style.display='block';menu.style.left=`${Math.min(x,window.innerWidth-210)}px`;menu.style.top=`${Math.min(y,window.innerHeight-250)}px`;}
     function ddShowLinkContextMenu(x,y,index){const menu=document.getElementById('ddBoardContextMenu');menu.replaceChildren(ddBuildContextButton('EXCLUIR CONEXÃO',()=>ddDeleteBoardLink(index),true));menu.style.display='block';menu.style.left=`${Math.min(x,window.innerWidth-210)}px`;menu.style.top=`${Math.min(y,window.innerHeight-80)}px`;}
     function ddHideBoardContextMenu(){const menu=document.getElementById('ddBoardContextMenu');if(menu)menu.style.display='none';}
     function ddSelectAllBoardNodes(){ddSelectedBoardNodes=new Set(boardNodes.map(item=>item.id));document.querySelectorAll('#boardNodes .board-note').forEach(node=>node.classList.add('dd-selected'));ddHideBoardContextMenu();}
-    function ddFilterBoard(){const query=String(document.getElementById('ddBoardSearch')?.value||'').toLowerCase();document.querySelectorAll('#boardNodes .board-note').forEach(card=>{const text=`${card.dataset.title||''} ${card.querySelector('textarea')?.value||''} ${card._boardPayload?.fileName||''}`.toLowerCase();card.style.display=!query||text.includes(query)?'':'none';});drawBoardLines();}
+    function ddFilterBoard(){const query=String(document.getElementById('ddBoardSearch')?.value||'').toLowerCase();const status=document.getElementById('ddEvidenceFilter')?.value||'';document.querySelectorAll('#boardNodes .board-note').forEach(card=>{const text=`${card.dataset.title||''} ${card.querySelector('textarea')?.value||''} ${card._boardPayload?.fileName||''}`.toLowerCase();card.style.display=(!query||text.includes(query))&&(!status||card.dataset.evidence===status)?'':'none';});drawBoardLines();}
     function ddFitBoard(){const cards=Array.from(document.querySelectorAll('#boardNodes .board-note')).filter(card=>card.style.display!=='none');if(!cards.length){resetBoardView();return;}const minX=Math.min(...cards.map(card=>Number.parseFloat(card.style.left)||0));const minY=Math.min(...cards.map(card=>Number.parseFloat(card.style.top)||0));const maxX=Math.max(...cards.map(card=>(Number.parseFloat(card.style.left)||0)+card.offsetWidth));const maxY=Math.max(...cards.map(card=>(Number.parseFloat(card.style.top)||0)+card.offsetHeight));const width=Math.max(1,maxX-minX),height=Math.max(1,maxY-minY);boardScale=ddClamp(Math.min((viewport.clientWidth-120)/width,(viewport.clientHeight-120)/height),.2,2.2);boardPanX=(viewport.clientWidth-width*boardScale)/2-minX*boardScale;boardPanY=(viewport.clientHeight-height*boardScale)/2-minY*boardScale;updateBoardTransform();salvarLocalData({skipHistory:true});}
 
     let ddTouchNodeState=null;
@@ -7448,11 +7801,11 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         return String(payload?.dataUrl||'');
     }
     async function ddBuildPortableBoard(){const current=collectCurrentData().board;const notes=[];for(const note of current.notes||[]){if(note.type==='note'){notes.push(note);continue;}notes.push({...note,dataUrl:await ddResolvePortableAttachmentDataUrl(note)});}return{type:'dark-dashboard-board',version:2,exportedAt:new Date().toISOString(),board:{...current,notes}};}
-    async function ddImportBoard(event){const input=event?.target;const file=input?.files?.[0];if(!file)return;try{const parsed=JSON.parse(await ddReadFileAsText(file));const board=parsed?.type==='dark-dashboard-board'?parsed.board:parsed?.board;if(!board||!Array.isArray(board.notes))throw new Error('Arquivo de quadro inválido.');abrirModalCustom('IMPORTAR QUADRO E SUBSTITUIR O QUADRO ATUAL?',false,true,async confirm=>{if(!confirm)return;document.querySelectorAll('.board-attachment').forEach(card=>{const url=card._boardPayload?.objectUrl;if(url)try{URL.revokeObjectURL(url);}catch{}});document.getElementById('boardNodes').replaceChildren();document.getElementById('boardLines').replaceChildren();boardNodes=[];boardLinks=[];document.getElementById('logList').replaceChildren();boardLogs=[];for(const note of board.notes.slice(0,500)){if(note.type==='note'){const card=addBoardNote(note.id,note.x,note.y,note.text||'');const node=boardNodes.find(item=>item.id===card.id);Object.assign(node,note);ddApplyBoardNodeMeta(card,note);}else if(note.dataUrl){addBoardAttachment(note,false);}}boardLinks=Array.isArray(board.links)?board.links.slice(0,1000):[];boardLogs=Array.isArray(board.logs)?board.logs.slice(0,500):[];[...boardLogs].reverse().forEach(log=>addLogEntry(log.text,log.date,log.id));drawBoardLines();salvarLocalData({label:'QUADRO IMPORTADO'});ddFitBoard();});}catch(error){ddToast(error.message||'Falha ao importar quadro.','error');}finally{input.value='';}}
+    async function ddImportBoard(event){const input=event?.target;const file=input?.files?.[0];if(!file)return;try{const parsed=JSON.parse(await ddReadFileAsText(file));const board=parsed?.type==='dark-dashboard-board'?parsed.board:parsed?.board;if(!board||!Array.isArray(board.notes))throw new Error('Arquivo de quadro inválido.');abrirModalCustom('IMPORTAR QUADRO E SUBSTITUIR O QUADRO ATUAL?',false,true,async confirm=>{if(!confirm)return;document.querySelectorAll('.board-attachment').forEach(card=>{const url=card._boardPayload?.objectUrl;if(url)try{URL.revokeObjectURL(url);}catch{}});document.getElementById('boardNodes').replaceChildren();document.getElementById('boardLines').replaceChildren();boardNodes=[];boardLinks=[];document.getElementById('logList').replaceChildren();boardLogs=[];for(const note of board.notes.slice(0,500)){if(note.type==='note'){const card=addBoardNote(note.id,note.x,note.y,note.text||'');const node=boardNodes.find(item=>item.id===card.id);Object.assign(node,note);ddApplyBoardNodeMeta(card,note);}else if(note.dataUrl){addBoardAttachment(note,false);}}boardLinks=ddNormalizeLinks(board.links).filter(l=>boardNodes.some(n=>n.id===l.from)&&boardNodes.some(n=>n.id===l.to));boardLogs=Array.isArray(board.logs)?board.logs.slice(0,500):[];[...boardLogs].reverse().forEach(log=>addLogEntry(log.text,log.date,log.id));drawBoardLines();salvarLocalData({label:'QUADRO IMPORTADO'});ddFitBoard();});}catch(error){ddToast(error.message||'Falha ao importar quadro.','error');}finally{input.value='';}}
 
     async function ddExportBoardPng(){const cards=Array.from(document.querySelectorAll('#boardNodes .board-note')).filter(card=>card.style.display!=='none');if(!cards.length){ddToast('O quadro está vazio.','warning');return;}ddToast('Gerando imagem do quadro...','ok');const minX=Math.min(...cards.map(card=>Number.parseFloat(card.style.left)||0))-40,minY=Math.min(...cards.map(card=>Number.parseFloat(card.style.top)||0))-40,maxX=Math.max(...cards.map(card=>(Number.parseFloat(card.style.left)||0)+card.offsetWidth))+40,maxY=Math.max(...cards.map(card=>(Number.parseFloat(card.style.top)||0)+card.offsetHeight))+40;const scale=Math.min(2,4000/Math.max(maxX-minX,maxY-minY,1));const output=document.createElement('canvas');output.width=Math.max(1,Math.round((maxX-minX)*scale));output.height=Math.max(1,Math.round((maxY-minY)*scale));const ctx=output.getContext('2d');ctx.scale(scale,scale);ctx.fillStyle='#090909';ctx.fillRect(0,0,maxX-minX,maxY-minY);ctx.strokeStyle='#333';ctx.lineWidth=1;for(let x=0;x<maxX-minX;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,maxY-minY);ctx.stroke();}for(let y=0;y<maxY-minY;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(maxX-minX,y);ctx.stroke();}
-        ctx.strokeStyle='#d33';ctx.lineWidth=2;for(const link of boardLinks){const a=document.getElementById(link.from),b=document.getElementById(link.to);if(!a||!b)continue;ctx.beginPath();ctx.moveTo((Number.parseFloat(a.style.left)||0)-minX+a.offsetWidth/2,(Number.parseFloat(a.style.top)||0)-minY+a.offsetHeight/2);ctx.lineTo((Number.parseFloat(b.style.left)||0)-minX+b.offsetWidth/2,(Number.parseFloat(b.style.top)||0)-minY+b.offsetHeight/2);ctx.stroke();}
-        for(const card of cards){const x=(Number.parseFloat(card.style.left)||0)-minX,y=(Number.parseFloat(card.style.top)||0)-minY,w=card.offsetWidth,h=card.offsetHeight;ctx.fillStyle='#111';ctx.strokeStyle='#777';ctx.lineWidth=1;ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);ctx.fillStyle='#eee';ctx.font='bold 14px monospace';ctx.fillText((card.dataset.title||'ITEM').slice(0,45),x+10,y+22);if(card.dataset.nodeType==='image'){const payload=card._boardPayload;let source=payload?.objectUrl||payload?.dataUrl;if(!source&&payload?.attachmentKey){const record=await ddGetAttachment(payload.attachmentKey);if(record?.blob)source=URL.createObjectURL(record.blob);}if(source){await new Promise(resolve=>{const img=new Image();img.onload=()=>{const ratio=Math.min((w-20)/img.width,(h-55)/img.height);ctx.drawImage(img,x+10,y+35,img.width*ratio,img.height*ratio);resolve();};img.onerror=resolve;img.src=source;});}}else{ctx.fillStyle='#bbb';ctx.font='12px monospace';const text=card.dataset.nodeType==='note'?(card.querySelector('textarea')?.value||''):(card._boardPayload?.fileName||'PDF');const words=text.split(/\s+/);let line='',lineY=y+45;for(const word of words){const test=`${line}${word} `;if(ctx.measureText(test).width>w-20){ctx.fillText(line,x+10,lineY);line=word+' ';lineY+=16;if(lineY>y+h-12)break;}else line=test;}if(lineY<=y+h-12)ctx.fillText(line,x+10,lineY);}}
+        ctx.strokeStyle='#d33';ctx.lineWidth=2;for(const link of boardLinks){const a=document.getElementById(link.from),b=document.getElementById(link.to);if(!a||!b)continue;ctx.beginPath();ctx.moveTo((Number.parseFloat(a.style.left)||0)-minX+a.offsetWidth/2,(Number.parseFloat(a.style.top)||0)-minY+a.offsetHeight/2);ctx.lineTo((Number.parseFloat(b.style.left)||0)-minX+b.offsetWidth/2,(Number.parseFloat(b.style.top)||0)-minY+b.offsetHeight/2);ctx.stroke();const label=ddRelationTypes[ddRelationType(link.type)];ctx.font='12px sans-serif';const mx=((parseFloat(a.style.left)||0)+a.offsetWidth/2+(parseFloat(b.style.left)||0)+b.offsetWidth/2)/2-minX,my=((parseFloat(a.style.top)||0)+a.offsetHeight/2+(parseFloat(b.style.top)||0)+b.offsetHeight/2)/2-minY;const tw=ctx.measureText(label).width;ctx.fillStyle='#111';ctx.fillRect(mx-tw/2-6,my-14,tw+12,22);ctx.fillStyle='#eee';ctx.fillText(label,mx-tw/2,my+2);}
+        for(const card of cards){const x=(Number.parseFloat(card.style.left)||0)-minX,y=(Number.parseFloat(card.style.top)||0)-minY,w=card.offsetWidth,h=card.offsetHeight;ctx.fillStyle='#111';ctx.strokeStyle='#777';ctx.lineWidth=1;ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);ctx.fillStyle='#eee';ctx.font='bold 14px monospace';ctx.fillText(((card.dataset.evidence==='fact'?'[FATO] ':card.dataset.evidence==='hypothesis'?'[HIPÓTESE] ':'')+(card.dataset.title||'ITEM')).slice(0,60),x+10,y+22);if(card.dataset.nodeType==='image'){const payload=card._boardPayload;let source=payload?.objectUrl||payload?.dataUrl;if(!source&&payload?.attachmentKey){const record=await ddGetAttachment(payload.attachmentKey);if(record?.blob)source=URL.createObjectURL(record.blob);}if(source){await new Promise(resolve=>{const img=new Image();img.onload=()=>{const ratio=Math.min((w-20)/img.width,(h-55)/img.height);ctx.drawImage(img,x+10,y+35,img.width*ratio,img.height*ratio);resolve();};img.onerror=resolve;img.src=source;});}}else{ctx.fillStyle='#bbb';ctx.font='12px monospace';const text=card.dataset.nodeType==='note'?(card.querySelector('textarea')?.value||''):(card._boardPayload?.fileName||'PDF');const words=text.split(/\s+/);let line='',lineY=y+45;for(const word of words){const test=`${line}${word} `;if(ctx.measureText(test).width>w-20){ctx.fillText(line,x+10,lineY);line=word+' ';lineY+=16;if(lineY>y+h-12)break;}else line=test;}if(lineY<=y+h-12)ctx.fillText(line,x+10,lineY);}}
         output.toBlob(blob=>{if(blob)ddDownloadBlob(blob,`quadro-investigativo-${new Date().toISOString().slice(0,10)}.png`);},'image/png');}
 
     document.addEventListener('paste',event=>{if(!document.getElementById('investigationBoard')?.classList.contains('active'))return;const files=Array.from(event.clipboardData?.items||[]).filter(item=>item.kind==='file').map(item=>item.getAsFile()).filter(Boolean);if(files.length){event.preventDefault();handleBoardFiles(files);}});
@@ -7461,14 +7814,18 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         const data=ddOriginals.collectCurrentData();data.version=11;data.appVersion=DD_VERSION;
         data.items=Array.from(document.querySelectorAll('.inventory-item')).map(item=>({id:item.id,nome:item.querySelector('.item-name')?.textContent||'',peso:Number(item.querySelector('.item-weight')?.dataset.peso||0),desc:item.querySelector('.item-desc')?.textContent||'',quantity:Math.max(0,Number(item.dataset.quantity||0)),charges:Math.max(0,Number(item.dataset.charges||0)),maxCharges:Math.max(0,Number(item.dataset.maxCharges||0)),favorite:item.dataset.favorite==='1'}));
         data.macros=combatMacros.map(macro=>({...macro,ammoCurrent:Math.max(0,Number(macro.ammoCurrent)||0),ammoCapacity:Math.max(0,Number(macro.ammoCapacity)||0),ammoReserve:Math.max(0,Number(macro.ammoReserve)||0),ammoCost:Math.max(0,Number(macro.ammoCost)||0),actionType:['standard','movement','reaction','free'].includes(macro.actionType)?macro.actionType:'standard',favorite:Boolean(macro.favorite)}));
-        const notes=[];document.querySelectorAll('#boardNodes .board-note').forEach(card=>{const type=card.dataset.nodeType||'note';const node=boardNodes.find(item=>item.id===card.id)||{};const base={id:card.id,type,x:Number.parseFloat(card.style.left)||0,y:Number.parseFloat(card.style.top)||0,width:card.offsetWidth||Number(node.width)||250,height:card.offsetHeight||Number(node.height)||150,category:card.dataset.category||node.category||'neutro',title:card.dataset.title||card.querySelector('.board-note-title')?.textContent||node.title||''};if(type==='note')notes.push({...base,text:card.querySelector('textarea')?.value||''});else{const payload=card._boardPayload||{};notes.push({...base,fileName:payload.fileName||node.fileName||'',mime:payload.mime||node.mime||'',attachmentKey:payload.attachmentKey||node.attachmentKey||`${activeProfileId}:${card.id}`,size:Number(payload.size||node.size)||0,...((payload.dataUrl&&(payload.persistFailed||payload.persistPending)&&(payload.inlineAllowed!==false))?{dataUrl:payload.dataUrl,persistFailed:Boolean(payload.persistFailed)}:{})});}});
+        const notes=[];document.querySelectorAll('#boardNodes .board-note').forEach(card=>{const type=card.dataset.nodeType||'note';const node=boardNodes.find(item=>item.id===card.id)||{};const base={id:card.id,type,x:Number.parseFloat(card.style.left)||0,y:Number.parseFloat(card.style.top)||0,width:card.offsetWidth||Number(node.width)||250,height:card.offsetHeight||Number(node.height)||150,category:card.dataset.category||node.category||'neutro',evidence:ddEvidenceState(card.dataset.evidence),title:card.dataset.title||card.querySelector('.board-note-title')?.textContent||node.title||''};if(type==='note')notes.push({...base,text:card.querySelector('textarea')?.value||''});else{const payload=card._boardPayload||{};notes.push({...base,fileName:payload.fileName||node.fileName||'',mime:payload.mime||node.mime||'',attachmentKey:payload.attachmentKey||node.attachmentKey||`${activeProfileId}:${card.id}`,size:Number(payload.size||node.size)||0,...((payload.dataUrl&&(payload.persistFailed||payload.persistPending)&&(payload.inlineAllowed!==false))?{dataUrl:payload.dataUrl,persistFailed:Boolean(payload.persistFailed)}:{})});}});
         data.board={notes,links:boardLinks.map(link=>({...link})),logs:Array.from(document.querySelectorAll('.log-entry')).map(el=>({id:el.id,date:el.querySelector('input')?.value||'',text:el.querySelector('textarea')?.value||''})),view:{scale:boardScale,panX:boardPanX,panY:boardPanY}};
-        data.enhancements={rollHistory:ddRollHistory.slice(0,DD_MAX_ROLL_HISTORY),favoriteSkills:Array.from(ddFavoriteSkills),turnActions:{...ddTurnActions}};
+        data.enhancements={conditionClock:ddNormalizeConditionClock(ddConditionClock),rollHistory:ddRollHistory.slice(0,DD_MAX_ROLL_HISTORY),favoriteSkills:Array.from(ddFavoriteSkills),turnActions:{...ddTurnActions}};
         return data;
     };
 
     processAndLoadDataMap = function(data) {
         document.querySelectorAll('.board-attachment').forEach(card=>{const url=card._boardPayload?.objectUrl;if(url)try{URL.revokeObjectURL(url);}catch{}});
+        ddConditionClock=ddNormalizeConditionClock(data.enhancements?.conditionClock);
+        ddCloseMobileFavorites();
+        if(document.getElementById('ddRelationsModal'))document.getElementById('ddRelationsModal').style.display='none';
+        if(document.getElementById('ddEvidenceFilter'))document.getElementById('ddEvidenceFilter').value='';
         ddHydratingProfile=true;ddCurrentData=data;ddOriginals.processAndLoadDataMap(data);
         try {
             if(Array.isArray(data.items)){document.getElementById('inventoryList')?.replaceChildren();data.items.forEach(item=>adicionarItem(item,null,null,true,item));atualizarCarga();}
@@ -7476,8 +7833,9 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
             ddRollHistory=Array.isArray(data.enhancements?.rollHistory)?data.enhancements.rollHistory.slice(0,DD_MAX_ROLL_HISTORY):[];ddFavoriteSkills=new Set(Array.isArray(data.enhancements?.favoriteSkills)?data.enhancements.favoriteSkills:[]);ddTurnActions={standard:Boolean(data.enhancements?.turnActions?.standard),movement:Boolean(data.enhancements?.turnActions?.movement),reaction:Boolean(data.enhancements?.turnActions?.reaction)};
             if(data.board?.view){boardScale=ddClamp(data.board.view.scale,.2,3)||1;boardPanX=Number(data.board.view.panX)||0;boardPanY=Number(data.board.view.panY)||0;updateBoardTransform();}
             if(Array.isArray(data.board?.notes)){data.board.notes.forEach(meta=>{let card=document.getElementById(meta.id);let node=boardNodes.find(item=>item.id===meta.id);if(!card&&['image','pdf'].includes(meta.type)&&meta.attachmentKey){node={...meta};boardNodes.push(node);card=addBoardAttachment(meta,true);}if(card){if(!node){node={...meta};boardNodes.push(node);}Object.assign(node,meta);ddApplyBoardNodeMeta(card,meta);if(['image','pdf'].includes(meta.type)){card._boardPayload={...(card._boardPayload||{}),type:meta.type,fileName:meta.fileName,mime:meta.mime,attachmentKey:meta.attachmentKey,size:meta.size||0};void ddHydrateAttachmentCard(card,card._boardPayload);}}});}
-            boardLinks=(Array.isArray(data.board?.links)?data.board.links:boardLinks).filter(link=>document.getElementById(link.from)&&document.getElementById(link.to));drawBoardLines();
+            boardLinks=ddNormalizeLinks(Array.isArray(data.board?.links)?data.board.links:boardLinks).filter(link=>document.getElementById(link.from)&&document.getElementById(link.to));drawBoardLines();
             ddEnhanceSkillFavorites();document.querySelectorAll('.skill-row').forEach(row=>{const select=row.querySelector('.skill-val');row.querySelector('.dd-favorite-star')?.classList.toggle('active',ddFavoriteSkills.has(select?.id));});ddRenderTurnActions();ddUpdateResourceSummaries();ddRenderFavorites();ddUpdateStorageStatus();
+            ddRenderConditionTimers();
         } finally {ddHydratingProfile=false;}
     };
 
@@ -7488,8 +7846,8 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 
     sanitizeImportedSave = function(data){const clean=ddOriginals.sanitizeImportedSave(data);if(Array.isArray(data.items))clean.items=data.items.slice(0,500).map(item=>({id:String(item?.id||ddUid('item')).slice(0,120),nome:String(item?.nome||'').slice(0,200),peso:Math.max(0,Number(item?.peso)||0),desc:String(item?.desc||'').slice(0,10000),quantity:Math.max(0,Number.parseInt(item?.quantity,10)||0),charges:Math.max(0,Number.parseInt(item?.charges,10)||0),maxCharges:Math.max(0,Number.parseInt(item?.maxCharges,10)||0),favorite:Boolean(item?.favorite)}));
         if(Array.isArray(data.macros))clean.macros=data.macros.slice(0,300).map(macro=>({...macro,id:String(macro?.id||ddUid('macro')).slice(0,120),nome:String(macro?.nome||'').slice(0,200),ammoCurrent:Math.max(0,Number(macro?.ammoCurrent)||0),ammoCapacity:Math.max(0,Number(macro?.ammoCapacity)||0),ammoReserve:Math.max(0,Number(macro?.ammoReserve)||0),ammoCost:Math.max(0,Number(macro?.ammoCost)||0),actionType:['standard','movement','reaction','free'].includes(macro?.actionType)?macro.actionType:'standard',favorite:Boolean(macro?.favorite)}));
-        if(data.enhancements&&typeof data.enhancements==='object')clean.enhancements={rollHistory:Array.isArray(data.enhancements.rollHistory)?data.enhancements.rollHistory.slice(0,DD_MAX_ROLL_HISTORY):[],favoriteSkills:Array.isArray(data.enhancements.favoriteSkills)?data.enhancements.favoriteSkills.slice(0,100):[],turnActions:{standard:Boolean(data.enhancements.turnActions?.standard),movement:Boolean(data.enhancements.turnActions?.movement),reaction:Boolean(data.enhancements.turnActions?.reaction)}};
-        if(data.board&&typeof data.board==='object'){clean.board={...clean.board,view:data.board.view||null,notes:Array.isArray(data.board.notes)?data.board.notes.slice(0,600).map(note=>{const type=['image','pdf'].includes(note?.type)?note.type:'note';const base={id:String(note?.id||ddUid(type==='note'?'note':'file')).slice(0,120),type,x:Number(note?.x)||0,y:Number(note?.y)||0,width:ddClamp(note?.width||250,170,900),height:ddClamp(note?.height||150,100,800),category:DD_CATEGORIES.includes(note?.category)?note.category:'neutro',title:String(note?.title||'').slice(0,160)};if(type==='note')return{...base,text:String(note?.text||'').slice(0,30000)};const dataUrl=String(note?.dataUrl||'');const valid=type==='image'?/^data:image\//i.test(dataUrl):/^data:application\/pdf/i.test(dataUrl);return{...base,fileName:String(note?.fileName||'').slice(0,240),mime:String(note?.mime||'').slice(0,100),attachmentKey:String(note?.attachmentKey||''),size:Number(note?.size)||estimateDataUrlBytes(dataUrl),dataUrl:valid&&estimateDataUrlBytes(dataUrl)<=DD_MAX_ATTACHMENT_BYTES?dataUrl:'',persistFailed:Boolean(note?.persistFailed)};}).filter(note=>note.type==='note'||note.dataUrl||note.attachmentKey):[]};}
+        if(data.enhancements&&typeof data.enhancements==='object')clean.enhancements={conditionClock:ddNormalizeConditionClock(data.enhancements.conditionClock),rollHistory:Array.isArray(data.enhancements.rollHistory)?data.enhancements.rollHistory.slice(0,DD_MAX_ROLL_HISTORY):[],favoriteSkills:Array.isArray(data.enhancements.favoriteSkills)?data.enhancements.favoriteSkills.slice(0,100):[],turnActions:{standard:Boolean(data.enhancements.turnActions?.standard),movement:Boolean(data.enhancements.turnActions?.movement),reaction:Boolean(data.enhancements.turnActions?.reaction)}};
+        if(data.board&&typeof data.board==='object'){clean.board={...clean.board,view:data.board.view||null,notes:Array.isArray(data.board.notes)?data.board.notes.slice(0,600).map(note=>{const type=['image','pdf'].includes(note?.type)?note.type:'note';const base={id:String(note?.id||ddUid(type==='note'?'note':'file')).slice(0,120),type,x:Number(note?.x)||0,y:Number(note?.y)||0,width:ddClamp(note?.width||250,170,900),height:ddClamp(note?.height||150,100,800),category:DD_CATEGORIES.includes(note?.category)?note.category:'neutro',evidence:ddEvidenceState(note?.evidence),title:String(note?.title||'').slice(0,160)};if(type==='note')return{...base,text:String(note?.text||'').slice(0,30000)};const dataUrl=String(note?.dataUrl||'');const valid=type==='image'?/^data:image\//i.test(dataUrl):/^data:application\/pdf/i.test(dataUrl);return{...base,fileName:String(note?.fileName||'').slice(0,240),mime:String(note?.mime||'').slice(0,100),attachmentKey:String(note?.attachmentKey||''),size:Number(note?.size)||estimateDataUrlBytes(dataUrl),dataUrl:valid&&estimateDataUrlBytes(dataUrl)<=DD_MAX_ATTACHMENT_BYTES?dataUrl:'',persistFailed:Boolean(note?.persistFailed)};}).filter(note=>note.type==='note'||note.dataUrl||note.attachmentKey):[]};}
         clean.version=11;return clean;};
 
     async function ddMigrateImportedAttachments(data,profileId){for(const note of data.board?.notes||[]){if(!['image','pdf'].includes(note.type)||!note.dataUrl)continue;const key=`${profileId}:${note.id}`;const blob=dataUrlToBlob(note.dataUrl);const record=await ddStoreAttachment(profileId,note.id,blob,{attachmentKey:key,fileName:note.fileName,mime:note.mime});note.attachmentKey=record.key;note.size=record.size;delete note.dataUrl;}}
@@ -7605,11 +7963,12 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         ddOpenResourceModal,ddCloseResourceModal,ddApplyResourceModal,ddOpenCommandPalette,ddCloseCommandPalette,
         ddOpenRollHistory,ddCloseRollHistory,ddClearRollHistory,ddOpenValidator,ddCloseValidator,ddOpenSnapshots,ddCloseSnapshots,ddCreateManualSnapshot,
         ddExportFullBackup,ddImportFullBackup,ddInstallApp,ddExportBoard,ddImportBoard,ddExportBoardPng,ddFitBoard,ddRenameBoardNode,ddDuplicateBoardNode,
-        ddCycleBoardCategory,ddSelectAllBoardNodes,ddDeleteBoardLink,ddAdjustItem,ddUseItem,ddRechargeItem,ddToggleItemFavorite,ddReloadMacro,ddToggleMacroFavorite,
+        ddOpenRelations,ddCycleBoardCategory,ddSelectAllBoardNodes,ddDeleteBoardLink,ddAdjustItem,ddUseItem,ddRechargeItem,ddToggleItemFavorite,ddReloadMacro,ddToggleMacroFavorite,
         deleteBoardNote,ddSetDiceEnabled,ddSetDiceSound,ddSetDiceEffects,ddSetDiceSpeed,ddSetDiceTheme
     });
 
     ddInjectStaticUi();
+    ddInitializeSessionTools();
     ddInjectQuickResourceControls();
     ddCreateSupportPanel();
     ddEnhanceMacroForm();
@@ -7617,6 +7976,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
     ddEnhanceMenu();
     ddEnhanceDiceSettings();
     ddEnhanceBoardControls();
+    ddInitializeInvestigation();
     ddEnhanceSkillFavorites();
     ddUpdateResourceSummaries();
     ddRenderFavorites();
@@ -7928,7 +8288,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         }
         if (!activeModal) return;
         if (event.key === 'Escape') {
-            const cancel = activeModal.querySelector('[data-dd-cancel], #modalCancelBtn, button:last-of-type');
+            const cancel = activeModal.querySelector('[data-dd-cancel]') || activeModal.querySelector('#modalCancelBtn') || Array.from(activeModal.querySelectorAll('button')).at(-1);
             cancel?.click();
             return;
         }
