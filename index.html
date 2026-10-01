@@ -1111,7 +1111,81 @@
             .save-status-indicator { left: 10px; bottom: 10px; min-width: 0; max-width: calc(100vw - 80px); }
         }
 
-    </style>
+    #ddPrintSheet { display:none; }
+#pdfPrintReport { margin-top:16px; padding:14px; border:1px solid var(--border-color); font-size:13px; line-height:1.6; }
+#pdfPrintReport button { margin-top:12px; }
+@media print {
+ @page { size:A4 portrait; margin:9mm; }
+ html, body { width:auto!important; height:auto!important; min-height:0!important; margin:0!important; padding:0!important; background:white!important; overflow:visible!important; }
+ body > :not(#ddPrintSheet) { display:none!important; }
+ body #ddPrintSheet { display:block!important; color:#17202a!important; }
+ body #ddPrintSheet, body #ddPrintSheet * { box-sizing:border-box!important; font-family:Arial,Helvetica,sans-serif!important; letter-spacing:normal!important; text-transform:none!important; text-shadow:none!important; box-shadow:none!important; animation:none!important; transform:none!important; }
+ #ddPrintSheet .pdf-page { width:192mm; height:278mm; display:flex; flex-direction:column; gap:2mm; break-after:page; font-size:9pt; line-height:1.25; }
+ #ddPrintSheet .pdf-page:last-child { break-after:auto; }
+ #ddPrintSheet .pdf-header { border-bottom:0.6mm solid #17202a; padding-bottom:3mm; }
+ #ddPrintSheet .pdf-kicker { font-size:8pt; color:#465361; margin-bottom:2mm; }
+ #ddPrintSheet .pdf-name { font-size:18pt; font-weight:bold; margin:0 0 2mm; overflow-wrap:anywhere; }
+ #ddPrintSheet .pdf-meta { font-size:9pt; overflow-wrap:anywhere; }
+ #ddPrintSheet .pdf-section { border:0.25mm solid #a3adb5; padding:2mm; break-inside:avoid; }
+ #ddPrintSheet h2 { font-size:10pt; margin:0 0 2mm; padding-bottom:1.5mm; border-bottom:0.25mm solid #b8c0c7; color:#17202a!important; }
+ #ddPrintSheet .pdf-grid { display:grid; grid-template-columns:1fr 1fr; gap:3mm; }
+ #ddPrintSheet .pdf-stats { display:grid; grid-template-columns:repeat(6,1fr); gap:2mm; }
+ #ddPrintSheet .pdf-stat { border:0.25mm solid #a3adb5; padding:2.5mm 1mm; text-align:center; }
+ #ddPrintSheet .pdf-stat b { display:block; font-size:15pt; margin-top:1.5mm; }
+ #ddPrintSheet .pdf-skills { display:grid; grid-template-columns:repeat(3,1fr); gap:3mm; }
+ #ddPrintSheet .pdf-skill { display:flex; justify-content:space-between; gap:2mm; border-bottom:0.2mm solid #e1e4e7; padding:0.7mm 0; }
+ #ddPrintSheet .pdf-subtitle { font-weight:bold; font-size:8pt; margin:2mm 0 1mm; }
+ #ddPrintSheet table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:8.5pt; }
+ #ddPrintSheet th, #ddPrintSheet td { padding:1mm 1mm; border-bottom:0.2mm solid #ccd2d7; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+ #ddPrintSheet th { font-size:8pt; }
+ #ddPrintSheet .pdf-entry { padding:1.7mm 0; border-bottom:0.2mm solid #d9dfe3; overflow-wrap:anywhere; }
+ #ddPrintSheet .pdf-entry b { display:block; margin-bottom:0.7mm; }
+ #ddPrintSheet .pdf-small { font-size:8pt; line-height:1.3; overflow-wrap:anywhere; }
+ #ddPrintSheet .pdf-lines { background:repeating-linear-gradient(to bottom,transparent 0,transparent 6.7mm,#b8c0c7 6.7mm,#b8c0c7 6.9mm)!important; min-height:14mm; }
+ #ddPrintSheet .pdf-notes { flex:1; min-height:7mm; }
+ #ddPrintSheet .pdf-footer { margin-top:auto; border-top:0.25mm solid #a3adb5; padding-top:2mm; display:flex; justify-content:space-between; gap:4mm; font-size:7.5pt; }
+}
+
+
+
+
+/* PDF: mesma identidade de terminal e paleta ativa da ficha. */
+@media print {
+ @page { size:A4 portrait; margin:0; }
+ body #ddPrintSheet { --pdf-rule:color-mix(in srgb,var(--text-main) 32%,var(--panel-bg)); --pdf-muted:color-mix(in srgb,var(--text-main) 72%,var(--panel-bg)); background:var(--bg-color)!important; print-color-adjust:exact!important; -webkit-print-color-adjust:exact!important; }
+ body #ddPrintSheet, body #ddPrintSheet * { color:var(--text-main)!important; font-family:'Share Tech Mono','Consolas',monospace!important; }
+ #ddPrintSheet .pdf-page { width:210mm; height:296.8mm; padding:9mm; background:var(--bg-color)!important; font-size:9pt; line-height:1.15; }
+ #ddPrintSheet .pdf-header { border-color:var(--menu-accent); padding-left:3mm; border-left:0.8mm solid var(--menu-accent); border-bottom-width:0.25mm; }
+ #ddPrintSheet .pdf-kicker { font-size:7pt; color:var(--pdf-muted)!important; letter-spacing:0.25mm!important; }
+ #ddPrintSheet .pdf-name { font-size:17pt; text-transform:uppercase!important; }
+ #ddPrintSheet .pdf-meta { font-size:8pt; color:var(--pdf-muted)!important; }
+ #ddPrintSheet .pdf-section { position:relative; background:var(--panel-bg)!important; border-color:var(--pdf-rule); padding:2mm; }
+ #ddPrintSheet h2 { font-size:9pt; font-weight:normal; text-transform:uppercase!important; letter-spacing:0.2mm!important; border-bottom:0.25mm solid var(--menu-accent); color:var(--menu-accent)!important; }
+ #ddPrintSheet h2::before { content:'// '; color:var(--menu-accent)!important; }
+ #ddPrintSheet .pdf-stat { border-color:var(--pdf-rule); border-top:0.6mm solid var(--menu-accent); background:var(--panel-bg)!important; padding:2mm 1mm; text-transform:uppercase!important; font-size:7pt; }
+ #ddPrintSheet .pdf-stat b { font-size:15pt; font-weight:normal; color:var(--menu-accent)!important; }
+ #ddPrintSheet .pdf-skill, #ddPrintSheet td, #ddPrintSheet .pdf-entry { border-color:var(--pdf-rule); }
+ #ddPrintSheet .pdf-subtitle { color:var(--menu-accent)!important; letter-spacing:0.2mm!important; }
+ #ddPrintSheet table { font-size:8.5pt; }
+ #ddPrintSheet th { font-size:7.5pt; font-weight:normal; text-transform:uppercase!important; color:var(--pdf-muted)!important; border-color:var(--menu-accent); }
+ #ddPrintSheet .pdf-small { font-size:8pt; line-height:1.2; }
+ #ddPrintSheet .pdf-lines { background:repeating-linear-gradient(to bottom,transparent 0,transparent 6.7mm,var(--pdf-rule) 6.7mm,var(--pdf-rule) 6.9mm)!important; }
+ #ddPrintSheet .pdf-footer { border-color:var(--menu-accent); font-size:7pt; }
+ #ddPrintSheet .pdf-footer b { white-space:nowrap; flex-shrink:0; }
+ #ddPrintSheet .pdf-footer span { color:var(--pdf-muted)!important; }
+ body.shape-round #ddPrintSheet .pdf-section, body.shape-round #ddPrintSheet .pdf-stat { border-radius:2mm!important; }
+}
+
+
+.pdf-appearance-options { display:flex; flex-wrap:wrap; gap:12px; margin:0 0 20px; padding:12px; border:1px solid var(--border-color); }
+.pdf-appearance-options legend { color:var(--text-main); font-size:13px; padding:0 6px; }
+.pdf-appearance-options label { display:flex; align-items:center; gap:8px; flex:1 1 220px; color:var(--text-main); font-size:13px; cursor:pointer; }
+.pdf-appearance-options input { width:auto; margin:0; accent-color:var(--menu-accent); }
+@media print {
+ body #ddPrintSheet[data-appearance="paper"] { --bg-color:#fff; --panel-bg:#fff; --text-main:#171717; --menu-accent:#252525; --pdf-rule:#b5b5b5; --pdf-muted:#555; }
+}
+
+</style>
 
 <meta name="theme-color" content="#050505"><style id="ddEnhancementStyles">/* =========================================================
    DARK DASHBOARD // PACOTE DE USABILIDADE V10
@@ -1853,17 +1927,22 @@
 <div id="pdfExportModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="pdfExportTitle">
     <div class="modal-content pdf-export-content">
         <div class="modal-header" id="pdfExportTitle">EXPORTAR PDF // SELECIONE O FORMATO</div>
-        <p class="pdf-export-intro">A ficha será preparada em A4 e aberta na janela de impressão do navegador. Escolha o formato adequado para a sessão.</p>
+        <p class="pdf-export-intro">Duas páginas A4: recursos e testes na primeira; habilidades, inventário e anotações na segunda. Até 5 ações, 6 habilidades e 10 itens, com descrições resumidas. Escolha o formato para conferir o conteúdo.</p>
+        <fieldset class="pdf-appearance-options">
+            <legend>Aparência do PDF</legend>
+            <label><input type="radio" name="pdfAppearance" value="paper" checked>Para imprimir · fundo branco e espaço para lápis</label>
+            <label><input type="radio" name="pdfAppearance" value="screen">Para tela · cores e fundo do tema ativo</label>
+        </fieldset>
         <div class="pdf-export-grid">
             <button class="pdf-export-mode recommended" type="button" data-dd-bind="ddbind_169">
                 <span class="pdf-export-badge">Recomendado</span>
                 <strong>SESSÃO PRESENCIAL</strong>
-                <span>Mantém atributos, perícias, máximos, habilidades, equipamentos e ataques. Deixa VD, SAN, PE atuais, condições, inspiração, quantidades e anotações livres para lápis.</span>
+                <span>Mantém atributos, perícias e máximos; resume habilidades, equipamentos e ataques. Deixa recursos atuais, condições, inspiração e quantidades livres para lápis.</span>
             </button>
             <button class="pdf-export-mode" type="button" data-dd-bind="ddbind_170">
                 <span class="pdf-export-badge" style="color:var(--gold-color);">Arquivo</span>
-                <strong>CÓPIA COMPLETA</strong>
-                <span>Registra exatamente o estado atual da ficha, incluindo recursos, condições marcadas, inventário e demais informações preenchidas.</span>
+                <strong>FICHA PREENCHIDA</strong>
+                <span>Inclui recursos e condições atuais em um resumo de duas páginas. Confira abaixo as entradas incluídas e os textos resumidos antes de imprimir.</span>
             </button>
             <button class="pdf-export-mode" type="button" data-dd-bind="ddbind_171">
                 <span class="pdf-export-badge" style="color:var(--dim-text);">Modelo</span>
@@ -1871,7 +1950,7 @@
                 <span>Exporta somente a estrutura da ficha, com campos e áreas pautadas para preenchimento manual desde o início.</span>
             </button>
         </div>
-        <div class="pdf-export-note">Na janela seguinte, use papel A4 e escala de 100%. Para um resultado mais limpo, desative os cabeçalhos e rodapés do navegador. Selecione “Salvar como PDF” para criar o arquivo ou escolha uma impressora.</div>
+        <div class="pdf-export-note">Para imprimir, o fundo fica branco com letras e bordas escuras. Para tela, o PDF acompanha o tema ativo. Use A4 e escala de 100%. Na opção para tela, ative “Gráficos de segundo plano” para preservar fundos e cores. Para um resultado mais limpo, desative os cabeçalhos e rodapés do navegador. Selecione “Salvar como PDF” para criar o arquivo ou escolha uma impressora.</div>
         <div class="modal-buttons" style="margin-top:20px; justify-content:flex-end;">
             <button class="sys-btn" type="button" style="transform:none;" data-dd-bind="ddbind_172">CANCELAR</button>
         </div>
@@ -1963,7 +2042,7 @@
     let profilesIndex = null;
     let defaultPanelState = null;
 
-    const APP_VERSION = '2026.07.28.13-safe-accessibility';
+    const APP_VERSION = '2026.09.28-reliable-overlay';
     const OBS_PROTOCOL_VERSION = 3;
     const MAX_OBS_PAYLOAD_BYTES = 3600;
     const MAX_IMPORT_FILE_BYTES = 4 * 1024 * 1024;
@@ -2348,7 +2427,9 @@
         }
     }
 
+    let lastObsPayloadTimestamp = 0;
     function buildObsPayload(data) {
+        lastObsPayloadTimestamp = Math.max(Date.now(), lastObsPayloadTimestamp + 1);
         const characterName = document.getElementById('charNameInput')?.value?.trim() || 'DESCONHECIDO';
         return {
             version: 3,
@@ -2356,7 +2437,6 @@
             appVersion: APP_VERSION,
             source: 'dark-dashboard',
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-            timestamp: Date.now(),
             duration: obsSettings.duration,
             character: obsSettings.showName ? characterName.slice(0, 80) : '',
             theme: getCurrentThemeName(),
@@ -2369,7 +2449,8 @@
             channel: ensureObsChannel(),
             accessKey: ensureObsAccessKey(),
             profileId: activeProfileId || '',
-            ...data
+            ...data,
+            timestamp: lastObsPayloadTimestamp
         };
     }
 
@@ -5199,143 +5280,93 @@
     function mostrarTodasPericias() { document.querySelectorAll('.skill-row, .skill-category').forEach(el => el.classList.remove('hide-in-combat')); }
     let activePrintMode = null;
     let printRestoreState = null;
-
+    let pdfPrintSummary = '';
+    const pdfEscape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function getPrintModeConfig(mode) {
+        return {label:({session:'SESSÃO PRESENCIAL',complete:'FICHA PREENCHIDA',blank:'FICHA EM BRANCO'})[mode] || 'SESSÃO PRESENCIAL'};
+    }
     function exportarParaPDF() {
         playSfx('click');
-        const menu = document.getElementById('gameMenuOverlay');
-        if (menu?.classList.contains('active')) toggleMenu();
-        const modal = document.getElementById('pdfExportModal');
-        if (modal) modal.style.display = 'flex';
+        if(document.getElementById('gameMenuOverlay')?.classList.contains('active')) toggleMenu();
+        document.getElementById('pdfPrintReport')?.remove();
+        document.getElementById('pdfExportModal').style.display='flex';
     }
-
     function fecharModalExportacaoPDF() {
-        playSfx('click');
-        const modal = document.getElementById('pdfExportModal');
-        if (modal) modal.style.display = 'none';
+        document.getElementById('pdfExportModal').style.display='none';
+        limparModoImpressao();
     }
-
-    function getPrintModeConfig(mode) {
-        const configs = {
-            session: { className: 'print-session-mode', label: 'SESSÃO PRESENCIAL' },
-            complete: { className: 'print-complete-mode', label: 'CÓPIA COMPLETA' },
-            blank: { className: 'print-blank-mode', label: 'FICHA EM BRANCO' }
-        };
-        return configs[mode] || configs.session;
+    // A impressão lê a ficha e monta uma cópia: nunca altera campos nem o autosave.
+    function aplicarModoImpressao(mode='session') {
+        if(!['session','complete','blank'].includes(mode)) mode='session';
+        if(!printRestoreState) printRestoreState={title:document.title};
+        activePrintMode=mode;
+        const blank=mode==='blank', current=mode==='complete';
+        const val=id => blank?'':String(document.getElementById(id)?.value || '');
+        const txt=id => blank?'':String(document.getElementById(id)?.textContent || '').replace(/\s+/g,' ').trim();
+        const selected=id => { const el=document.getElementById(id); return blank||!el?.value?'':el.selectedOptions[0]?.textContent.trim()||''; };
+        let shortened=0;
+        const short=(s,n) => { s=String(s||'').replace(/\s+/g,' ').trim(); if(s.length>n){shortened++; return s.slice(0,n-1).trimEnd()+'…';} return s; };
+        const esc=pdfEscape;
+        const field=(s,n=80)=>esc(short(s,n))||'________________';
+        const section=(title,content)=>`<section class="pdf-section"><h2>${title}</h2>${content}</section>`;
+        const stat=(label,value)=>`<div class="pdf-stat">${label}<b>${esc(value)||'___'}</b></div>`;
+        const name=blank?'Personagem':short(val('charNameInput')||'Personagem',48);
+        const header=subtitle=>`<header class="pdf-header"><div class="pdf-kicker">FICHA DE PERSONAGEM · ${getPrintModeConfig(mode).label} · ${subtitle}</div><div class="pdf-name">${esc(name)}</div><div class="pdf-meta">Jogador: ${field(val('charPlayer'),45)} · ${field(selected('classeSelect'),30)} / ${field(selected('subclasseSelect'),40)}</div></header>`;
+        const resources=['vd','san','pe'].map(k=>stat(k.toUpperCase(),`${current?val(k+'_atual'):'___'} / ${val(k+'_max')||'___'}`)).join('')+
+            stat('Defesa atual',val('def_val'))+stat('Afinidade',val('afi_val'))+stat('Inspiração',current?document.querySelectorAll('#insp-boxes .box.filled').length:'___');
+        const attrs=['FOR','DES','VIG','INT','SAB','APA'].map(k=>stat(k,blank?'':document.querySelectorAll('#attr-'+k+' .box.filled').length)).join('');
+        const categories=Array.from(document.querySelectorAll('#panel-skills .skill-category')).map((cat,i)=>`<div><div class="pdf-subtitle">${['FORÇA','DESTREZA','INTELECTO','SABEDORIA','APARÊNCIA'][i]||'PERÍCIAS'}</div>${Array.from(cat.querySelectorAll('.skill-row')).map(row=>`<div class="pdf-skill"><span>${esc(row.querySelector('span')?.textContent.trim())}</span><b>${blank?'___':esc(row.querySelector('select')?.value)}</b></div>`).join('')}</div>`);
+        const skills=`<div class="pdf-skills"><div>${categories[0]||''}${categories[1]||''}</div><div>${categories[2]||''}</div><div>${categories[3]||''}${categories[4]||''}</div></div>`;
+        const macros=blank?[]:[...combatMacros].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite));
+        const attacks=macros.slice(0,5).map(m=>`<tr><td>${field(m.nome,32)}</td><td>${field([m.attr,m.skill].filter(Boolean).join(' / '),24)}</td><td>${field(m.dmg,18)}</td><td>${field(String(m.crit??''),10)}</td><td>${esc(m.peCost??0)}</td></tr>`);
+        while(attacks.length<3) attacks.push('<tr><td>________________</td><td>____________</td><td>________</td><td>____</td><td>___</td></tr>');
+        const attackTable=`<table><colgroup><col style="width:30%"><col style="width:28%"><col style="width:23%"><col style="width:11%"><col style="width:8%"></colgroup><thead><tr><th>Ação / ataque</th><th>Atributo / perícia</th><th>Dano</th><th>Crítico</th><th>PE¹</th></tr></thead><tbody>${attacks.join('')}</tbody></table><div class="pdf-small">¹ Custo base; aplique os efeitos de condições. Ações favoritas aparecem primeiro.</div>`;
+        const conditions=current?Array.from(document.querySelectorAll('.cond-checkbox:checked')).map(el=>{
+            const label=el.closest('.cond-item')?.querySelector('.cond-label')?.textContent||el.id;
+            const effect=typeof ddConditionClock!=='undefined'?ddConditionClock.effects?.[el.id]:null;
+            return label.trim()+(effect?` (${effect.mode==='rounds'?effect.remaining+' rodadas':effect.mode==='scene'?'cena':'manual'})`:'');
+        }):[];
+        const conditionText=current?field(conditions.join(' · ')||'Nenhuma condição ativa.',260):'Condição / duração: __________________________________________________________';
+        const abilities=blank?[]:Array.from(document.querySelectorAll('#abilitiesContainer .ability-card'));
+        const items=blank?[]:Array.from(document.querySelectorAll('#inventoryList .inventory-item')).sort((a,b)=>Number(b.dataset.favorite==='1')-Number(a.dataset.favorite==='1'));
+        const abilityContent=abilities.slice(0,6).map(el=>`<div class="pdf-entry"><b>${field(el.querySelector('.ability-name')?.textContent,38)}</b><div class="pdf-small">${field(el.querySelector('.ability-desc')?.textContent,120)}</div></div>`).join('')||'<div class="pdf-lines" style="height:100mm"></div>';
+        const inventory=items.slice(0,10).map(el=>`<tr><td>${field(el.querySelector('.item-name')?.textContent,35)}</td><td>${current?esc(el.dataset.quantity||1):'___'}</td><td>${field(el.querySelector('.item-weight')?.textContent,14)}</td></tr>`).join('')||'<tr><td>__________________</td><td>___</td><td>___</td></tr>';
+        const inventoryContent=`<table><colgroup><col style="width:65%"><col style="width:14%"><col style="width:21%"></colgroup><thead><tr><th>Item</th><th>Qtd.</th><th>Peso</th></tr></thead><tbody>${inventory}</tbody></table><p class="pdf-small">${field(current?txt('cargaDisplay'):txt('cargaDisplay').replace(/ATUAL\s*\[[^\]]*\]/i,'ATUAL [ ___ ]'),115)}</p><div class="pdf-small">Cargas / consumíveis / alterações:</div><div class="pdf-lines"></div>`;
+        const bio=blank?'':short([val('charAppearance'),val('charBackground')].filter(Boolean).join(' • '),300);
+        const omitted=Math.max(0,macros.length-5)+Math.max(0,abilities.length-6)+Math.max(0,items.length-10);
+        const details=`${Math.min(macros.length,5)}/${macros.length} ações; ${Math.min(abilities.length,6)}/${abilities.length} habilidades; ${Math.min(items.length,10)}/${items.length} itens.`;
+        pdfPrintSummary=blank?'Modelo vazio em duas páginas A4.':`${details} ${shortened?shortened+' textos abreviados com reticências. ':''}${omitted?omitted+' entradas excedentes ficam apenas no site. ':''}Descrições de itens, diário e quadro investigativo não entram neste resumo. A ficha digital permanece completa.`;
+        const footer=n=>`<footer class="pdf-footer"><span>Referência de mesa · ${blank?'modelo para preencher':details+' Textos com … foram resumidos; consulte o site.'}</span><b>${n} / 2</b></footer>`;
+        let root=document.getElementById('ddPrintSheet');
+        if(!root){root=document.createElement('div');root.id='ddPrintSheet';document.body.appendChild(root);}
+        root.dataset.appearance=document.querySelector('input[name="pdfAppearance"]:checked')?.value || 'paper';
+        root.innerHTML=`<article class="pdf-page">${header('RECURSOS E TESTES')}<div class="pdf-stats">${resources}</div><div class="pdf-stats">${attrs}</div>${section('Perícias · bônus de treinamento',skills)}${section('Ações rápidas',attackTable)}${section('Condições e acompanhamento',`<div class="pdf-small">${conditionText}</div><div class="pdf-lines"></div><div class="pdf-small">Defesa e atributos refletem os valores exibidos ao exportar. Revise-os ao alterar condições.</div>`)}<div class="pdf-notes pdf-lines"></div>${footer(1)}</article>
+        <article class="pdf-page">${header('HABILIDADES E EQUIPAMENTO')}<div class="pdf-grid">${section('Habilidades · referência resumida',abilityContent)}${section('Inventário · itens favoritos primeiro',inventoryContent)}</div>${section('Identidade e história',`<div class="pdf-small">Idade: ${field(val('charAge'),8)} · Altura: ${field(val('charHeight'),10)} · Peso: ${field(val('charWeight'),10)}</div><p class="pdf-small">${esc(bio)||'____________________________________________________________________'}</p>`)}${section('Sobre este resumo',`<div class="pdf-small">${esc(pdfPrintSummary)}</div>`)}<div class="pdf-subtitle">Anotações da sessão</div><div class="pdf-notes pdf-lines"></div>${footer(2)}</article>`;
+        document.title=`${name} - Ficha 2 paginas`;
     }
-
-    function parseCargaForPrint() {
-        const display = document.getElementById('cargaDisplay');
-        const source = String(display?.textContent || '');
-        const normal = source.match(/NORMAL\s*\[\s*([^\]]*)\]/i)?.[1]?.trim() || '';
-        const maxima = source.match(/M[ÁA]XIMA\s*\[\s*([^\]]*)\]/i)?.[1]?.trim() || '';
-        return `CARGA: ATUAL [          ] | NORMAL [ ${normal} ] | MÁXIMA [ ${maxima} ]`;
-    }
-
-    function prepararCamposParaImpressao() {
-        if (printRestoreState) return;
-        printRestoreState = {
-            title: document.title,
-            selectMirrors: [],
-            checkboxes: [],
-            filledBoxes: [],
-            textareas: Array.from(document.querySelectorAll('textarea')).map(textarea => ({
-                textarea,
-                height: textarea.style.height,
-                overflow: textarea.style.overflow
-            }))
-        };
-
-        printRestoreState.textareas.forEach(({ textarea }) => {
-            const minimum = textarea.id === 'charBackground' ? 210 : textarea.id === 'charAppearance' ? 90 : 62;
-            textarea.style.height = `${Math.max(minimum, textarea.scrollHeight + 4)}px`;
-            textarea.style.overflow = 'visible';
-        });
-
-        if (activePrintMode !== 'complete') {
-            const checkboxSelector = activePrintMode === 'session'
-                ? '#panel-conditions input[type="checkbox"]'
-                : '#mainContainer input[type="checkbox"]';
-            document.querySelectorAll(checkboxSelector).forEach(checkbox => {
-                printRestoreState.checkboxes.push({ checkbox, checked: checkbox.checked });
-                checkbox.checked = false;
-            });
-
-            const boxSelector = activePrintMode === 'session' ? '#insp-boxes .box' : '#mainContainer .box.filled';
-            document.querySelectorAll(boxSelector).forEach(box => {
-                printRestoreState.filledBoxes.push({ box, filled: box.classList.contains('filled') });
-                box.classList.remove('filled');
-            });
-        }
-
-        document.querySelectorAll('#mainContainer select').forEach(select => {
-            const mirror = document.createElement('span');
-            mirror.className = `print-select-value${select.classList.contains('skill-val') ? ' print-skill-value' : ''}`;
-            mirror.textContent = select.options?.[select.selectedIndex]?.textContent?.trim() || '';
-            select.insertAdjacentElement('afterend', mirror);
-            printRestoreState.selectMirrors.push(mirror);
-        });
-
-        const cargaDisplay = document.getElementById('cargaDisplay');
-        if (cargaDisplay) cargaDisplay.dataset.printSession = parseCargaForPrint();
-
-        const name = document.getElementById('charNameInput')?.value.trim() || 'PERSONAGEM';
-        const player = document.getElementById('charPlayer')?.value.trim();
-        const dateText = new Intl.DateTimeFormat('pt-BR', {
-            dateStyle: 'short', timeStyle: 'short'
-        }).format(new Date());
-        const config = getPrintModeConfig(activePrintMode);
-
-        document.getElementById('printModeLabel').textContent = config.label;
-        document.getElementById('printCharacterName').textContent = activePrintMode === 'blank' ? 'MODELO EM BRANCO' : name;
-        document.getElementById('printCharacterPlayer').textContent = activePrintMode === 'blank' ? '' : (player ? `JOGADOR: ${player}` : '');
-        document.getElementById('printGeneratedAt').textContent = `GERADO EM ${dateText}`;
-        document.getElementById('printFooterCharacter').textContent = name;
-        document.getElementById('printFooterDate').textContent = dateText;
-        document.title = `${name} - ${config.label}`;
-    }
-
-    function aplicarModoImpressao(mode = 'session') {
-        const config = getPrintModeConfig(mode);
-        activePrintMode = mode;
-        document.body.classList.remove('print-session-mode', 'print-complete-mode', 'print-blank-mode');
-        document.body.classList.add(config.className);
-        prepararCamposParaImpressao();
-    }
-
     function limparModoImpressao() {
-        document.body.classList.remove('print-session-mode', 'print-complete-mode', 'print-blank-mode');
-        if (printRestoreState) {
-            printRestoreState.textareas.forEach(({ textarea, height, overflow }) => {
-                textarea.style.height = height;
-                textarea.style.overflow = overflow;
-            });
-            printRestoreState.selectMirrors.forEach(mirror => mirror.remove());
-            printRestoreState.checkboxes.forEach(({ checkbox, checked }) => { checkbox.checked = checked; });
-            printRestoreState.filledBoxes.forEach(({ box, filled }) => box.classList.toggle('filled', filled));
-            document.title = printRestoreState.title;
-        }
-        const cargaDisplay = document.getElementById('cargaDisplay');
-        if (cargaDisplay) delete cargaDisplay.dataset.printSession;
-        printRestoreState = null;
-        activePrintMode = null;
+        if(printRestoreState) document.title=printRestoreState.title;
+        printRestoreState=null;
+        activePrintMode=null;
+        document.getElementById('ddPrintSheet')?.remove();
     }
-
     function iniciarExportacaoPDF(mode) {
-        playSfx('click');
-        const modal = document.getElementById('pdfExportModal');
-        if (modal) modal.style.display = 'none';
         aplicarModoImpressao(mode);
-        window.setTimeout(() => {
-            window.print();
-            // Alguns navegadores não disparam afterprint ao cancelar a janela.
-            window.setTimeout(limparModoImpressao, 120);
-        }, 180);
+        document.getElementById('pdfPrintReport')?.remove();
+        const report=document.createElement('div');report.id='pdfPrintReport';report.setAttribute('role','status');
+        const p=document.createElement('p');p.textContent=getPrintModeConfig(mode).label+' · '+pdfPrintSummary;report.appendChild(p);
+        const button=document.createElement('button');button.type='button';button.className='sys-btn';button.textContent='IMPRIMIR / SALVAR PDF · 2 PÁGINAS';
+        button.addEventListener('click',()=>{
+            aplicarModoImpressao(mode);
+            document.getElementById('pdfExportModal').style.display='none';
+            try { window.print(); } finally { limparModoImpressao(); }
+        });report.appendChild(button);
+        document.querySelector('#pdfExportModal .pdf-export-grid').after(report);
+        button.focus();
     }
+    window.addEventListener('beforeprint',()=>{if(!activePrintMode) aplicarModoImpressao('session');});
+    window.addEventListener('afterprint',limparModoImpressao);
 
-    window.addEventListener('beforeprint', () => {
-        if (!activePrintMode) aplicarModoImpressao('session');
-    });
-    window.addEventListener('afterprint', limparModoImpressao);
     function abrirModalCustom(mensagem, mostrarInput, mostrarCancelar, callback) { playSfx('alert'); const modal = document.getElementById('customModal'); const msgEl = document.getElementById('modalMessage'); const inputContainer = document.getElementById('modalInputContainer'); const inputEl = document.getElementById('modalInput'); const confirmBtn = document.getElementById('modalConfirmBtn'); const cancelBtn = document.getElementById('modalCancelBtn'); msgEl.innerText = mensagem; inputEl.value = ""; inputContainer.style.display = mostrarInput ? 'block' : 'none'; cancelBtn.style.display = mostrarCancelar ? 'block' : 'none'; modal.style.display = 'flex'; if (mostrarInput) setTimeout(() => inputEl.focus(), 50); confirmBtn.onclick = function() { playSfx('click'); modal.style.display = 'none'; if (mostrarInput) callback(inputEl.value); else callback(true); }; cancelBtn.onclick = function() { playSfx('click'); modal.style.display = 'none'; callback(false); }; }
 
     // 8. MECÂNICAS DA FICHA (Rolagens, Calculos, Reset)
@@ -8449,7 +8480,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
             const data = readProfileData(profile.id) || readStoredSaveForProfile(profile.id) || createBlankProfileData(profile.name, profile.id);
             entries.push({ profile: { ...profile }, data: await ddPortableProfile(data) });
         }
-        const backup = { type: 'dark-dashboard-full-backup', version: DD_SAFE_BACKUP_VERSION, schemaVersion: DD_SAFE_SCHEMA_VERSION, appVersion: '2026.07.28.13-safe-accessibility', exportedAt: new Date().toISOString(), activeProfileId, profiles: entries, globalSettings: safeReadJson(GLOBAL_SETTINGS_KEY, null) };
+        const backup = { type: 'dark-dashboard-full-backup', version: DD_SAFE_BACKUP_VERSION, schemaVersion: DD_SAFE_SCHEMA_VERSION, appVersion: '2026.09.28-reliable-overlay', exportedAt: new Date().toISOString(), activeProfileId, profiles: entries, globalSettings: safeReadJson(GLOBAL_SETTINGS_KEY, null) };
         backup.checksum = await ddSha256(JSON.stringify(backup));
         return backup;
     }
