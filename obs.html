@@ -204,7 +204,9 @@
         .obs-diagnostics-value.warn { color:var(--gold); }
         .obs-diagnostics-value.error { color:var(--alert); }
 
-    </style>
+    .free-roll .rolls {font-size:clamp(16px,2vw,26px);line-height:1.5;overflow-wrap:anywhere;}
+.free-roll .content {align-items:center;}
+</style>
 </head>
 <body>
     <aside id="persistentHud" class="persistent-hud" aria-live="polite">
@@ -401,8 +403,14 @@
                     if (!id || (payload.id && payload.id.length > 160)) return null;
                     const rolls = payload.rolls === undefined ? [] : payload.rolls;
                     if (!Array.isArray(rolls) || rolls.length > 30) return null;
-                    const dice = rolls.map(value => {const n = finite(value, 0, 1, 20); if (!Number.isInteger(n)) throw new TypeError('D20 inválido'); return n;});
-                    const chosen = finite(payload.chosen, dice[0] || 0, 0, 20);
+                    const isSum = payload.rollMode === 'sum';
+                    if (payload.rollMode !== undefined && !['sum','highest','lowest'].includes(payload.rollMode)) return null;
+                    if (isSum && (eventType !== 'roll' || !rolls.length || !Array.isArray(payload.diceSides) || payload.diceSides.length !== rolls.length)) return null;
+                    const diceSides = isSum ? payload.diceSides : rolls.map(() => 20);
+                    if (diceSides.some(n => ![2,3,4,6,8,10,12,20,100].includes(n))) return null;
+                    const dice = rolls.map((value,index) => {const n = finite(value, 0, 1, diceSides[index]); if (!Number.isInteger(n)) throw new TypeError('Dado inválido'); return n;});
+                    if (isSum && (!Number.isInteger(payload.bonus) || Math.abs(payload.bonus)>9999 || payload.total !== dice.reduce((a,b)=>a+b, payload.bonus))) return null;
+                    const chosen = finite(payload.chosen, dice[0] || 0, 0, isSum ? 100 : 20);
                     if (dice.length && !dice.includes(chosen)) return null;
                     const booleanFields = ['critical','failure','dice3d','diceSound','diceFx','remoteOnly'];
                     if (booleanFields.some(key => payload[key] !== undefined && typeof payload[key] !== 'boolean')) return null;
@@ -432,9 +440,9 @@
                         duration: Math.min(15000, Math.max(2000, finite(payload.duration, defaultDuration, 0, 3600000))),
                         character: boundedText(payload.character,80),title:boundedText(payload.title,120,'ROLAGEM'),
                         subtitle:boundedText(payload.subtitle,100,'DARK DASHBOARD'),message:boundedText(payload.message,900),
-                        rolls:dice, chosen, bonus:finite(payload.bonus),total:finite(payload.total),
+                        rolls:dice, diceSides, rollMode:isSum?'sum':'pick', chosen, bonus:finite(payload.bonus),total:finite(payload.total),
                         damage:payload.damage == null?null:finite(payload.damage,0,0),
-                        critical:payload.critical===true,failure:payload.failure===true,
+                        critical:!isSum && payload.critical===true,failure:!isSum && payload.failure===true,
                         theme:payload.theme==='custom'?'default':payload.theme,layout:payload.layout,
                         dice3d:payload.dice3d!==false,diceSound:payload.diceSound!==false,diceFx:payload.diceFx!==false,
                         diceSpeed:['fast','normal','cinematic'].includes(payload.diceSpeed)?payload.diceSpeed:'normal',
@@ -723,8 +731,38 @@
                 return chosen === min && chosen !== max ? 'lowest' : 'highest';
             }
 
+const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+function hull(vertices){
+ const faces=[],seen=new Set();
+ for(let a=0;a<vertices.length;a++)for(let b=a+1;b<vertices.length;b++)for(let c=b+1;c<vertices.length;c++){
+  let normal=cross(sub(vertices[b],vertices[a]),sub(vertices[c],vertices[a]));if(Math.hypot(...normal)<1e-6)continue;normal=normalizeVector(normal);
+  let distances=vertices.map(v=>dot(normal,sub(v,vertices[a])));
+  if(distances.some(x=>x>1e-5)&&distances.some(x=>x< -1e-5))continue;
+  if(distances.some(x=>x>1e-5))normal=normal.map(v=>-v);
+  const ids=distances.map((x,i)=>Math.abs(x)<1e-5?i:-1).filter(i=>i>=0),key=ids.join(',');if(seen.has(key))continue;seen.add(key);
+  const center=ids.reduce((s,i)=>s.map((v,k)=>v+vertices[i][k]/ids.length),[0,0,0]);
+  const u=normalizeVector(sub(vertices[ids[0]],center)),v=cross(normal,u);
+  ids.sort((a,b)=>Math.atan2(dot(sub(vertices[a],center),v),dot(sub(vertices[a],center),u))-Math.atan2(dot(sub(vertices[b],center),v),dot(sub(vertices[b],center),u)));
+  faces.push(ids);
+ }return {vertices,faces};
+}
+function dual(g){return hull(g.faces.map(f=>{const a=g.vertices[f[0]],n=normalizeVector(cross(sub(g.vertices[f[1]],a),sub(g.vertices[f[2]],a)));return n.map(x=>x/dot(n,a));}));}
+function normalized(g){const radius=Math.max(...g.vertices.map(v=>Math.hypot(...v)));return {...g,vertices:g.vertices.map(v=>v.map(x=>x/radius))};}
+const cube=hull([-1,1].flatMap(x=>[-1,1].flatMap(y=>[-1,1].map(z=>[x,y,z]))));
+const antiprism=hull(Array.from({length:10},(_,i)=>{const row=i%2,angle=Math.floor(i/2)*Math.PI*2/5+row*Math.PI/5;return [Math.cos(angle),Math.sin(angle),row?0.55:-0.55];}));
+const geometries={2:normalized(cube),3:normalized(cube),6:normalized(cube),4:normalized(hull([[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]])),8:normalized(hull([[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])),10:normalized(dual(antiprism)),12:normalized(dual(D20_GEOMETRY)),20:D20_GEOMETRY};
+function actorFor(sides,value,label){
+ const geometry=geometries[sides],labels=geometry.faces.map((_,i)=>sides<=3?i%sides+1:i+1);
+ if(label==='dezenas')labels.splice(0,labels.length,...Array.from({length:10},(_,i)=>String(i*10).padStart(2,'0')));
+ if(label==='unidades')labels.splice(0,labels.length,...Array.from({length:10},(_,i)=>i));
+ const targetFace=labels.findIndex(x=>Number(x)===value),f=geometry.faces[targetFace],a=geometry.vertices[f[0]];
+ const n=normalizeVector(cross(sub(geometry.vertices[f[1]],a),sub(geometry.vertices[f[2]],a)));
+ const target=sides===20?targetOrientationForFace(targetFace):{rx:Math.atan2(n[1],n[2]),ry:-Math.atan2(n[0],Math.hypot(n[1],n[2])),rz:0};
+ return {geometry,labels,targetFace,target,value,label:label?`d100 · ${label}`:`d${sides}`,rx:Math.random()*6,ry:Math.random()*6,rz:Math.random()*6,offsetY:0,scale:1,fade:1,highlight:0,highlightPulse:0};
+}
+
             function drawD20(context, actor, event) {
-                const rotatedVertices = D20_GEOMETRY.vertices.map(vertex => rotateVertex(vertex, actor.rx, actor.ry, actor.rz));
+                const rotatedVertices = (actor.geometry || D20_GEOMETRY).vertices.map(vertex => rotateVertex(vertex, actor.rx, actor.ry, actor.rz));
                 const projectionDistance = 4.8;
                 const projected = rotatedVertices.map(vertex => {
                     const perspective = projectionDistance / (projectionDistance - vertex[2]);
@@ -735,12 +773,12 @@
                 const main = palette.text;
                 const line = 'rgba(255,255,255,.2)';
                 const light = normalizeVector([-.65, -.8, 1]);
-                const faceData = D20_GEOMETRY.faces.map((face, index) => {
+                const faceData = (actor.geometry || D20_GEOMETRY).faces.map((face, index) => {
                     const a = rotatedVertices[face[0]], b = rotatedVertices[face[1]], c = rotatedVertices[face[2]];
                     const ab = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
                     const ac = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
                     const normal = normalizeVector([ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]]);
-                    const center = [(a[0]+b[0]+c[0])/3, (a[1]+b[1]+c[1])/3, (a[2]+b[2]+c[2])/3];
+                    const center = face.reduce((sum,i)=>sum.map((x,k)=>x+rotatedVertices[i][k]/face.length),[0,0,0]);
                     return { face, index, normal, center, depth:center[2], light:Math.max(0, normal[0]*light[0]+normal[1]*light[1]+normal[2]*light[2]) };
                 }).sort((left, right) => left.depth - right.depth);
 
@@ -760,8 +798,7 @@
                     const isResultFace = faceInfo.index === actor.targetFace && actor.revealed;
                     context.beginPath();
                     context.moveTo(points[0].x, points[0].y);
-                    context.lineTo(points[1].x, points[1].y);
-                    context.lineTo(points[2].x, points[2].y);
+                    points.slice(1).forEach(p=>context.lineTo(p.x,p.y));
                     context.closePath();
                     context.fillStyle = isResultFace ? hexToRgba(accent, actor.chosen ? .96 : .84) : hexToRgba(palette.fill, Math.min(.99, .76 + shade * .22));
                     context.fill();
@@ -783,8 +820,7 @@
                         context.save();
                         context.beginPath();
                         context.moveTo(points[0].x, points[0].y);
-                        context.lineTo(points[1].x, points[1].y);
-                        context.lineTo(points[2].x, points[2].y);
+                        points.slice(1).forEach(p=>context.lineTo(p.x,p.y));
                         context.closePath();
                         context.clip();
                         context.translate(centerX, centerY);
@@ -793,7 +829,7 @@
                         context.fillStyle = isResultFace ? '#050505' : main;
                         context.font = `700 ${textSize}px Oswald, Arial, sans-serif`;
                         context.textAlign = 'center'; context.textBaseline = 'middle';
-                        context.fillText(String(faceInfo.index + 1), 0, 0);
+                        context.fillText(String(actor.labels ? actor.labels[faceInfo.index] : faceInfo.index + 1), 0, 0);
                         context.restore();
                     }
                 });
@@ -916,26 +952,29 @@
                     const cancel = () => finish(new Error('Animação cancelada'));
                     try {
                     if (!diceContext || !event.rolls.length || event.dice3d === false) { resolve(); return; }
-                    const {values, chosenIndex, omitted} = selectVisibleDice(event);
+                    const isSum = event.rollMode === 'sum';
+                    const mixedActors = isSum ? event.rolls.flatMap((value,i)=>event.diceSides[i]===100 ? [actorFor(10,Math.floor(value%100/10)*10,'dezenas'),actorFor(10,value%10,'unidades')] : [actorFor(event.diceSides[i],value)]) : [];
+                    const {values, chosenIndex, omitted} = isSum ? {values:mixedActors.map(a=>a.value),chosenIndex:-1,omitted:0} : selectVisibleDice(event);
                     const omittedLabel = omitted ? ` · ${omitted} DADO(S) NÃO ANIMADO(S)` : '';
                     animationCancel = cancel;
                     const width = diceCanvas.width;
                     const height = diceCanvas.height;
-                    const rows = values.length > 4 ? 2 : 1;
-                    const columns = rows === 1 ? values.length : Math.ceil(values.length / 2);
+                    const columns = isSum ? Math.min(8,Math.max(1,Math.ceil(Math.sqrt(values.length*1.7)))) : (values.length > 4 ? Math.ceil(values.length/2) : values.length);
+                    const rows = Math.ceil(values.length / columns);
                     const pickMode = inferPickMode(event);
                     const actors = values.map((value, index) => {
                         const row = rows === 1 ? 0 : Math.floor(index / columns);
                         const column = rows === 1 ? index : index % columns;
                         const cellWidth = width / columns;
-                        const cellHeight = height / rows;
+                        const cellHeight = (isSum ? height - 50 : height) / rows;
                         return {
                             x: cellWidth * (column + .5), y: cellHeight * (row + .53),
-                            radius: Math.min(78, Math.max(45, Math.min(cellWidth, cellHeight) * .27)),
+                            radius: isSum ? Math.min(70, Math.min(cellWidth,cellHeight)*.25) : Math.min(78, Math.max(45, Math.min(cellWidth, cellHeight) * .27)),
                             rx: Math.random()*Math.PI*2, ry: Math.random()*Math.PI*2, rz: Math.random()*Math.PI*2,
                             spinX:(.18+Math.random()*.22)*(Math.random()>.5?1:-1), spinY:(.2+Math.random()*.24)*(Math.random()>.5?1:-1), spinZ:(.14+Math.random()*.18)*(Math.random()>.5?1:-1),
                             target:targetOrientationForFace(value-1), targetFace:value-1, chosen:index===chosenIndex,
-                            phase:Math.random()*Math.PI*2, offsetY:-15, revealed:false, scale:1, fade:1, badgeLabel:index===chosenIndex ? (pickMode === 'lowest' ? 'MENOR' : 'MAIOR') : ''
+                            phase:Math.random()*Math.PI*2, offsetY:-15, revealed:false, scale:1, fade:1, badgeLabel:index===chosenIndex ? (pickMode === 'lowest' ? 'MENOR' : 'MAIOR') : '',
+                            ...(isSum ? mixedActors[index] : {})
                         };
                     });
                     diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')} · TEMA ${safe(diceThemeLabel(event.diceTheme))}${omittedLabel}</small>`;
@@ -985,11 +1024,14 @@
                                 actor.scale = actor.chosen ? 1 + profile.chosenScale * focus : 1 - .08 * focus;
                                 actor.fade = actor.chosen ? 1 : 1 - profile.nonChosenFade * focus;
                             }
+                            if(isSum && progress>=1){Object.assign(actor,actor.target);actor.offsetY=0;actor.revealed=true;}
+                            if(isSum)actor.fade=1;
                             drawD20(diceContext, actor, event);
+                            if(isSum){diceContext.save();diceContext.fillStyle=getDiceThemePalette(event.diceTheme).text;diceContext.font=`600 ${Math.max(10,Math.min(15,actor.radius*.35))}px Arial`;diceContext.textAlign='center';diceContext.fillText(actor.label+(actor.revealed?` = ${actor.value}`:''),actor.x,actor.y+actor.radius*1.6);diceContext.restore();}
                         });
                         if (progress >= profile.settleRatio) {
                             const accent = event.critical ? readOverlayColor('--gold', '#ffcc33') : event.failure ? readOverlayColor('--alert', '#ff2929') : readOverlayColor('--accent', '#ffffff');
-                            const label = `${pickMode === 'lowest' ? 'MENOR' : 'MAIOR'} RESULTADO: ${event.chosen}`;
+                            const label = isSum ? `SOMA TOTAL: ${event.total}` : `${pickMode === 'lowest' ? 'MENOR' : 'MAIOR'} RESULTADO: ${event.chosen}`;
                             diceContext.save();
                             diceContext.fillStyle = 'rgba(0,0,0,.48)';
                             drawRoundedRect(diceContext, width/2 - 132, height - 46, 264, 26, 11); diceContext.fill();
@@ -1124,20 +1166,20 @@
             function showResultCard(event) {
                 const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
                 const bonus = event.bonus ? ` ${event.bonus > 0 ? '+' : ''}${event.bonus}` : '';
-                const rolls = event.rolls.length ? `[ ${event.rolls.join(' | ')} ]` : '[ -- ]';
+                const rolls = event.rolls.length ? `[ ${event.rolls.map((v,i)=>event.rollMode==='sum'?`d${event.diceSides[i]}: ${v}`:v).join(' | ')} ]` : '[ -- ]';
                 const card = document.createElement('section');
-                card.className = `card${event.critical ? ' critical' : ''}${event.failure ? ' failure' : ''}`;
+                card.className = `card${event.rollMode==='sum'?' free-roll':''}${event.critical ? ' critical' : ''}${event.failure ? ' failure' : ''}`;
                 card.innerHTML = `
                     <div class="scanlines"></div>
                     <div class="topline">
-                        <div><div class="character">${safe(event.character)}</div><div class="title">${safe(event.title)}</div></div>
+                        <div><div class="character">${safe(event.character)}</div><div class="title">${safe(event.title)}</div>${event.rollMode==='sum'?`<div>${safe(event.subtitle)}</div>`:''}</div>
                         <div class="badge">${safe(status)}</div>
                     </div>
                     <div class="content">
-                        <div><div class="rolls">DADOS: ${safe(rolls)}</div><div class="chosen">ESCOLHIDO: <strong>${event.chosen}</strong>${safe(bonus)}</div></div>
+                        <div><div class="rolls">DADOS: ${safe(rolls)}</div><div class="chosen">${event.rollMode==='sum'?`SOMA DOS DADOS: <strong>${event.rolls.reduce((a,b)=>a+b,0)}</strong>${event.bonus?` · MODIFICADOR: ${safe(bonus)}`:''}`:`ESCOLHIDO: <strong>${event.chosen}</strong>${safe(bonus)}`}</div></div>
                         <div class="result-wrap">
                             ${event.damage !== null ? `<div class="result-block damage"><div class="result-label">DANO</div><div class="result">${event.damage}</div></div>` : ''}
-                            <div class="result-block"><div class="result-label">${safe(event.subtitle)}</div><div class="result">${event.total}</div></div>
+                            <div class="result-block"><div class="result-label">${event.rollMode==='sum'?'TOTAL':safe(event.subtitle)}</div><div class="result">${event.total}</div></div>
                         </div>
                     </div>`;
                 stage.replaceChildren(card);
@@ -1160,7 +1202,7 @@
                 if (event.event === 'banner') {
                     const card = document.createElement('section');
                     card.className = 'card';
-                    card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div></div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
+                    card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div>${event.rollMode==='sum'?`<div>${safe(event.subtitle)}</div>`:''}</div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
                     stage.replaceChildren(card);
                     presentCard(card, event, showNext);
                     return;
@@ -1173,7 +1215,7 @@
                     console.warn('Cartão indisponível; usando resultado simples.',error);
                     try {
                         const card=document.createElement('section');card.className='card';
-                        card.textContent=event.event==='banner' ? `${event.title}: ${event.message}` : `${event.title} · DADOS: ${event.rolls.join(', ')} · ESCOLHIDO: ${event.chosen} · TOTAL: ${event.total}${event.damage!==null?' · DANO: '+event.damage:''}`;
+                        card.textContent=event.event==='banner' ? `${event.title}: ${event.message}` : `${event.title} · DADOS: ${event.rolls.map((v,i)=>event.rollMode==='sum'?`d${event.diceSides[i]}: ${v}`:v).join(', ')}${event.rollMode==='sum'?'':` · ESCOLHIDO: ${event.chosen}`}  · TOTAL: ${event.total}${event.damage!==null?' · DANO: '+event.damage:''}`;
                         stage.replaceChildren(card);presentCard(card,event,showNext);
                     } catch(fallbackError) { active=false;activeEvent=null;setTimeout(()=>void showNext(),0); }
                 }
