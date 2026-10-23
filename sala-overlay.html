@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK // OBS OVERLAY</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Share+Tech+Mono&display=swap');
+        :root {
+            --main: #e8e8e8;
+            --dim: #777777;
+            --accent: #ffffff;
+            --alert: #ff2929;
+            --gold: #ffcc33;
+            --panel: rgba(5, 5, 5, 0.92);
+            --line: rgba(255, 255, 255, 0.2);
+        }
+        * { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent !important; }
+        body { font-family: 'Share Tech Mono', monospace; color: var(--main); }
+        body.theme-architect { --main:#69f0ae; --dim:#4caf50; --accent:#69f0ae; --alert:#ff5252; --gold:#b2ff59; --panel:rgba(2,8,2,.93); --line:rgba(105,240,174,.3); }
+        body.theme-light { --main:#111; --dim:#555; --accent:#222; --alert:#d32f2f; --gold:#e65100; --panel:rgba(245,245,245,.94); --line:rgba(0,0,0,.25); }
+        body.theme-ambar { --main:#ffb000; --dim:#b37700; --accent:#ffcc00; --alert:#ff3300; --gold:#ffe066; --panel:rgba(10,5,0,.94); --line:rgba(255,176,0,.3); }
+        body.theme-ordem { --main:#f0f0f0; --dim:#8d8d8d; --accent:#e60000; --alert:#ff1a1a; --gold:#ffffff; --panel:rgba(0,0,0,.95); --line:rgba(230,0,0,.45); }
+        body.theme-contencao { --main:#b3e6ff; --dim:#5c99cc; --accent:#80d4ff; --alert:#d90011; --gold:#00ccff; --panel:rgba(2,6,15,.95); --line:rgba(128,212,255,.35); }
+        body.theme-neon { --main:#00ffff; --dim:#008888; --accent:#ff00ff; --alert:#ff0055; --gold:#ffff00; --panel:rgba(5,5,16,.94); --line:rgba(255,0,255,.4); }
+        body.theme-combat { --main:#ffffff; --dim:#cc7777; --accent:#ff2020; --alert:#ff2020; --gold:#ffffff; --panel:rgba(10,0,0,.95); --line:rgba(255,0,0,.45); }
+
+        .persistent-hud {
+            position: fixed; top: 4vh; left: 3vw; width: min(470px, 46vw); min-width: 330px;
+            background: linear-gradient(110deg, var(--panel), rgba(0,0,0,.48));
+            border: 1px solid var(--line); border-left: 4px solid var(--accent);
+            padding: 16px 18px; box-shadow: 0 14px 38px rgba(0,0,0,.62);
+            opacity: 0; transform: translateX(-20px); transition: opacity .35s, transform .35s;
+            pointer-events: none;
+        }
+        .persistent-hud.visible { opacity: 1; transform: translateX(0); }
+        .hud-layout { display: flex; align-items: stretch; gap: 14px; }
+        .hud-portrait-frame { display: none; width: 88px; min-width: 88px; height: 88px; position: relative; overflow: hidden; align-self: flex-start; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: rgba(0,0,0,.55); box-shadow: inset 0 0 18px rgba(0,0,0,.65); }
+        .persistent-hud.has-portrait .hud-portrait-frame { display: block; }
+        .hud-portrait { width: 100%; height: 100%; object-fit: cover; display: block; filter: contrast(1.04) saturate(.92); }
+        .hud-info { flex: 1; min-width: 0; }
+        .hud-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 9px; margin-bottom: 11px; }
+        .hud-character { font-family:'Oswald',sans-serif; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: var(--main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hud-afi { color: var(--dim); font-size: 12px; letter-spacing: 2px; white-space: nowrap; }
+        .hud-stat { display: grid; grid-template-columns: 44px 1fr 82px; align-items: center; gap: 10px; margin: 8px 0; }
+        .hud-stat-label { color: var(--dim); font-size: 12px; letter-spacing: 2px; }
+        .hud-track { height: 9px; border: 1px solid var(--line); background: rgba(0,0,0,.55); overflow: hidden; }
+        .hud-fill { height: 100%; width: 0; background: var(--accent); transition: width .45s ease; }
+        .hud-stat.vd .hud-fill { background: var(--alert); }
+        .hud-stat.san .hud-fill { background: var(--gold); }
+        .hud-value { text-align: right; color: var(--main); font-size: 14px; letter-spacing: 1px; }
+        .hud-conditions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; min-height: 0; }
+        .hud-condition { border: 1px solid var(--line); color: var(--dim); padding: 4px 7px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+        @media (max-width:700px) { .persistent-hud { width: 90vw; min-width: 0; top: 2vh; left: 3vw; } .hud-portrait-frame { width: 76px; min-width: 76px; height: 76px; } }
+
+        /* PRESETS DE LAYOUT: alteram apenas posição, proporção e organização. */
+        body.layout-compact .persistent-hud { top: 2.5vh; left: 2vw; width: min(365px, 38vw); min-width: 285px; padding: 11px 13px; }
+        body.layout-compact .hud-layout { gap: 10px; }
+        body.layout-compact .hud-portrait-frame { width: 64px; min-width: 64px; height: 64px; }
+        body.layout-compact .hud-header { padding-bottom: 5px; margin-bottom: 6px; }
+        body.layout-compact .hud-character { font-size: 19px; }
+        body.layout-compact .hud-afi, body.layout-compact .hud-stat-label { font-size: 10px; }
+        body.layout-compact .hud-stat { grid-template-columns: 34px 1fr 63px; gap: 7px; margin: 5px 0; }
+        body.layout-compact .hud-track { height: 7px; }
+        body.layout-compact .hud-value { font-size: 11px; }
+        body.layout-compact .hud-conditions { margin-top: 7px; gap: 4px; }
+        body.layout-compact .hud-condition { padding: 2px 5px; font-size: 8px; }
+        body.layout-compact #stage { justify-content: flex-end; padding: 0 3vw 4vh; }
+        body.layout-compact .card { width: min(570px, 62vw); min-height: 150px; padding: 17px 21px; }
+        body.layout-compact .title { font-size: 24px; }
+        body.layout-compact .result { font-size: 52px; }
+
+        body.layout-lowerthird .persistent-hud { top: auto; bottom: 3vh; left: 3vw; width: min(840px, 74vw); min-width: 560px; padding: 13px 17px; }
+        body.layout-lowerthird .hud-layout { align-items: center; }
+        body.layout-lowerthird .hud-portrait-frame { width: 92px; min-width: 92px; height: 92px; }
+        body.layout-lowerthird .hud-info { display: grid; grid-template-columns: repeat(3, minmax(145px, 1fr)); gap: 5px 16px; }
+        body.layout-lowerthird .hud-header { grid-column: 1 / -1; margin-bottom: 3px; padding-bottom: 6px; }
+        body.layout-lowerthird .hud-stat { grid-template-columns: 34px 1fr 66px; gap: 7px; margin: 4px 0; }
+        body.layout-lowerthird .hud-conditions { margin-top: 8px; }
+        body.layout-lowerthird #stage { align-items: flex-start; padding: 5vh 5vw 0; }
+
+        body.layout-sidebar .persistent-hud { top: 50%; left: 2vw; width: min(285px, 25vw); min-width: 235px; padding: 15px; transform: translate(-20px, -50%); }
+        body.layout-sidebar .persistent-hud.visible { transform: translate(0, -50%); }
+        body.layout-sidebar .hud-layout { flex-direction: column; align-items: center; gap: 12px; }
+        body.layout-sidebar .hud-portrait-frame { width: 108px; min-width: 108px; height: 108px; align-self: center; }
+        body.layout-sidebar .hud-info { width: 100%; }
+        body.layout-sidebar .hud-header { flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+        body.layout-sidebar .hud-character { width: 100%; text-align: center; }
+        body.layout-sidebar .hud-stat { grid-template-columns: 34px 1fr 62px; gap: 7px; }
+        body.layout-sidebar .hud-conditions { justify-content: center; }
+
+        body.layout-topbar .persistent-hud { top: 2vh; left: 50%; width: min(920px, 86vw); min-width: 610px; padding: 13px 18px; transform: translate(-50%, -20px); }
+        body.layout-topbar .persistent-hud.visible { transform: translate(-50%, 0); }
+        body.layout-topbar .hud-layout { align-items: center; }
+        body.layout-topbar .hud-portrait-frame { width: 78px; min-width: 78px; height: 78px; }
+        body.layout-topbar .hud-info { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 4px 18px; }
+        body.layout-topbar .hud-header { grid-column: 1 / -1; margin-bottom: 2px; padding-bottom: 6px; }
+        body.layout-topbar .hud-stat { grid-template-columns: 36px 1fr 70px; gap: 8px; margin: 3px 0; }
+        body.layout-topbar .hud-conditions { justify-content: center; margin-top: 7px; }
+
+        body.layout-mirrored .persistent-hud { left: auto; right: 3vw; border-left-width: 1px; border-right: 4px solid var(--accent); transform: translateX(20px); }
+        body.layout-mirrored .persistent-hud.visible { transform: translateX(0); }
+        body.layout-mirrored .hud-layout { flex-direction: row-reverse; }
+        body.layout-mirrored .hud-portrait-frame { border-left-width: 1px; border-right: 3px solid var(--accent); }
+        body.layout-mirrored #stage { justify-content: flex-start; padding-left: 4vw; padding-right: 5vw; }
+
+        @media (max-width: 800px) {
+            body.layout-lowerthird .persistent-hud, body.layout-topbar .persistent-hud { width: 94vw; min-width: 0; left: 3vw; right: auto; transform: translateY(-15px); }
+            body.layout-lowerthird .persistent-hud.visible, body.layout-topbar .persistent-hud.visible { transform: translateY(0); }
+            body.layout-lowerthird .hud-info, body.layout-topbar .hud-info { display: block; }
+            body.layout-sidebar .persistent-hud { width: 90vw; min-width: 0; top: 2vh; left: 3vw; transform: translateY(-15px); }
+            body.layout-sidebar .persistent-hud.visible { transform: translateY(0); }
+            body.layout-sidebar .hud-layout { flex-direction: row; align-items: stretch; }
+            body.layout-compact .persistent-hud { width: 90vw; min-width: 0; }
+            body.layout-mirrored .persistent-hud { left: 3vw; right: auto; border-left: 4px solid var(--accent); border-right: 1px solid var(--line); }
+            body.layout-mirrored .hud-layout { flex-direction: row; }
+        }
+
+        #stage { position: fixed; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 5vw 8vh; pointer-events: none; }
+        .card {
+            width: min(760px, 90vw); min-height: 190px; position: relative; overflow: hidden;
+            background: linear-gradient(110deg, var(--panel), rgba(0,0,0,.55));
+            border: 1px solid var(--line); border-left: 5px solid var(--accent);
+            padding: 24px 30px 22px; box-shadow: 0 18px 55px rgba(0,0,0,.75), 0 0 28px color-mix(in srgb, var(--accent) 22%, transparent);
+            opacity: 0; transform: translateY(55px) scale(.97); filter: blur(8px);
+        }
+        .card.visible { opacity:1; transform:translateY(0) scale(1); filter:blur(0); animation: enter .52s cubic-bezier(.18,.86,.3,1.15) forwards; }
+        .card.leaving { animation: leave .38s ease-in forwards; }
+        .card.critical { border-color: var(--gold); border-left-color: var(--gold); }
+        .card.failure { border-color: var(--alert); border-left-color: var(--alert); }
+        .scanlines { position:absolute; inset:0; opacity:.12; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0,transparent 3px,var(--main) 4px); mix-blend-mode:overlay; }
+        .topline { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; border-bottom:1px solid var(--line); padding-bottom:12px; }
+        .character { color:var(--dim); font-size:14px; letter-spacing:3px; text-transform:uppercase; min-height:18px; }
+        .title { font-family:'Oswald',sans-serif; color:var(--main); font-size:30px; line-height:1.05; letter-spacing:2px; text-transform:uppercase; margin-top:3px; }
+        .badge { border:1px solid var(--line); color:var(--accent); padding:6px 10px; font-size:12px; letter-spacing:2px; white-space:nowrap; }
+        .card.critical .badge { color:var(--gold); border-color:var(--gold); }
+        .card.failure .badge { color:var(--alert); border-color:var(--alert); }
+        .content { display:grid; grid-template-columns:1fr auto; gap:28px; align-items:end; padding-top:16px; }
+        .rolls { color:var(--dim); font-size:16px; letter-spacing:2px; word-break:break-word; }
+        .chosen { color:var(--main); font-size:18px; margin-top:9px; }
+        .chosen strong { color:var(--accent); font-size:28px; }
+        .result-wrap { display:flex; gap:18px; align-items:flex-end; }
+        .result-block { min-width:125px; text-align:right; }
+        .result-label { color:var(--dim); font-size:11px; letter-spacing:2px; }
+        .result { color:var(--accent); font-family:'Oswald',sans-serif; font-size:64px; font-weight:700; line-height:.9; text-shadow:0 0 20px color-mix(in srgb, var(--accent) 45%, transparent); }
+        .damage .result { color:var(--alert); text-shadow:0 0 20px color-mix(in srgb, var(--alert) 45%, transparent); }
+        .connection { position:fixed; right:20px; bottom:18px; color:rgba(255,255,255,.3); font-size:11px; letter-spacing:2px; opacity:0; transition:.3s; }
+        .connection.show { opacity:1; }
+        @keyframes enter { 0%{opacity:0;transform:translateY(55px) scale(.97);filter:blur(8px)} 55%{opacity:1;filter:blur(0)} 100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)} }
+        @keyframes leave { to{opacity:0;transform:translateY(-35px) scale(.98);filter:blur(7px)} }
+        @media (max-width:700px) { .card{padding:18px 20px}.title{font-size:23px}.content{grid-template-columns:1fr;gap:12px}.result-wrap{justify-content:flex-end}.result{font-size:52px} }
+
+
+        /* D20 3D // animação de rolagem no OBS */
+        #diceStage {
+            position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0; transition: opacity .18s ease;
+        }
+        #diceStage.visible { opacity: 1; }
+        #diceCanvas { width: min(960px, 94vw); height: min(560px, 66vh); display: block; }
+        .dice-stage-label {
+            position: fixed; left: 50%; top: 13vh; transform: translateX(-50%); z-index: 21;
+            color: var(--main); font-family: 'Oswald', sans-serif; font-size: clamp(18px, 2.2vw, 31px);
+            letter-spacing: 4px; text-transform: uppercase; text-align: center; text-shadow: 0 3px 18px rgba(0,0,0,.9);
+            opacity: 0; transition: opacity .18s ease;
+        }
+        #diceStage.visible + .dice-stage-label { opacity: 1; }
+        .dice-stage-label small { display: block; margin-top: 5px; color: var(--dim); font: 12px 'Share Tech Mono', monospace; letter-spacing: 2px; }
+        @media (max-width:700px) {
+            #diceCanvas { width: 98vw; height: 56vh; }
+            .dice-stage-label { top: 18vh; width: 92vw; }
+        }
+        .obs-outcome-fx { position:fixed; inset:0; z-index:40; pointer-events:none; overflow:hidden; }
+        .obs-outcome-fx::before { content:''; position:absolute; inset:-18%; opacity:0; }
+        .obs-outcome-fx.critical::before { background:radial-gradient(circle, rgba(255,228,88,.68), rgba(255,183,0,.15) 38%, transparent 72%); animation:obsCriticalFlash 1s ease-out forwards; }
+        .obs-outcome-fx.failure::before { background:repeating-linear-gradient(90deg, transparent 0 12px, rgba(255,0,35,.24) 13px 16px); animation:obsFailureGlitch .85s steps(8,end) forwards; }
+        .obs-outcome-particle { position:absolute; left:50%; top:50%; width:6px; height:25px; background:var(--gold); box-shadow:0 0 18px currentColor; transform-origin:50% 350px; animation:obsParticleBurst 1.1s cubic-bezier(.1,.72,.22,1) forwards; }
+        .obs-outcome-fx.failure .obs-outcome-particle { width:26px; height:4px; background:var(--alert); color:var(--alert); animation-name:obsFailureShard; }
+        body.obs-critical-pulse .card { animation:obsCardCritical 1s ease-out forwards; }
+        body.obs-failure-shake .card { animation:obsCardFailure .72s steps(7,end); }
+        @keyframes obsCriticalFlash { 0%{opacity:0;transform:scale(.5)} 22%{opacity:1} 100%{opacity:0;transform:scale(1.3)} }
+        @keyframes obsFailureGlitch { 0%{opacity:0;transform:translateX(0)} 20%{opacity:.9;transform:translateX(-20px)} 40%{opacity:.42;transform:translateX(18px)} 60%{opacity:.8;transform:translateX(-9px)} 80%{opacity:.5;transform:translateX(7px)} 100%{opacity:0;transform:translateX(0)} }
+        @keyframes obsParticleBurst { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scale(.2)} 18%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-340px) scale(1.2)} }
+        @keyframes obsFailureShard { 0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scaleX(.2)} 20%{opacity:1} 100%{opacity:0;transform:rotate(var(--angle)) translateY(-290px) scaleX(1.8)} }
+        @keyframes obsCardCritical { 0%{filter:brightness(1)} 35%{filter:brightness(1.8);box-shadow:0 0 90px rgba(255,204,51,.75)} 100%{filter:brightness(1)} }
+        @keyframes obsCardFailure { 0%,100%{transform:translate(0)} 14%{transform:translate(-14px,5px)} 28%{transform:translate(13px,-5px)} 42%{transform:translate(-9px,-3px)} 57%{transform:translate(10px,4px)} 72%{transform:translate(-5px,2px)} 86%{transform:translate(5px,-2px)} }
+
+
+        .obs-diagnostics {
+            position: fixed; top: 14px; right: 14px; z-index: 100;
+            width: min(330px, calc(100vw - 28px)); padding: 11px 13px;
+            border: 1px solid rgba(255,255,255,.22); border-left: 3px solid var(--accent);
+            background: rgba(2,2,4,.88); box-shadow: 0 10px 34px rgba(0,0,0,.55);
+            color: var(--main); font: 11px 'Share Tech Mono', monospace; letter-spacing: 1px;
+            pointer-events: none; backdrop-filter: blur(8px);
+        }
+        .obs-diagnostics[hidden] { display: none !important; }
+        .obs-diagnostics-title { display:flex; justify-content:space-between; gap:10px; color:var(--accent); font-weight:bold; margin-bottom:8px; }
+        .obs-diagnostics-grid { display:grid; grid-template-columns: 92px 1fr; gap:5px 10px; }
+        .obs-diagnostics-label { color:var(--dim); }
+        .obs-diagnostics-value { color:var(--main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .obs-diagnostics-value.ok { color:#69f0ae; }
+        .obs-diagnostics-value.warn { color:var(--gold); }
+        .obs-diagnostics-value.error { color:var(--alert); }
+
+    .free-roll .rolls {font-size:clamp(16px,2vw,26px);line-height:1.5;overflow-wrap:anywhere;}
+.free-roll .content {align-items:center;}
+
+        #persistentHud,.connection,#diagnostics {display:none!important;}
+        #stage {padding:0 3vw 3vh;}
+        .card {width:min(660px,92vw);min-height:0;padding:16px 20px;}
+        .title {font-size:22px;}.result {font-size:48px;}.topline{padding-bottom:8px;}.content{padding-top:10px;gap:12px;}.character{font-size:12px;}.chosen{font-size:14px;}
+        #diceCanvas {width:min(760px,94vw);height:auto;max-height:78vh;object-fit:contain;}
+        .dice-stage-label {top:4vh;}
+        @media(max-width:600px){.content{grid-template-columns:1fr auto}.result-block{min-width:60px}.result{font-size:38px}.rolls,.free-roll .rolls{font-size:13px}.title{font-size:17px}.character{font-size:10px}.chosen{font-size:12px}.card{padding:12px}.badge{font-size:9px;padding:4px}}
+        </style>
+</head>
+<body>
+    <aside id="persistentHud" class="persistent-hud" aria-live="polite">
+        <div class="hud-layout">
+            <div id="hudPortraitFrame" class="hud-portrait-frame"><img id="hudPortrait" class="hud-portrait" alt="Retrato do personagem"></div>
+            <div class="hud-info">
+                <div class="hud-header"><div id="hudCharacter" class="hud-character">DESCONHECIDO</div><div id="hudAfi" class="hud-afi">AFI 1</div></div>
+                <div class="hud-stat vd"><span class="hud-stat-label">VD</span><div class="hud-track"><div id="hudVdFill" class="hud-fill"></div></div><span id="hudVdValue" class="hud-value">0 / 0</span></div>
+                <div class="hud-stat san"><span class="hud-stat-label">SAN</span><div class="hud-track"><div id="hudSanFill" class="hud-fill"></div></div><span id="hudSanValue" class="hud-value">0 / 0</span></div>
+                <div class="hud-stat pe"><span class="hud-stat-label">PE</span><div class="hud-track"><div id="hudPeFill" class="hud-fill"></div></div><span id="hudPeValue" class="hud-value">0 / 0</span></div>
+            </div>
+        </div>
+        <div id="hudConditions" class="hud-conditions"></div>
+    </aside>
+
+    <div id="diceStage" aria-hidden="true"><canvas id="diceCanvas" width="960" height="560"></canvas></div>
+    <div id="diceStageLabel" class="dice-stage-label"></div>
+    <main id="stage" aria-live="polite"></main>
+    <div id="connection" class="connection">AGUARDANDO SINAL...</div>
+
+    <aside id="diagnostics" class="obs-diagnostics" hidden aria-hidden="true">
+        <div class="obs-diagnostics-title"><span>OBS // DIAGNÓSTICO</span><span id="diagVersion">--</span></div>
+        <div class="obs-diagnostics-grid">
+            <span class="obs-diagnostics-label">LOCAL</span><span id="diagLocal" class="obs-diagnostics-value">INICIANDO</span>
+            <span class="obs-diagnostics-label">REMOTO</span><span id="diagRemote" class="obs-diagnostics-value">INICIANDO</span>
+            <span class="obs-diagnostics-label">PROTOCOLO</span><span id="diagProtocol" class="obs-diagnostics-value">--</span>
+            <span class="obs-diagnostics-label">FILA</span><span id="diagQueue" class="obs-diagnostics-value">0</span>
+            <span class="obs-diagnostics-label">INVÁLIDOS</span><span id="diagInvalid" class="obs-diagnostics-value">0</span>
+            <span class="obs-diagnostics-label">FALHAS 3D</span><span id="diagAnimation" class="obs-diagnostics-value">0</span>
+            <span class="obs-diagnostics-label">ÚLTIMO PACOTE</span><span id="diagPacket" class="obs-diagnostics-value">NENHUM</span>
+            <span class="obs-diagnostics-label">LATÊNCIA</span><span id="diagLatency" class="obs-diagnostics-value">--</span>
+            <span class="obs-diagnostics-label">RECUPERAÇÃO</span><span id="diagRecovery" class="obs-diagnostics-value">AGUARDANDO</span>
+            <span class="obs-diagnostics-label">ÁUDIO</span><span id="diagAudio" class="obs-diagnostics-value">NÃO INICIADO</span>
+            <span class="obs-diagnostics-label">FPS D20</span><span id="diagFps" class="obs-diagnostics-value">--</span>
+        </div>
+    </aside>
+    <script>
+        (() => {
+            'use strict';
+            const params = new URLSearchParams(location.search);
+            const OVERLAY_VERSION = '2026.09.28-reliable-overlay';
+            const OBS_PROTOCOL_VERSION = 3;
+            const DEBUG_ENABLED = params.get('debug') === '1';
+            const QUEUE_MODE = ['smart', 'latest', 'all'].includes(params.get('queue')) ? params.get('queue') : 'smart';
+            const MAX_QUEUE_SIZE = Math.min(50, Math.max(5, Number.parseInt(params.get('queueMax'), 10) || 20));
+            const EVENT_TTL_MS = Math.min(180000, Math.max(15000, (Number.parseInt(params.get('ttl'), 10) || 45) * 1000));
+            const channel = 'breu-call-overlay';
+            const accessKey = 'local-room-overlay';
+            const defaultDuration = Math.min(15000, Math.max(2000, (Number.parseInt(params.get('duration'), 10) || 6) * 1000));
+            const stage = document.getElementById('stage');
+            const connection = document.getElementById('connection');
+            const persistentHud = document.getElementById('persistentHud');
+            const hudCharacter = document.getElementById('hudCharacter');
+            const hudAfi = document.getElementById('hudAfi');
+            const hudPortrait = document.getElementById('hudPortrait');
+            const hudConditions = document.getElementById('hudConditions');
+            const diagnostics = document.getElementById('diagnostics');
+            const queue = [];
+            const receivedIds = new Set();
+            const bootTime = Date.now();
+            let active = false;
+            let activeEvent = null;
+            let activeFinish = null;
+            let relaySocket = null;
+            let reconnectTimer = null;
+            let reconnectAttempt = 0;
+            let recoveryRequest = null;
+            let broadcastChannel = null;
+            let currentPortrait = '';
+            let localStatus = 'FALLBACK STORAGE';
+            let remoteStatus = navigator.onLine === false ? 'SEM INTERNET' : 'DESCONECTADO';
+            let recoveryStatus = 'AGUARDANDO';
+            let lastPacketAt = 0;
+            let lastPacketLatency = null;
+            let lastReceivedTimestamp = 0;
+            let lastRelayMessageId = '';
+            let droppedEvents = 0;
+            let diceFps = 0;
+            let lastDiceSoundEnabled = true;
+            let diagnosticsTimer = null;
+            let lastHudAt = 0, lastPortraitAt = 0, lastThemeAt = 0, lastLayoutAt = 0, lastRelayAt = 0;
+            let connectionTimer = null, animationCancel = null, disposed = false;
+            let invalidEvents = 0, animationFailures = 0;
+            let remoteValidated = false;
+            applyLayout('standard');
+
+            function safe(value) {
+                return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+            }
+
+            function setConnection(text, visible = true) {
+                connection.textContent = text;
+                connection.classList.toggle('show', visible);
+                clearTimeout(connectionTimer);
+                if (visible) connectionTimer = window.setTimeout(() => connection.classList.remove('show'), 2500);
+                updateDiagnostics();
+            }
+
+            function formatAge(timestamp) {
+                if (!timestamp) return 'NENHUM';
+                const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000));
+                if (seconds < 2) return 'AGORA';
+                if (seconds < 60) return `${seconds}s`;
+                return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            }
+
+            function setDiagnosticValue(id, value, state = '') {
+                const element = document.getElementById(id);
+                if (!element) return;
+                element.textContent = String(value);
+                element.className = `obs-diagnostics-value${state ? ` ${state}` : ''}`;
+            }
+
+            function updateDiagnostics() {
+                if (!DEBUG_ENABLED || !diagnostics) return;
+                diagnostics.hidden = false;
+                diagnostics.setAttribute('aria-hidden', 'false');
+                document.getElementById('diagVersion').textContent = OVERLAY_VERSION;
+                setDiagnosticValue('diagLocal', localStatus, localStatus.includes('ATIVO') ? 'ok' : 'warn');
+                setDiagnosticValue('diagRemote', remoteStatus, remoteStatus === 'CONECTADO' ? 'ok' : remoteStatus === 'CONECTANDO' ? 'warn' : 'error');
+                setDiagnosticValue('diagProtocol', `${OBS_PROTOCOL_VERSION} · ${QUEUE_MODE.toUpperCase()}`, 'ok');
+                setDiagnosticValue('diagQueue', `${queue.length}/${MAX_QUEUE_SIZE} · DESCARTADOS ${droppedEvents}`, queue.length > 5 ? 'warn' : '');
+                setDiagnosticValue('diagInvalid', invalidEvents, invalidEvents ? 'warn' : '');
+                setDiagnosticValue('diagAnimation', animationFailures, animationFailures ? 'warn' : '');
+                setDiagnosticValue('diagPacket', `${lastPacketAt ? 'VÁLIDO · ' : ''}${formatAge(lastPacketAt)}`,  lastPacketAt ? 'ok' : 'warn');
+                setDiagnosticValue('diagLatency', lastPacketLatency === null ? '--' : `${Math.max(0, Math.round(lastPacketLatency))} ms`, lastPacketLatency !== null && lastPacketLatency > 2500 ? 'warn' : '');
+                setDiagnosticValue('diagRecovery', recoveryStatus, recoveryStatus === 'OK' ? 'ok' : recoveryStatus === 'BUSCANDO' ? 'warn' : '');
+                const audioState = diceAudioContext?.state || (lastDiceSoundEnabled ? 'NÃO INICIADO' : 'DESATIVADO');
+                setDiagnosticValue('diagAudio', audioState.toUpperCase(), audioState === 'running' ? 'ok' : audioState === 'suspended' ? 'warn' : '');
+                setDiagnosticValue('diagFps', diceFps ? String(diceFps) : '--', diceFps && diceFps < 45 ? 'warn' : '');
+            }
+
+            function startDiagnostics() {
+                if (!DEBUG_ENABLED || !diagnostics) return;
+                diagnostics.hidden = false;
+                diagnostics.setAttribute('aria-hidden', 'false');
+                updateDiagnostics();
+                diagnosticsTimer = window.setInterval(updateDiagnostics, 500);
+            }
+
+            function applyTheme(theme) {
+                Array.from(document.body.classList).forEach(className => {
+                    if (className.startsWith('theme-')) document.body.classList.remove(className);
+                });
+                const allowed = new Set(['architect','light','ambar','ordem','contencao','neon','combat']);
+                if (allowed.has(theme)) document.body.classList.add(`theme-${theme}`);
+            }
+
+            function applyLayout(layout) {
+                Array.from(document.body.classList).forEach(className => {
+                    if (className.startsWith('layout-')) document.body.classList.remove(className);
+                });
+                const allowed = new Set(['standard','compact','lowerthird','sidebar','topbar','mirrored']);
+                const selected = allowed.has(layout) ? layout : 'standard';
+                if (selected !== 'standard') document.body.classList.add(`layout-${selected}`);
+            }
+
+            function validPortrait(value) {
+                return typeof value === 'string' && /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value) && value.length <= 4000;
+            }
+
+            const ALLOWED_EVENTS = new Set(['hud', 'portrait', 'roll', 'macro', 'test', 'banner']);
+            const ALLOWED_THEMES = new Set(['default','architect','light','ambar','ordem','contencao','neon','combat','custom']);
+            const ALLOWED_LAYOUTS = new Set(['standard','compact','lowerthird','sidebar','topbar','mirrored']);
+            const MAX_PACKET_CHARS = 16000;
+            const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+            const finite = (value, fallback = 0, min = -1000000, max = 1000000) => {
+                if (value === undefined || value === null) return fallback;
+                if (!['number','string'].includes(typeof value) || value === '') throw new TypeError('Número inválido');
+                const number = Number(value);
+                if (!Number.isFinite(number) || number < min || number > max) throw new RangeError('Número fora do limite');
+                return number;
+            };
+            const boundedText = (value, limit, fallback = '') => {
+                if (value === undefined || value === null) return fallback;
+                if (typeof value !== 'string') throw new TypeError('Texto inválido');
+                return value.slice(0, limit);
+            };
+            function normalize(payload) {
+                // Validation is pure: an invalid packet must not consume its id or recovery cursor.
+                try {
+                    if (!isRecord(payload)) return null;
+                    if (payload.channel !== undefined && payload.channel !== channel) return null;
+                    if (accessKey && (payload.channel !== channel || payload.accessKey !== accessKey)) return null;
+                    if (payload.event === 'ack') return null;
+                    const eventType = payload.event === undefined ? 'roll' : payload.event;
+                    if (!ALLOWED_EVENTS.has(eventType)) return null;
+                    const protocol = finite(payload.protocol, 2, 2, 100);
+                    if (!Number.isInteger(protocol)) return null;
+                    if (protocol > OBS_PROTOCOL_VERSION) { setConnection(`VERSÃO DO OVERLAY DESATUALIZADA // PROTOCOLO ${protocol}`, true); return null; }
+                    const timestamp = finite(payload.timestamp, Date.now(), 1, Date.now() + 300000);
+                    if (!['hud', 'portrait'].includes(eventType) && timestamp < bootTime - 2500) return null;
+                    const id = boundedText(payload.id, 160, `${timestamp}-${Math.random()}`);
+                    if (!id || (payload.id && payload.id.length > 160)) return null;
+                    const rolls = payload.rolls === undefined ? [] : payload.rolls;
+                    if (!Array.isArray(rolls) || rolls.length > 30) return null;
+                    const isSum = payload.rollMode === 'sum';
+                    if (payload.rollMode !== undefined && !['sum','highest','lowest'].includes(payload.rollMode)) return null;
+                    if (isSum && (eventType !== 'roll' || !rolls.length || !Array.isArray(payload.diceSides) || payload.diceSides.length !== rolls.length)) return null;
+                    const diceSides = isSum ? payload.diceSides : rolls.map(() => 20);
+                    if (diceSides.some(n => ![2,3,4,6,8,10,12,20,100].includes(n))) return null;
+                    const dice = rolls.map((value,index) => {const n = finite(value, 0, 1, diceSides[index]); if (!Number.isInteger(n)) throw new TypeError('Dado inválido'); return n;});
+                    if (isSum && (!Number.isInteger(payload.bonus) || Math.abs(payload.bonus)>9999 || payload.total !== dice.reduce((a,b)=>a+b, payload.bonus))) return null;
+                    const chosen = finite(payload.chosen, dice[0] || 0, 0, isSum ? 100 : 20);
+                    if (dice.length && !dice.includes(chosen)) return null;
+                    const booleanFields = ['critical','failure','dice3d','diceSound','diceFx','remoteOnly'];
+                    if (booleanFields.some(key => payload[key] !== undefined && typeof payload[key] !== 'boolean')) return null;
+                    const portrait = value => {if (value === undefined) return undefined; if (value === '' || validPortrait(value)) return value; throw new TypeError('Retrato inválido');};
+                    let hud = null;
+                    if (eventType === 'hud') {
+                        if (!isRecord(payload.hud)) return null;
+                        const source = payload.hud;
+                        if (source.enabled !== undefined && typeof source.enabled !== 'boolean') return null;
+                        hud = {enabled: source.enabled !== false, afi: finite(source.afi, 1, 0, 1000000)};
+                        for (const key of ['vd','san','pe']) {
+                            if (source[key] !== undefined && !isRecord(source[key])) return null;
+                            hud[key] = {current: finite(source[key]?.current, 0), max: finite(source[key]?.max, 1, 1)};
+                        }
+                        if (source.conditions !== undefined && (!Array.isArray(source.conditions) || source.conditions.length > 100)) return null;
+                        hud.conditions = (source.conditions || []).slice(0, 8).map(value => boundedText(value, 40));
+                        if (Object.hasOwn(source, 'portrait')) hud.portrait = portrait(source.portrait);
+                    }
+                    const picture = portrait(payload.portrait);
+                    if (eventType === 'portrait' && picture === undefined) return null;
+                    if (payload.theme !== undefined && !ALLOWED_THEMES.has(payload.theme)) return null;
+                    if (payload.layout !== undefined && !ALLOWED_LAYOUTS.has(payload.layout)) return null;
+                    const event = {
+                        id, protocol, timestamp, event: eventType, appVersion: boundedText(payload.appVersion, 120),
+                        receivedAt: Date.now(), relayTime: finite(payload.__relayTime, 0, 0, (Date.now()+300000)/1000)*1000,
+                        relayId: boundedText(payload.__relayId, 160),
+                        duration: Math.min(15000, Math.max(2000, finite(payload.duration, defaultDuration, 0, 3600000))),
+                        character: boundedText(payload.character,80),title:boundedText(payload.title,120,'ROLAGEM'),
+                        subtitle:boundedText(payload.subtitle,100,'DARK DASHBOARD'),message:boundedText(payload.message,900),
+                        rolls:dice, diceSides, rollMode:isSum?'sum':'pick', chosen, bonus:finite(payload.bonus),total:finite(payload.total),
+                        damage:payload.damage == null?null:finite(payload.damage,0,0),
+                        critical:!isSum && payload.critical===true,failure:!isSum && payload.failure===true,
+                        theme:payload.theme==='custom'?'default':payload.theme,layout:payload.layout,
+                        dice3d:payload.dice3d!==false,diceSound:payload.diceSound!==false,diceFx:payload.diceFx!==false,
+                        diceSpeed:['fast','normal','cinematic'].includes(payload.diceSpeed)?payload.diceSpeed:'normal',
+                        diceTheme:['adaptive','onyx','ivory','emerald','crimson','amethyst','gold','frost'].includes(payload.diceTheme)?payload.diceTheme:'adaptive',
+                        portrait:picture,hud,remoteOnly:payload.remoteOnly===true
+                    };
+                    event.priority=event.critical||event.failure?100:event.event==='test'?90:event.event==='banner'?70:event.damage!==null?60:50;
+                    event.expiresAt=event.receivedAt+(event.priority>=90?Math.max(EVENT_TTL_MS,90000):event.event==='banner'?Math.max(EVENT_TTL_MS,60000):EVENT_TTL_MS);
+                    return event;
+                } catch (error) { return null; }
+            }
+            function applyCurrentAppearance(event) {
+                // Configuration is updated on receipt, never when an old queued roll is presented.
+                if (event.theme !== undefined && event.timestamp > lastThemeAt) { lastThemeAt=event.timestamp; applyTheme(event.theme); }
+                if (event.layout !== undefined && event.timestamp > lastLayoutAt) { lastLayoutAt=event.timestamp; applyLayout(event.layout); }
+            }
+            function selectVisibleDice(event) {
+                const indexes = event.rolls.slice(0,8).map((_, index) => index);
+                const winner = event.rolls.indexOf(event.chosen);
+                if (winner >= 8 && indexes.length) indexes[indexes.length-1] = winner;
+                return {values:indexes.map(index=>event.rolls[index]), chosenIndex:indexes.indexOf(winner), omitted:Math.max(0,event.rolls.length-indexes.length)};
+            }
+
+
+            async function sendTestAck(event) {
+                const ack = {
+                    version: 3, protocol: OBS_PROTOCOL_VERSION, overlayVersion: OVERLAY_VERSION,
+                    source: 'dark-obs-overlay', event: 'ack', ackType: 'test', ackFor: event.id,
+                    id: `ack-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    timestamp: Date.now(), channel, accessKey
+                };
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = window.setTimeout(() => controller.abort(), 5000);
+                    try {
+                        await fetch(`https://ntfy.sh/${encodeURIComponent(channel)}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+                            body: JSON.stringify(ack), mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal
+                        });
+                    } finally { window.clearTimeout(timeoutId); }
+                } catch (error) { console.warn('Confirmação do teste indisponível.', error); }
+            }
+
+            function clampPercent(current, max) {
+                const maximum = Math.max(1, Number(max) || 1);
+                return Math.max(0, Math.min(100, ((Number(current) || 0) / maximum) * 100));
+            }
+
+            function applyCurrentPortrait() {
+                if (currentPortrait) {
+                    if (hudPortrait.src !== currentPortrait) hudPortrait.src = currentPortrait;
+                    persistentHud.classList.add('has-portrait');
+                } else {
+                    hudPortrait.removeAttribute('src');
+                    persistentHud.classList.remove('has-portrait');
+                }
+            }
+
+            function updatePortrait(event) {
+                if (event.timestamp <= lastPortraitAt || event.portrait === undefined) return;
+                lastPortraitAt = event.timestamp;
+                if (event.portrait !== undefined) currentPortrait = event.portrait;
+                applyCurrentPortrait();
+            }
+
+            function updateHud(event) {
+                if (event.timestamp <= lastHudAt) return;
+                lastHudAt = event.timestamp;
+                const hud = event.hud;
+                if (!hud || hud.enabled === false) {
+                    persistentHud.classList.remove('visible');
+                    return;
+                }
+
+                hudCharacter.textContent = event.character || 'DESCONHECIDO';
+                hudAfi.textContent = `AFI ${Number(hud.afi) || 1}`;
+                if (Object.prototype.hasOwnProperty.call(hud, 'portrait')) updatePortrait({...event, portrait:hud.portrait});
+                applyCurrentPortrait();
+                [['Vd','vd'], ['San','san'], ['Pe','pe']].forEach(([prefix, key]) => {
+                    const stat = hud[key] || { current: 0, max: 1 };
+                    document.getElementById(`hud${prefix}Fill`).style.width = `${clampPercent(stat.current, stat.max)}%`;
+                    document.getElementById(`hud${prefix}Value`).textContent = `${Number(stat.current) || 0} / ${Math.max(1, Number(stat.max) || 1)}`;
+                });
+                hudConditions.replaceChildren();
+                const conditions = Array.isArray(hud.conditions) ? hud.conditions.slice(0, 8) : [];
+                conditions.forEach(condition => {
+                    const tag = document.createElement('span');
+                    tag.className = 'hud-condition';
+                    tag.textContent = String(condition).slice(0, 40);
+                    hudConditions.appendChild(tag);
+                });
+                persistentHud.classList.add('visible');
+            }
+
+
+            /* =========================================================
+               D20 3D ANIMADO // sem dependências externas
+               ========================================================= */
+            const diceStage = document.getElementById('diceStage');
+            const diceCanvas = document.getElementById('diceCanvas');
+            const diceStageLabel = document.getElementById('diceStageLabel');
+            const diceContext = diceCanvas.getContext('2d');
+            const D20_GEOMETRY = (() => {
+                const phi = (1 + Math.sqrt(5)) / 2;
+                const rawVertices = [
+                    [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+                    [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+                    [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+                ];
+                const vertices = rawVertices.map(vertex => {
+                    const length = Math.hypot(vertex[0], vertex[1], vertex[2]) || 1;
+                    return [vertex[0] / length, vertex[1] / length, vertex[2] / length];
+                });
+                const faces = [
+                    [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
+                    [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
+                    [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+                    [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]
+                ];
+                return { vertices, faces };
+            })();
+            const D20_FACE_NORMALS = D20_GEOMETRY.faces.map(face => {
+                const centroid = face.reduce((accumulator, vertexIndex) => {
+                    const vertex = D20_GEOMETRY.vertices[vertexIndex];
+                    return [accumulator[0] + vertex[0], accumulator[1] + vertex[1], accumulator[2] + vertex[2]];
+                }, [0, 0, 0]).map(value => value / 3);
+                return normalizeVector(centroid);
+            });
+            const d20OrientationCache = new Map();
+
+            function normalizeVector(vector) {
+                const length = Math.hypot(vector[0], vector[1], vector[2]) || 1;
+                return [vector[0] / length, vector[1] / length, vector[2] / length];
+            }
+
+            function rotateVertex(vertex, rx, ry, rz) {
+                let [x, y, z] = vertex;
+                let cosine = Math.cos(rx), sine = Math.sin(rx);
+                [y, z] = [y * cosine - z * sine, y * sine + z * cosine];
+                cosine = Math.cos(ry); sine = Math.sin(ry);
+                [x, z] = [x * cosine + z * sine, -x * sine + z * cosine];
+                cosine = Math.cos(rz); sine = Math.sin(rz);
+                [x, y] = [x * cosine - y * sine, x * sine + y * cosine];
+                return [x, y, z];
+            }
+
+            function lerpAngle(current, target, amount) {
+                let difference = (target - current + Math.PI) % (Math.PI * 2);
+                if (difference < 0) difference += Math.PI * 2;
+                difference -= Math.PI;
+                return current + difference * amount;
+            }
+
+            function measureFaceReadability(faceIndex, rx, ry, rz) {
+                const face = D20_GEOMETRY.faces[faceIndex];
+                const rotated = face.map(vertexIndex => rotateVertex(D20_GEOMETRY.vertices[vertexIndex], rx, ry, rz));
+                const normal = rotateVertex(D20_FACE_NORMALS[faceIndex], rx, ry, rz);
+                const center = rotated.reduce((accumulator, vertex) => [
+                    accumulator[0] + vertex[0], accumulator[1] + vertex[1], accumulator[2] + vertex[2]
+                ], [0, 0, 0]).map(value => value / 3);
+                const edgeX = rotated[1][0] - rotated[0][0];
+                const edgeY = rotated[1][1] - rotated[0][1];
+                let angle = Math.atan2(edgeY, edgeX);
+                if (angle > Math.PI / 2) angle -= Math.PI;
+                if (angle < -Math.PI / 2) angle += Math.PI;
+                const upright = 1 - Math.min(1, Math.abs(angle) / (Math.PI / 2));
+                return { normal, center, upright };
+            }
+
+            function targetOrientationForFace(faceIndex) {
+                const target = Math.max(0, Math.min(19, Number(faceIndex) || 0));
+                if (d20OrientationCache.has(target)) return d20OrientationCache.get(target);
+                let best = { score: -Infinity, rx: 0, ry: 0, rz: 0 };
+                const evaluate = (rx, ry, rz) => {
+                    const reading = measureFaceReadability(target, rx, ry, rz);
+                    const score = reading.normal[2] * 3.3 + reading.upright * 1.4
+                        - Math.abs(reading.center[0]) * .28 - Math.abs(reading.center[1]) * .24;
+                    if (score > best.score) best = { score, rx, ry, rz };
+                };
+                for (let attempt = 0; attempt < 1800; attempt += 1) {
+                    evaluate(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+                }
+                let step = .28;
+                while (step > .008) {
+                    let improved = false;
+                    const previous = { ...best };
+                    [-step, 0, step].forEach(dx => [-step, 0, step].forEach(dy => [-step, 0, step].forEach(dz => {
+                        const before = best.score;
+                        evaluate(previous.rx + dx, previous.ry + dy, previous.rz + dz);
+                        if (best.score > before) improved = true;
+                    })));
+                    if (!improved) step *= .62;
+                }
+                d20OrientationCache.set(target, best);
+                return best;
+            }
+
+
+            function primeOverlayOrientations() {
+                if (primeOverlayOrientations.done) return;
+                primeOverlayOrientations.done = true;
+                const warm = () => { for (let face = 0; face < 20; face += 1) targetOrientationForFace(face); };
+                if (window.requestIdleCallback) window.requestIdleCallback(warm, { timeout: 1400 });
+                else window.setTimeout(warm, 100);
+            }
+            primeOverlayOrientations();
+
+            const DICE_THEME_PRESETS = {
+                adaptive: null,
+                onyx: { fill: '#121318', edge: '#d6d9e4', text: '#f5f7ff', glow: '#ffffff' },
+                ivory: { fill: '#f1eadf', edge: '#8d7256', text: '#221b16', glow: '#e0b980' },
+                emerald: { fill: '#0d1714', edge: '#37d39a', text: '#e8fff8', glow: '#37d39a' },
+                crimson: { fill: '#180c10', edge: '#ff4a67', text: '#ffecef', glow: '#ff4a67' },
+                amethyst: { fill: '#15101b', edge: '#bd87ff', text: '#f3e9ff', glow: '#bd87ff' },
+                gold: { fill: '#17140c', edge: '#ffcf53', text: '#fff5cf', glow: '#ffcf53' },
+                frost: { fill: '#0b151c', edge: '#75d5ff', text: '#ebfbff', glow: '#75d5ff' }
+            };
+            function normalizeDiceTheme(theme) {
+                return Object.prototype.hasOwnProperty.call(DICE_THEME_PRESETS, theme) ? theme : 'adaptive';
+            }
+            function diceThemeLabel(theme) {
+                const labels = { adaptive:'SISTEMA', onyx:'ÔNIX', ivory:'MARFIM', emerald:'ESMERALDA', crimson:'RUBI', amethyst:'AMETISTA', gold:'DOURADO', frost:'GELO' };
+                return labels[normalizeDiceTheme(theme)] || 'SISTEMA';
+            }
+            function getDiceThemePalette(theme) {
+                const normalized = normalizeDiceTheme(theme);
+                if (normalized === 'adaptive') {
+                    return {
+                        fill: 'rgba(12,12,16,.96)',
+                        edge: readOverlayColor('--accent', '#ffffff'),
+                        text: readOverlayColor('--main', '#e8e8e8'),
+                        glow: readOverlayColor('--accent', '#ffffff')
+                    };
+                }
+                return DICE_THEME_PRESETS[normalized] || DICE_THEME_PRESETS.onyx;
+            }
+
+            function readOverlayColor(variable, fallback) {
+                return getComputedStyle(document.body).getPropertyValue(variable).trim() || fallback;
+            }
+
+            function hexToRgba(value, alpha) {
+                const hex = String(value || '').trim().replace('#', '');
+                if (!/^[0-9a-fA-F]{3,6}$/.test(hex)) return `rgba(255,255,255,${alpha})`;
+                const normalized = hex.length === 3 ? hex.split('').map(character => character + character).join('') : hex;
+                const number = Number.parseInt(normalized, 16);
+                return `rgba(${(number >> 16) & 255},${(number >> 8) & 255},${number & 255},${alpha})`;
+            }
+
+            function drawRoundedRect(context, x, y, width, height, radius) {
+                const r = Math.min(radius, width / 2, height / 2);
+                context.beginPath();
+                context.moveTo(x + r, y);
+                context.lineTo(x + width - r, y);
+                context.quadraticCurveTo(x + width, y, x + width, y + r);
+                context.lineTo(x + width, y + height - r);
+                context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+                context.lineTo(x + r, y + height);
+                context.quadraticCurveTo(x, y + height, x, y + height - r);
+                context.lineTo(x, y + r);
+                context.quadraticCurveTo(x, y, x + r, y);
+                context.closePath();
+            }
+
+            function drawTray(context, width, height) {
+                context.clearRect(0, 0, width, height);
+                const gradient = context.createRadialGradient(width / 2, height / 2, 30, width / 2, height / 2, width * .55);
+                gradient.addColorStop(0, 'rgba(0,0,0,.3)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, width, height);
+                context.save();
+                context.strokeStyle = 'rgba(255,255,255,.12)';
+                context.lineWidth = 2;
+                drawRoundedRect(context, 35, 35, width - 70, height - 70, 28);
+                context.stroke();
+                context.restore();
+            }
+
+            function inferPickMode(event) {
+                const values = Array.isArray(event.rolls) ? event.rolls.map(value => Number(value) || 0) : [];
+                if (!values.length) return 'highest';
+                const chosen = Number(event.chosen) || values[0];
+                const max = Math.max(...values), min = Math.min(...values);
+                return chosen === min && chosen !== max ? 'lowest' : 'highest';
+            }
+
+const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+function hull(vertices){
+ const faces=[],seen=new Set();
+ for(let a=0;a<vertices.length;a++)for(let b=a+1;b<vertices.length;b++)for(let c=b+1;c<vertices.length;c++){
+  let normal=cross(sub(vertices[b],vertices[a]),sub(vertices[c],vertices[a]));if(Math.hypot(...normal)<1e-6)continue;normal=normalizeVector(normal);
+  let distances=vertices.map(v=>dot(normal,sub(v,vertices[a])));
+  if(distances.some(x=>x>1e-5)&&distances.some(x=>x< -1e-5))continue;
+  if(distances.some(x=>x>1e-5))normal=normal.map(v=>-v);
+  const ids=distances.map((x,i)=>Math.abs(x)<1e-5?i:-1).filter(i=>i>=0),key=ids.join(',');if(seen.has(key))continue;seen.add(key);
+  const center=ids.reduce((s,i)=>s.map((v,k)=>v+vertices[i][k]/ids.length),[0,0,0]);
+  const u=normalizeVector(sub(vertices[ids[0]],center)),v=cross(normal,u);
+  ids.sort((a,b)=>Math.atan2(dot(sub(vertices[a],center),v),dot(sub(vertices[a],center),u))-Math.atan2(dot(sub(vertices[b],center),v),dot(sub(vertices[b],center),u)));
+  faces.push(ids);
+ }return {vertices,faces};
+}
+function dual(g){return hull(g.faces.map(f=>{const a=g.vertices[f[0]],n=normalizeVector(cross(sub(g.vertices[f[1]],a),sub(g.vertices[f[2]],a)));return n.map(x=>x/dot(n,a));}));}
+function normalized(g){const radius=Math.max(...g.vertices.map(v=>Math.hypot(...v)));return {...g,vertices:g.vertices.map(v=>v.map(x=>x/radius))};}
+const cube=hull([-1,1].flatMap(x=>[-1,1].flatMap(y=>[-1,1].map(z=>[x,y,z]))));
+const antiprism=hull(Array.from({length:10},(_,i)=>{const row=i%2,angle=Math.floor(i/2)*Math.PI*2/5+row*Math.PI/5;return [Math.cos(angle),Math.sin(angle),row?0.55:-0.55];}));
+const geometries={2:normalized(cube),3:normalized(cube),6:normalized(cube),4:normalized(hull([[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]])),8:normalized(hull([[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])),10:normalized(dual(antiprism)),12:normalized(dual(D20_GEOMETRY)),20:D20_GEOMETRY};
+function actorFor(sides,value,label){
+ const geometry=geometries[sides],labels=geometry.faces.map((_,i)=>sides<=3?i%sides+1:i+1);
+ if(label==='dezenas')labels.splice(0,labels.length,...Array.from({length:10},(_,i)=>String(i*10).padStart(2,'0')));
+ if(label==='unidades')labels.splice(0,labels.length,...Array.from({length:10},(_,i)=>i));
+ const targetFace=labels.findIndex(x=>Number(x)===value),f=geometry.faces[targetFace],a=geometry.vertices[f[0]];
+ const n=normalizeVector(cross(sub(geometry.vertices[f[1]],a),sub(geometry.vertices[f[2]],a)));
+ const target=sides===20?targetOrientationForFace(targetFace):{rx:Math.atan2(n[1],n[2]),ry:-Math.atan2(n[0],Math.hypot(n[1],n[2])),rz:0};
+ return {geometry,labels,targetFace,target,value,label:label?`d100 · ${label}`:`d${sides}`,rx:Math.random()*6,ry:Math.random()*6,rz:Math.random()*6,offsetY:0,scale:1,fade:1,highlight:0,highlightPulse:0};
+}
+
+            function drawD20(context, actor, event) {
+                const rotatedVertices = (actor.geometry || D20_GEOMETRY).vertices.map(vertex => rotateVertex(vertex, actor.rx, actor.ry, actor.rz));
+                const projectionDistance = 4.8;
+                const projected = rotatedVertices.map(vertex => {
+                    const perspective = projectionDistance / (projectionDistance - vertex[2]);
+                    return { x: vertex[0] * actor.radius * perspective, y: vertex[1] * actor.radius * perspective };
+                });
+                const palette = getDiceThemePalette(event.diceTheme);
+                const accent = palette.edge;
+                const main = palette.text;
+                const line = 'rgba(255,255,255,.2)';
+                const light = normalizeVector([-.65, -.8, 1]);
+                const faceData = (actor.geometry || D20_GEOMETRY).faces.map((face, index) => {
+                    const a = rotatedVertices[face[0]], b = rotatedVertices[face[1]], c = rotatedVertices[face[2]];
+                    const ab = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
+                    const ac = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
+                    const normal = normalizeVector([ab[1]*ac[2]-ab[2]*ac[1], ab[2]*ac[0]-ab[0]*ac[2], ab[0]*ac[1]-ab[1]*ac[0]]);
+                    const center = face.reduce((sum,i)=>sum.map((x,k)=>x+rotatedVertices[i][k]/face.length),[0,0,0]);
+                    return { face, index, normal, center, depth:center[2], light:Math.max(0, normal[0]*light[0]+normal[1]*light[1]+normal[2]*light[2]) };
+                }).sort((left, right) => left.depth - right.depth);
+
+                context.save();
+                context.globalAlpha = actor.fade ?? 1;
+                context.translate(actor.x, actor.y + actor.offsetY);
+                context.scale(actor.scale || 1, actor.scale || 1);
+                context.fillStyle = actor.chosen ? hexToRgba(accent, .25) : 'rgba(0,0,0,.34)';
+                context.beginPath();
+                context.ellipse(0, actor.radius * 1.12, actor.radius * .88, actor.radius * .23, 0, 0, Math.PI * 2);
+                context.fill();
+                if (actor.chosen && actor.revealed) { context.shadowBlur = 32; context.shadowColor = accent; }
+
+                faceData.forEach(faceInfo => {
+                    const points = faceInfo.face.map(vertexIndex => projected[vertexIndex]);
+                    const shade = .18 + faceInfo.light * .34;
+                    const isResultFace = faceInfo.index === actor.targetFace && actor.revealed;
+                    context.beginPath();
+                    context.moveTo(points[0].x, points[0].y);
+                    points.slice(1).forEach(p=>context.lineTo(p.x,p.y));
+                    context.closePath();
+                    context.fillStyle = isResultFace ? hexToRgba(accent, actor.chosen ? .96 : .84) : hexToRgba(palette.fill, Math.min(.99, .76 + shade * .22));
+                    context.fill();
+                    context.strokeStyle = isResultFace ? accent : line;
+                    context.lineWidth = isResultFace ? (actor.chosen ? 2.4 : 1.6) : 1;
+                    context.stroke();
+                    if (faceInfo.normal[2] > .04) {
+                        const perspective = projectionDistance / (projectionDistance - faceInfo.center[2]);
+                        const centerX = faceInfo.center[0] * actor.radius * perspective;
+                        const centerY = faceInfo.center[1] * actor.radius * perspective;
+                        const edgeA = points[1].x - points[0].x;
+                        const edgeB = points[1].y - points[0].y;
+                        let angle = Math.atan2(edgeB, edgeA);
+                        if (angle > Math.PI / 2) angle -= Math.PI;
+                        if (angle < -Math.PI / 2) angle += Math.PI;
+                        const averageFaceSize = (((Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) + Math.hypot(points[1].x - points[2].x, points[1].y - points[2].y) + Math.hypot(points[2].x - points[0].x, points[2].y - points[0].y)) / 3) || actor.radius * .55);
+                        const tiltScale = Math.max(.5, Math.min(1, .48 + faceInfo.normal[2] * .52));
+                        const textSize = Math.max(9, averageFaceSize * (isResultFace ? .34 : .30));
+                        context.save();
+                        context.beginPath();
+                        context.moveTo(points[0].x, points[0].y);
+                        points.slice(1).forEach(p=>context.lineTo(p.x,p.y));
+                        context.closePath();
+                        context.clip();
+                        context.translate(centerX, centerY);
+                        context.rotate(angle);
+                        context.scale(1, tiltScale);
+                        context.fillStyle = isResultFace ? '#050505' : main;
+                        context.font = `700 ${textSize}px Oswald, Arial, sans-serif`;
+                        context.textAlign = 'center'; context.textBaseline = 'middle';
+                        context.fillText(String(actor.labels ? actor.labels[faceInfo.index] : faceInfo.index + 1), 0, 0);
+                        context.restore();
+                    }
+                });
+                if (actor.chosen && actor.revealed && actor.badgeLabel) {
+                    context.save();
+                    context.fillStyle = hexToRgba(accent, .18);
+                    context.strokeStyle = accent;
+                    context.lineWidth = 1;
+                    drawRoundedRect(context, -36, -actor.radius * 1.62, 72, 20, 10);
+                    context.fill(); context.stroke();
+                    context.fillStyle = accent;
+                    context.font = `700 11px Oswald, Arial, sans-serif`;
+                    context.textAlign = 'center'; context.textBaseline = 'middle';
+                    context.fillText(actor.badgeLabel, 0, -actor.radius * 1.62 + 10);
+                    context.restore();
+                }
+                context.restore();
+            }
+
+            let diceAudioContext = null;
+            function getDiceAudioContext() {
+                const Constructor = window.AudioContext || window.webkitAudioContext;
+                if (!Constructor) return null;
+                if (!diceAudioContext) diceAudioContext = new Constructor();
+                if (diceAudioContext.state === 'suspended') diceAudioContext.resume().catch(() => {});
+                return diceAudioContext;
+            }
+            function playDiceImpact(event, strength = .7, outcome = '') {
+                if (event?.diceSound === false) return;
+                const context = getDiceAudioContext();
+                if (!context) return;
+                const now = context.currentTime;
+                const safeStrength = Math.max(.18, Math.min(1.15, Number(strength) || .7));
+                const duration = .11 + safeStrength * .09;
+                const master = context.createGain();
+                master.gain.setValueAtTime(.0001, now);
+                master.gain.linearRampToValueAtTime(.9, now + .01);
+                master.connect(context.destination);
+                const buffer = context.createBuffer(1, Math.max(1, Math.floor(context.sampleRate * duration)), context.sampleRate);
+                const samples = buffer.getChannelData(0);
+                for (let index = 0; index < samples.length; index += 1) {
+                    const progress = index / samples.length;
+                    const envelope = Math.pow(1 - progress, outcome ? 2.2 : 2.8);
+                    samples[index] = (Math.random() * 2 - 1) * envelope;
+                }
+                const noise = context.createBufferSource();
+                const noiseFilter = context.createBiquadFilter();
+                const noiseGain = context.createGain();
+                noise.buffer = buffer;
+                noiseFilter.type = outcome === 'failure' ? 'bandpass' : 'lowpass';
+                noiseFilter.Q.value = outcome === 'critical' ? .9 : 1.1;
+                noiseFilter.frequency.setValueAtTime(outcome === 'critical' ? 980 : outcome === 'failure' ? 520 : 760, now);
+                noiseGain.gain.setValueAtTime(.0001, now);
+                noiseGain.gain.linearRampToValueAtTime((outcome === 'critical' ? .026 : .02) * safeStrength, now + .006);
+                noiseGain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+                noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(master);
+                noise.start(now); noise.stop(now + duration + .03);
+                const body = context.createOscillator();
+                const bodyFilter = context.createBiquadFilter();
+                const bodyGain = context.createGain();
+                body.type = outcome === 'failure' ? 'triangle' : 'sine';
+                body.frequency.setValueAtTime(outcome === 'critical' ? 140 : outcome === 'failure' ? 72 : 92, now);
+                body.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 78 : outcome === 'failure' ? 46 : 58, now + duration);
+                bodyFilter.type = 'lowpass';
+                bodyFilter.frequency.setValueAtTime(outcome === 'critical' ? 900 : 720, now);
+                bodyGain.gain.setValueAtTime(.0001, now);
+                bodyGain.gain.linearRampToValueAtTime((outcome === 'critical' ? .022 : .016) * safeStrength, now + .01);
+                bodyGain.gain.exponentialRampToValueAtTime(.0001, now + duration + .02);
+                body.connect(bodyFilter); bodyFilter.connect(bodyGain); bodyGain.connect(master);
+                body.start(now); body.stop(now + duration + .03);
+                if (outcome === 'critical' || outcome === 'failure') {
+                    const accent = context.createOscillator();
+                    const accentGain = context.createGain();
+                    accent.type = outcome === 'critical' ? 'triangle' : 'sawtooth';
+                    accent.frequency.setValueAtTime(outcome === 'critical' ? 520 : 180, now + .012);
+                    accent.frequency.exponentialRampToValueAtTime(outcome === 'critical' ? 360 : 120, now + .18);
+                    accentGain.gain.setValueAtTime(.0001, now);
+                    accentGain.gain.linearRampToValueAtTime(outcome === 'critical' ? .012 : .008, now + .02);
+                    accentGain.gain.exponentialRampToValueAtTime(.0001, now + .2);
+                    accent.connect(accentGain); accentGain.connect(master);
+                    accent.start(now + .01); accent.stop(now + .22);
+                }
+            }
+            function diceAnimationProfile(event, count) {
+                if (event.diceSpeed === 'fast') return { duration: Math.min(2350, 1480 + count * 130), launchRatio: .54, settleRatio: .85, bounce: 18, chosenScale: .13, nonChosenFade: .22, linger: 500, impacts: [.22,.5,.74,.92], spinBase: .27, spinBurst: .32 };
+                if (event.diceSpeed === 'cinematic') return { duration: Math.min(5600, 3780 + count * 280), launchRatio: .66, settleRatio: .9, bounce: 30, chosenScale: .2, nonChosenFade: .34, linger: 1220, impacts: [.16,.32,.5,.7,.86,.97], spinBase: .33, spinBurst: .5 };
+                return { duration: Math.min(3900, 2660 + count * 210), launchRatio: .6, settleRatio: .87, bounce: 24, chosenScale: .16, nonChosenFade: .28, linger: 860, impacts: [.2,.42,.62,.82,.95], spinBase: .3, spinBurst: .4 };
+            }
+            function triggerOutcomeEffect(event) {
+                if (event.diceFx === false || (!event.critical && !event.failure)) return;
+                const type = event.critical ? 'critical' : 'failure';
+                const effect = document.createElement('div');
+                effect.className = `obs-outcome-fx ${type}`;
+                const count = type === 'critical' ? 34 : 24;
+                for (let index = 0; index < count; index++) {
+                    const particle = document.createElement('span');
+                    particle.className = 'obs-outcome-particle';
+                    particle.style.setProperty('--angle', `${index * 360 / count + Math.random() * 9}deg`);
+                    particle.style.animationDelay = `${Math.random() * .14}s`;
+                    effect.appendChild(particle);
+                }
+                document.body.appendChild(effect);
+                const bodyClass = type === 'critical' ? 'obs-critical-pulse' : 'obs-failure-shake';
+                document.body.classList.add(bodyClass);
+                playDiceImpact(event, type === 'critical' ? .92 : .88, type);
+                window.setTimeout(() => { effect.remove(); document.body.classList.remove(bodyClass); }, 1250);
+            }
+
+            function animateDice(event) {
+                return new Promise((resolve, reject) => {
+                    let done=false, frameId=null, lingerTimer=null, clearTimer=null, watchdog=null;
+                    const finish = error => {
+                        if(done)return; done=true;
+                        cancelAnimationFrame(frameId); clearTimeout(lingerTimer); clearTimeout(clearTimer); clearTimeout(watchdog);
+                        if(animationCancel===cancel)animationCancel=null;
+                        diceStage.classList.remove('visible');diceStageLabel.textContent='';
+                        try { diceContext?.clearRect(0,0,diceCanvas.width,diceCanvas.height); } catch(cleanupError) { error ||= cleanupError; }
+                        if(error)reject(error);else resolve();
+                    };
+                    const cancel = () => finish(new Error('Animação cancelada'));
+                    try {
+                    if (!diceContext || !event.rolls.length || event.dice3d === false) { resolve(); return; }
+                    const isSum = event.rollMode === 'sum';
+                    const mixedActors = isSum ? event.rolls.flatMap((value,i)=>event.diceSides[i]===100 ? [actorFor(10,Math.floor(value%100/10)*10,'dezenas'),actorFor(10,value%10,'unidades')] : [actorFor(event.diceSides[i],value)]) : [];
+                    const {values, chosenIndex, omitted} = isSum ? {values:mixedActors.map(a=>a.value),chosenIndex:-1,omitted:0} : selectVisibleDice(event);
+                    const omittedLabel = omitted ? ` · ${omitted} DADO(S) NÃO ANIMADO(S)` : '';
+                    animationCancel = cancel;
+                    const width = diceCanvas.width;
+                    const height = diceCanvas.height;
+                    const columns = isSum ? Math.min(8,Math.max(1,Math.ceil(Math.sqrt(values.length*1.7)))) : (values.length > 4 ? Math.ceil(values.length/2) : values.length);
+                    const rows = Math.ceil(values.length / columns);
+                    const pickMode = inferPickMode(event);
+                    const actors = values.map((value, index) => {
+                        const row = rows === 1 ? 0 : Math.floor(index / columns);
+                        const column = rows === 1 ? index : index % columns;
+                        const cellWidth = width / columns;
+                        const cellHeight = (isSum ? height - 50 : height) / rows;
+                        return {
+                            x: cellWidth * (column + .5), y: cellHeight * (row + .53),
+                            radius: isSum ? Math.min(70, Math.min(cellWidth,cellHeight)*.25) : Math.min(78, Math.max(45, Math.min(cellWidth, cellHeight) * .27)),
+                            rx: Math.random()*Math.PI*2, ry: Math.random()*Math.PI*2, rz: Math.random()*Math.PI*2,
+                            spinX:(.18+Math.random()*.22)*(Math.random()>.5?1:-1), spinY:(.2+Math.random()*.24)*(Math.random()>.5?1:-1), spinZ:(.14+Math.random()*.18)*(Math.random()>.5?1:-1),
+                            target:targetOrientationForFace(value-1), targetFace:value-1, chosen:index===chosenIndex,
+                            phase:Math.random()*Math.PI*2, offsetY:-15, revealed:false, scale:1, fade:1, badgeLabel:index===chosenIndex ? (pickMode === 'lowest' ? 'MENOR' : 'MAIOR') : '',
+                            ...(isSum ? mixedActors[index] : {})
+                        };
+                    });
+                    diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')} · TEMA ${safe(diceThemeLabel(event.diceTheme))}${omittedLabel}</small>`;
+                    diceStage.classList.add('visible');
+                    const profile = diceAnimationProfile(event, values.length);
+                    const duration = profile.duration;
+                    const impactThresholds = profile.impacts;
+                    let impactIndex = 0;
+                    let started = null;
+                    let fpsWindowStarted = null;
+                    let fpsFrames = 0;
+                    function frame(timestamp) {
+                        if(done)return;
+                        try {
+                        if (started === null) started = timestamp;
+                        if (fpsWindowStarted === null) fpsWindowStarted = timestamp;
+                        fpsFrames += 1;
+                        if (timestamp - fpsWindowStarted >= 500) {
+                            diceFps = Math.round((fpsFrames * 1000) / Math.max(1, timestamp - fpsWindowStarted));
+                            fpsFrames = 0; fpsWindowStarted = timestamp; updateDiagnostics();
+                        }
+                        const elapsed = timestamp - started;
+                        const progress = Math.min(1, elapsed / duration);
+                        while (impactIndex < impactThresholds.length && progress >= impactThresholds[impactIndex]) {
+                            const isFinal = impactIndex === impactThresholds.length - 1;
+                            playDiceImpact(event, (isFinal ? .95 : .42) + impactIndex * .08, isFinal ? (event.critical ? 'critical' : event.failure ? 'failure' : '') : '');
+                            impactIndex += 1;
+                        }
+                        drawTray(diceContext, width, height);
+                        actors.forEach(actor => {
+                            if (progress < profile.launchRatio) {
+                                const phase = progress / profile.launchRatio;
+                                const damp = 1 - phase;
+                                actor.rx += actor.spinX*(1.2+damp*profile.spinBurst);
+                                actor.ry += actor.spinY*(1.22+damp*profile.spinBurst);
+                                actor.rz += actor.spinZ*(1.08+damp*(profile.spinBurst-.08));
+                                actor.offsetY = -Math.abs(Math.sin(elapsed/160 + actor.phase))*profile.bounce*damp - damp*12;
+                                actor.scale = 1; actor.fade = 1; actor.revealed = false;
+                            } else {
+                                const settle = Math.max(0, Math.min(1, (progress-profile.launchRatio)/(1-profile.launchRatio)));
+                                actor.rx = lerpAngle(actor.rx, actor.target.rx, .1+settle*.13);
+                                actor.ry = lerpAngle(actor.ry, actor.target.ry, .1+settle*.13);
+                                actor.rz = lerpAngle(actor.rz, actor.target.rz, .12+settle*.16);
+                                actor.offsetY *= .6;
+                                actor.revealed = settle >= .36;
+                                const focus = Math.max(0, Math.min(1, (progress-profile.settleRatio)/(1-profile.settleRatio)));
+                                actor.scale = actor.chosen ? 1 + profile.chosenScale * focus : 1 - .08 * focus;
+                                actor.fade = actor.chosen ? 1 : 1 - profile.nonChosenFade * focus;
+                            }
+                            if(isSum && progress>=1){Object.assign(actor,actor.target);actor.offsetY=0;actor.revealed=true;}
+                            if(isSum)actor.fade=1;
+                            drawD20(diceContext, actor, event);
+                            if(isSum){diceContext.save();diceContext.fillStyle=getDiceThemePalette(event.diceTheme).text;diceContext.font=`600 ${Math.max(10,Math.min(15,actor.radius*.35))}px Arial`;diceContext.textAlign='center';diceContext.fillText(actor.label+(actor.revealed?` = ${actor.value}`:''),actor.x,actor.y+actor.radius*1.6);diceContext.restore();}
+                        });
+                        if (progress >= profile.settleRatio) {
+                            const accent = event.critical ? readOverlayColor('--gold', '#ffcc33') : event.failure ? readOverlayColor('--alert', '#ff2929') : readOverlayColor('--accent', '#ffffff');
+                            const label = isSum ? `SOMA TOTAL: ${event.total}` : `${pickMode === 'lowest' ? 'MENOR' : 'MAIOR'} RESULTADO: ${event.chosen}`;
+                            diceContext.save();
+                            diceContext.fillStyle = 'rgba(0,0,0,.48)';
+                            drawRoundedRect(diceContext, width/2 - 132, height - 46, 264, 26, 11); diceContext.fill();
+                            diceContext.strokeStyle = accent; diceContext.globalAlpha = .82; diceContext.stroke();
+                            diceContext.globalAlpha = 1; diceContext.fillStyle = accent; diceContext.font = `700 16px Oswald, Arial, sans-serif`; diceContext.textAlign = 'center'; diceContext.textBaseline = 'middle'; diceContext.fillText(label, width/2, height - 33); diceContext.restore();
+                            diceStageLabel.innerHTML = `${safe(event.title)}<small>${safe(event.subtitle || 'ROLAGEM TÁTICA')} · ${safe(label)} · TEMA ${safe(diceThemeLabel(event.diceTheme))}${omittedLabel}</small>`;
+                        }
+                        if (progress < 1) frameId = requestAnimationFrame(frame);
+                        else lingerTimer = window.setTimeout(() => {
+                            diceStage.classList.remove('visible');
+                            clearTimer = window.setTimeout(() => finish(), 220);
+                        }, profile.linger);
+                        } catch(error) { finish(error); }
+                    }
+                    watchdog = window.setTimeout(()=>finish(new Error('Tempo de animação excedido')), duration + profile.linger + 2000);
+                    frameId = requestAnimationFrame(frame);
+                    } catch(error) { finish(error); }
+                });
+            }
+
+
+            function isEventExpired(event) {
+                if (!event || ['hud', 'portrait'].includes(event.event)) return false;
+                const sourceTime = event.transport === 'remote' ? (event.relayTime || event.timestamp || event.receivedAt) : event.receivedAt;
+                return Date.now() > event.expiresAt || (sourceTime > 0 && Date.now() - sourceTime > Math.max(EVENT_TTL_MS, 15000));
+            }
+
+            function dropEvent(event, reason = 'expirado') {
+                droppedEvents += 1;
+                if (DEBUG_ENABLED) console.info(`OBS descartou evento (${reason})`, event?.id || event?.event || 'desconhecido');
+                updateDiagnostics();
+            }
+
+            function markPacket(event, transport) {
+                event.transport = transport;
+                lastPacketAt = Date.now();
+                const sourceTime = transport === 'remote' ? (event.relayTime || event.timestamp || lastPacketAt) : lastPacketAt;
+                lastPacketLatency = Math.max(0, lastPacketAt - sourceTime);
+                lastReceivedTimestamp = Math.max(lastReceivedTimestamp, event.timestamp || 0, event.relayTime || 0);
+                if (event.relayId && event.relayTime >= lastRelayAt) { lastRelayAt=event.relayTime;lastRelayMessageId=event.relayId; }
+                if (transport === 'remote') {
+                    remoteStatus = 'CONECTADO';
+                    if(!remoteValidated){remoteValidated=true;setConnection(accessKey ? 'DADOS VÁLIDOS RECEBIDOS // CHAVE CONFERIDA NO OVERLAY' : 'DADOS RECEBIDOS // CANAL LEGADO SEM CHAVE',true);}
+                }
+                lastDiceSoundEnabled = event.diceSound !== false;
+                updateDiagnostics();
+            }
+
+            function trimQueueForCapacity() {
+                while (queue.length > MAX_QUEUE_SIZE) {
+                    let dropIndex = 0;
+                    for (let index = 1; index < queue.length; index += 1) {
+                        const candidate = queue[index];
+                        const current = queue[dropIndex];
+                        if (candidate.priority < current.priority || (candidate.priority === current.priority && candidate.receivedAt < current.receivedAt)) dropIndex = index;
+                    }
+                    const [removed] = queue.splice(dropIndex, 1);
+                    dropEvent(removed, 'fila cheia');
+                }
+            }
+
+            function insertQueuedEvent(event) {
+                if (QUEUE_MODE === 'latest' && event.priority < 90) {
+                    for (let index = queue.length - 1; index >= 0; index -= 1) {
+                        if (queue[index].priority < 90) {
+                            const [removed] = queue.splice(index, 1);
+                            dropEvent(removed, 'substituído pelo mais recente');
+                        }
+                    }
+                } else if (QUEUE_MODE === 'smart' && event.priority < 90 && queue.length >= 6) {
+                    const replaceIndex = queue.findIndex(item => item.priority < 90 && item.event === event.event && item.character === event.character && item.title === event.title);
+                    if (replaceIndex >= 0) {
+                        const [removed] = queue.splice(replaceIndex, 1);
+                        dropEvent(removed, 'resultado repetido mais antigo');
+                    }
+                }
+                queue.push(event);
+                queue.sort((left, right) => right.priority - left.priority || left.receivedAt - right.receivedAt);
+                trimQueueForCapacity();
+            }
+
+            function enqueue(payload, transport = 'local') {
+                if (payload?.remoteOnly && transport !== 'remote') return;
+                const event=normalize(payload);
+                if(!event){if(payload?.event!=='ack'){invalidEvents++;updateDiagnostics();}return;}
+                acceptEvent(event,transport);
+            }
+            function acceptEvent(event, transport) {
+                if(disposed || (event.remoteOnly && transport!=='remote') || receivedIds.has(event.id))return;
+                receivedIds.add(event.id);
+                if(receivedIds.size>150)receivedIds.delete(receivedIds.values().next().value);
+                markPacket(event,transport);
+                if(!['hud','portrait'].includes(event.event) && isEventExpired(event)){dropEvent(event,'evento antigo');return;}
+                applyCurrentAppearance(event);
+                if(event.event==='portrait'){updatePortrait(event);return;}
+                if(event.event==='hud'){updateHud(event);return;}
+                insertQueuedEvent(event);
+                if(activeEvent?.event==='banner' && event.priority>=90 && typeof activeFinish==='function')activeFinish(true);
+                if(!active)void showNext();
+                updateDiagnostics();
+            }
+
+            function prepareEventForBacklog(event) {
+                const backlog = queue.length;
+                if (event.priority >= 90 || backlog < 3) return event;
+                const adjusted = { ...event, diceSpeed: 'fast', duration: Math.min(event.duration, backlog >= 6 ? 2400 : 3200) };
+                if (event.event === 'banner') adjusted.duration = Math.min(adjusted.duration, 2200);
+                return adjusted;
+            }
+
+            function presentCard(card, event, afterDone) {
+                let finished = false;
+                let hideTimer = null;
+                let removeTimer = null;
+                const finish = immediate => {
+                    if (finished) return;
+                    finished = true;
+                    window.clearTimeout(hideTimer);
+                    window.clearTimeout(removeTimer);
+                    activeFinish = null;
+                    card.classList.remove('visible');
+                    card.classList.add('leaving');
+                    removeTimer = window.setTimeout(() => {
+                        card.remove(); activeEvent = null; afterDone();
+                    }, immediate ? 100 : 420);
+                };
+                activeFinish = finish;
+                requestAnimationFrame(() => card.classList.add('visible'));
+                hideTimer = window.setTimeout(() => finish(false), event.duration);
+            }
+
+            function showResultCard(event) {
+                const status = event.critical ? 'CRÍTICO' : event.failure ? 'FALHA CRÍTICA' : event.event === 'test' ? 'TESTE' : 'RESULTADO';
+                const bonus = event.bonus ? ` ${event.bonus > 0 ? '+' : ''}${event.bonus}` : '';
+                const rolls = event.rolls.length ? `[ ${event.rolls.map((v,i)=>event.rollMode==='sum'?`d${event.diceSides[i]}: ${v}`:v).join(' | ')} ]` : '[ -- ]';
+                const card = document.createElement('section');
+                card.className = `card${event.rollMode==='sum'?' free-roll':''}${event.critical ? ' critical' : ''}${event.failure ? ' failure' : ''}`;
+                card.innerHTML = `
+                    <div class="scanlines"></div>
+                    <div class="topline">
+                        <div><div class="character">${safe(event.character)}</div><div class="title">${safe(event.title)}</div>${event.rollMode==='sum'?`<div>${safe(event.subtitle)}</div>`:''}</div>
+                        <div class="badge">${safe(status)}</div>
+                    </div>
+                    <div class="content">
+                        <div><div class="rolls">DADOS: ${safe(rolls)}</div><div class="chosen">${event.rollMode==='sum'?`SOMA DOS DADOS: <strong>${event.rolls.reduce((a,b)=>a+b,0)}</strong>${event.bonus?` · MODIFICADOR: ${safe(bonus)}`:''}`:`ESCOLHIDO: <strong>${event.chosen}</strong>${safe(bonus)}`}</div></div>
+                        <div class="result-wrap">
+                            ${event.damage !== null ? `<div class="result-block damage"><div class="result-label">DANO</div><div class="result">${event.damage}</div></div>` : ''}
+                            <div class="result-block"><div class="result-label">${event.rollMode==='sum'?'TOTAL':safe(event.subtitle)}</div><div class="result">${event.total}</div></div>
+                        </div>
+                    </div>`;
+                stage.replaceChildren(card);
+                requestAnimationFrame(() => {try{triggerOutcomeEffect(event);}catch(error){console.warn('Efeito visual indisponível.',error);}});
+                if (event.event === 'test') sendTestAck(event);
+                presentCard(card, event, showNext);
+            }
+
+            async function showNext() {
+                if(disposed)return;
+                while (queue.length && isEventExpired(queue[0])) dropEvent(queue.shift(), 'venceu na fila');
+                if (!queue.length) { active = false; activeEvent = null; updateDiagnostics(); return; }
+                active = true;
+                const originalEvent = queue.shift();
+                const event = prepareEventForBacklog(originalEvent);
+                activeEvent = event;
+
+                updateDiagnostics();
+                try {
+                if (event.event === 'banner') {
+                    const card = document.createElement('section');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="scanlines"></div><div class="topline"><div><div class="character">${safe(event.character || 'DARK 1.7.1')}</div><div class="title">${safe(event.title)}</div>${event.rollMode==='sum'?`<div>${safe(event.subtitle)}</div>`:''}</div><div class="badge">${safe(event.subtitle || 'AVISO')}</div></div><div class="content"><div class="rolls" style="font-size:1.25rem;line-height:1.45">${safe(event.message || '')}</div></div>`;
+                    stage.replaceChildren(card);
+                    presentCard(card, event, showNext);
+                    return;
+                }
+                try { await animateDice(event); }
+                catch(error) { animationFailures++;updateDiagnostics();console.warn('Animação indisponível; exibindo resultado.',error); }
+                if(disposed)return;
+                showResultCard(event);
+                } catch(error) {
+                    console.warn('Cartão indisponível; usando resultado simples.',error);
+                    try {
+                        const card=document.createElement('section');card.className='card';
+                        card.textContent=event.event==='banner' ? `${event.title}: ${event.message}` : `${event.title} · DADOS: ${event.rolls.map((v,i)=>event.rollMode==='sum'?`d${event.diceSides[i]}: ${v}`:v).join(', ')}${event.rollMode==='sum'?'':` · ESCOLHIDO: ${event.chosen}`}  · TOTAL: ${event.total}${event.damage!==null?' · DANO: '+event.damage:''}`;
+                        stage.replaceChildren(card);presentCard(card,event,showNext);
+                    } catch(fallbackError) { active=false;activeEvent=null;setTimeout(()=>void showNext(),0); }
+                }
+            }
+
+            function extractRelayPayload(envelope) {
+                try {
+                    if(typeof envelope==='string' && envelope.length>MAX_PACKET_CHARS)return null;
+                    const parsed = typeof envelope === 'string' ? JSON.parse(envelope) : envelope;
+                    if (!parsed || typeof parsed !== 'object') return null;
+                    if (parsed.event === 'open' || parsed.event === 'keepalive') return null;
+                    if (parsed.event !== 'message') return null;
+                    if(typeof parsed.message!=='string' || parsed.message.length>MAX_PACKET_CHARS)return null;
+                    const payload = JSON.parse(parsed.message);
+                    if (payload?.event === 'ack') return null;
+                    if (payload && typeof payload === 'object') {
+                        payload.__relayId = String(parsed.id || '');
+                        payload.__relayTime = Math.max(0, Number(parsed.time) || 0);
+                    }
+                    return payload;
+                } catch (error) { console.warn('Evento remoto inválido.', error); return null; }
+            }
+
+            function parseRelayEnvelope(envelope) {
+                const payload = extractRelayPayload(envelope);
+                if (payload) enqueue(payload, 'remote');
+            }
+
+            function processRecoveryBatch(text) {
+                let latestHud=null,latestPortrait=null;
+                // Filter before choosing the newest state. Bad packets never advance the cursor.
+                text.split(/\r?\n/).filter(Boolean).forEach(line=>{
+                    const payload=extractRelayPayload(line),event=payload&&normalize(payload);
+                    if(!event)return;
+                    if(event.event==='hud' && (!latestHud || event.timestamp>latestHud.timestamp))latestHud=event;
+                    if(event.event==='portrait' && (!latestPortrait || event.timestamp>latestPortrait.timestamp))latestPortrait=event;
+                });
+                if(latestPortrait)acceptEvent(latestPortrait,'remote');
+                if(latestHud)acceptEvent(latestHud,'remote');
+            }
+
+            async function recoverPersistentState(reason = 'reconnect') {
+                if (recoveryRequest) recoveryRequest.abort();
+                const controller = new AbortController();
+                recoveryRequest = controller;
+                recoveryStatus = 'BUSCANDO'; updateDiagnostics();
+                const timeoutId = window.setTimeout(() => controller.abort(), 9000);
+                try {
+                    const since = lastRelayMessageId || (lastReceivedTimestamp ? String(Math.max(0, Math.floor((lastReceivedTimestamp - 5000) / 1000))) : '12h');
+                    const url = `https://ntfy.sh/${encodeURIComponent(channel)}/json?poll=1&since=${encodeURIComponent(since)}&_=${Date.now()}`;
+                    const response = await fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit', signal: controller.signal });
+                    if (!response.ok) {
+                        if (response.status === 429) setConnection('RELAY TEMPORARIAMENTE LIMITADO // HUD AO VIVO CONTINUA', true);
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const text=await response.text();
+                    if(recoveryRequest!==controller || controller.signal.aborted)return;
+                    processRecoveryBatch(text);
+                    recoveryStatus = 'OK';
+                    if (DEBUG_ENABLED) console.info(`Recuperação OBS concluída (${reason}) desde ${since}.`);
+                } catch (error) {
+                    if(recoveryRequest!==controller)return;
+                    if (error?.name !== 'AbortError') console.warn('Recuperação do HUD indisponível.', error);
+                    recoveryStatus = error?.name === 'AbortError' ? 'CANCELADA' : 'FALHOU';
+                } finally {
+                    window.clearTimeout(timeoutId);
+                    if (recoveryRequest === controller) recoveryRequest = null;
+                    updateDiagnostics();
+                }
+            }
+
+            function closeRelaySocket() {
+                clearTimeout(reconnectTimer); reconnectTimer = null;
+                if (!relaySocket) return;
+                try {
+                    relaySocket.onopen = relaySocket.onmessage = relaySocket.onerror = relaySocket.onclose = null;
+                    relaySocket.close();
+                } catch (error) {}
+                relaySocket = null;
+                remoteStatus = navigator.onLine === false ? 'SEM INTERNET' : 'DESCONECTADO';
+                updateDiagnostics();
+            }
+
+            function scheduleReconnect() {
+                if (disposed || navigator.onLine === false || reconnectTimer) return;
+                const base = Math.min(60000, 4000 * (2 ** Math.min(reconnectAttempt, 4)));
+                const delay = base + Math.floor(Math.random() * 1200);
+                reconnectAttempt += 1;
+                remoteStatus = `RECONECTA ${Math.ceil(delay / 1000)}s`;
+                setConnection(`RECONECTANDO EM ${Math.ceil(delay / 1000)}s`, true);
+                reconnectTimer = window.setTimeout(() => {
+                    reconnectTimer = null;
+                    startRelaySocket('timer');
+                }, delay);
+            }
+
+            function startRelaySocket(reason = 'startup') {
+                if(disposed)return;
+                if (navigator.onLine === false) { remoteStatus = 'SEM INTERNET'; updateDiagnostics(); return; }
+                closeRelaySocket();
+                remoteStatus = 'CONECTANDO';
+                setConnection('CONECTANDO OVERLAY...', true);
+                try {
+                    const socket = new WebSocket(`wss://ntfy.sh/${encodeURIComponent(channel)}/ws`);
+                    relaySocket = socket;
+                    socket.onopen = () => {
+                        if (relaySocket !== socket) return;
+                        reconnectAttempt = 0;
+                        remoteStatus = 'CONECTADO';
+                        remoteValidated=false;
+                        setConnection('CONECTADO AO RELAY // AGUARDANDO DADOS VÁLIDOS', true);
+                        recoverPersistentState(reason);
+                    };
+                    socket.onmessage = event => {if(relaySocket===socket)parseRelayEnvelope(event.data);};
+                    socket.onerror = () => { if (relaySocket === socket) socket.close(); };
+                    socket.onclose = () => {
+                        if (relaySocket !== socket) return;
+                        relaySocket = null;
+                        remoteStatus = 'DESCONECTADO'; updateDiagnostics();
+                        scheduleReconnect();
+                    };
+                } catch (error) {
+                    console.warn('WebSocket do relay indisponível.', error);
+                    relaySocket = null;
+                    remoteStatus = 'ERRO'; updateDiagnostics();
+                    scheduleReconnect();
+                }
+            }
+
+            // Room overlays accept only their same-origin parent, with no relay connection.
+            window.addEventListener('message', event => {
+                if(event.source !== parent || event.origin !== location.origin || event.data?.type !== 'breu-room-roll')return;
+                const payload=event.data.payload;
+                if(!payload || !['roll','macro'].includes(payload.event))return;
+                try{if(JSON.stringify(payload).length>12000)return;enqueue(payload,'local');}catch{}
+            });
+            parent.postMessage({type:'breu-overlay-ready'},location.origin==='null'?'*':location.origin);
+            window.addEventListener('beforeunload',()=>{disposed=true;animationCancel?.();});
+        })();
+    </script>
+</body>
+</html>
