@@ -1396,6 +1396,7 @@
 <div id="customBgContainer" class="custom-bg"></div>
 
 <div class="top-fixed-controls">
+<button class="fixed-menu-btn" id="ddFreeOpen" type="button" aria-haspopup="dialog">⚄ DADOS</button>
     <button class="fixed-menu-btn" data-dd-bind="ddbind_1">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         MENU
@@ -8699,6 +8700,241 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         document.documentElement.dataset.ddEnhancements = 'ready';
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
+})();
+</script>
+
+<style>
+#ddFreeModal {z-index:10040;padding:12px;}
+#ddFreeModal .modal-content {width:min(760px,96vw);max-width:760px;max-height:90dvh;overflow:auto;text-align:left;padding:24px;}
+.dd-free-head {display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.dd-free-head h2 {font-size:1.15rem;color:var(--gold-color);letter-spacing:2px;}
+.dd-free-grid {display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;margin:24px 0;}
+#ddFreeModal button {transform:none;min-height:40px;}
+#ddFreeModal .dd-free-die {position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:85px;padding:10px 2px;border:1px solid transparent;border-radius:6px;background:rgba(255,255,255,.035);color:var(--dim-text);font:inherit;font-size:.75rem;cursor:pointer;}
+#ddFreeModal .dd-free-die:hover,#ddFreeModal .dd-free-die.selected {color:var(--gold-color);border-color:var(--gold-color);background:rgba(210,175,70,.07);}
+.dd-free-die svg {width:32px;height:32px;}
+.dd-free-die b {position:absolute;top:3px;right:5px;font-size:.65rem;color:var(--gold-color);}
+#ddFreeChips {display:flex;gap:7px;flex-wrap:wrap;min-height:40px;align-items:center;}
+#ddFreeModal .dd-free-chip {padding:7px 12px;background:transparent;border:1px solid var(--border-color);border-radius:20px;color:var(--text-main);font:inherit;font-size:.85rem;cursor:pointer;}
+#ddFreeModal .dd-free-chip:hover {border-color:var(--gold-color);}
+.dd-free-selection {padding:14px 0;border-top:1px solid var(--border-color);}
+#ddFreeModal #ddFreeClear {border:0;background:transparent;color:var(--dim-text);font:inherit;font-size:.75rem;padding:0 4px;cursor:pointer;}
+#ddFreeModal #ddFreeRoll {border-color:var(--gold-color);color:var(--gold-color);min-height:48px;margin:8px 0 16px;}
+#ddFreeStatus:empty {display:none;}
+#ddFreeStatus {font-size:.8rem;color:var(--dim-text);}
+#ddFreeModal input {color:var(--text-main);background:var(--panel-bg);border:1px solid var(--border-color);font:inherit;}
+.dd-free-actions {display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;align-items:center;}
+#ddFreeFormula {overflow-wrap:anywhere;color:var(--gold-color);font-size:1.1rem;}
+#ddFreeResult canvas {width:100%;display:block;}
+.dd-free-values {display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+.dd-free-values span {border:1px solid var(--border-color);padding:7px 10px;}
+#ddFreeHistory {font-size:.85rem;line-height:1.7;padding-left:20px;overflow-wrap:anywhere;}
+@media(max-width:520px){.dd-free-grid {grid-template-columns:repeat(5,minmax(0,1fr));}#ddFreeModal .modal-content {padding:16px;}}
+@media print {#ddFreeModal {display:none!important;}}
+</style>
+<div id="ddFreeModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="ddFreeTitle">
+ <div class="modal-content">
+  <div class="dd-free-head"><h2 id="ddFreeTitle">DADOS LIVRES</h2><button type="button" class="sys-btn" id="ddFreeClose" aria-label="Fechar rolador">✕</button></div>
+  <p style="color:var(--dim-text);font-size:.85rem">Clique nos dados para adicionar à rolagem.</p>
+  <div class="dd-free-grid" id="ddFreeGrid"></div>
+  <div class="dd-free-selection"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div id="ddFreeChips"></div><button type="button" id="ddFreeClear">Limpar</button></div><p id="ddFreeFormula" style="font-size:.8rem;margin:10px 0 0;color:var(--dim-text)"></p></div>
+  <p id="ddFreeStatus" role="status" aria-live="polite"></p>
+  <button type="button" class="sys-btn" id="ddFreeRoll" style="width:100%">ROLAR</button>
+  <details style="font-size:.8rem;color:var(--dim-text);margin-bottom:16px"><summary>Modificador e opções</summary><div class="dd-free-actions"><label for="ddFreeBonus">Modificador</label><input id="ddFreeBonus" type="number" min="-9999" max="9999" value="0" step="1" style="width:100px;padding:8px"></div><p>Até 30 dados por rolagem. Clique em uma combinação para remover um dado. O d3 usa faces de 1 a 3 repetidas; o d100 usa dois d10.</p></details>
+  <div id="ddFreeResult"></div>
+  <details style="margin-top:20px"><summary>Histórico desta sessão</summary><ol id="ddFreeHistory"><li>Nenhuma rolagem ainda.</li></ol></details>
+ </div>
+</div>
+<script>
+(() => {
+'use strict';
+    function ddFreeDrawDie(ctx, actor) {
+        const rotatedVertices = (actor.geometry || DD_D20_GEOMETRY).vertices.map(vertex => ddRotateVertex(vertex, actor.rx, actor.ry, actor.rz));
+        const projectionDistance = 4.8;
+        const projected = rotatedVertices.map(vertex => {
+            const perspective = projectionDistance / (projectionDistance - vertex[2]);
+            return { x: vertex[0] * actor.radius * perspective, y: vertex[1] * actor.radius * perspective, z: vertex[2], perspective };
+        });
+        const light = ddNormalizeVector([-0.65, -0.8, 1]);
+        const palette = ddGetDicePalette(Boolean(actor.highlight));
+        const faceData = (actor.geometry || DD_D20_GEOMETRY).faces.map((face, index) => {
+            const a = rotatedVertices[face[0]], b = rotatedVertices[face[1]], c = rotatedVertices[face[2]];
+            const ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+            const ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+            const normal = ddNormalizeVector([ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]]);
+            const lightPower = Math.max(0, normal[0] * light[0] + normal[1] * light[1] + normal[2] * light[2]);
+            const center = face.map(i => rotatedVertices[i]).reduce((s,v) => s.map((x,k) => x+v[k]), [0,0,0]).map(x => x/face.length); const averageZ = center[2];
+            const center3 = center;
+            const centerProjection = projectionDistance / (projectionDistance - center3[2]);
+            return { face, index, normal, lightPower, averageZ, center3, centerProjection };
+        }).sort((left, right) => left.averageZ - right.averageZ);
+        ctx.save();
+        ctx.globalAlpha = actor.fade ?? 1;
+        ctx.translate(actor.x, actor.y + actor.offsetY);
+        ctx.scale(actor.scale || 1, actor.scale || 1);
+        const shadowScale = ddClamp((actor.radius / 42) * (1 + Number(actor.highlight) * 0.06), 0.8, 1.6);
+        ctx.fillStyle = palette.shadow;
+        ctx.beginPath();
+        ctx.ellipse(0, actor.radius * 1.14, actor.radius * 0.9 * shadowScale, actor.radius * 0.25 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (actor.highlightPulse > 0.02) { ctx.shadowBlur = 34; ctx.shadowColor = palette.glow; }
+        faceData.forEach(faceDataItem => {
+            const points = faceDataItem.face.map(vertexIndex => projected[vertexIndex]);
+            const shade = 0.24 + faceDataItem.lightPower * 0.82;
+            const fillAlpha = actor.highlight ? 0.96 : 0.92;
+            const isResultFace = faceDataItem.index === actor.targetFace && actor.revealed;
+            const outlineColor = isResultFace ? palette.chosenOutline : palette.edge;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y); points.slice(1).forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
+            ctx.fillStyle = isResultFace ? ddHexToRgba(outlineColor, actor.highlight ? .98 : .88) : ddHexToRgba(palette.base || '#101014', Math.min(.99, .76 + shade * .18));
+            ctx.fill();
+            ctx.strokeStyle = outlineColor;
+            ctx.lineWidth = isResultFace ? (actor.highlight ? 2.2 : 1.5) : 1;
+            ctx.stroke();
+            if (faceDataItem.normal[2] > 0.04) {
+                const cx = faceDataItem.center3[0] * actor.radius * faceDataItem.centerProjection;
+                const cy = faceDataItem.center3[1] * actor.radius * faceDataItem.centerProjection;
+                const edgeA = points[1].x - points[0].x;
+                const edgeB = points[1].y - points[0].y;
+                let angle = Math.atan2(edgeB, edgeA);
+                if (angle > Math.PI / 2) angle -= Math.PI;
+                if (angle < -Math.PI / 2) angle += Math.PI;
+                const averageFaceSize = (((Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) + Math.hypot(points[1].x - points[2].x, points[1].y - points[2].y) + Math.hypot(points[2].x - points[0].x, points[2].y - points[0].y)) / 3) || actor.radius * 0.55);
+                const tiltScale = ddClamp(0.48 + faceDataItem.normal[2] * 0.52, 0.5, 1);
+                const textSize = Math.max(9, averageFaceSize * (isResultFace ? 0.34 : 0.30));
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y); points.slice(1).forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
+                ctx.clip();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+                ctx.scale(1, tiltScale);
+                ctx.fillStyle = isResultFace ? '#080808' : palette.text;
+                ctx.font = `bold ${textSize}px Inter, Arial, sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(String(actor.labels ? actor.labels[faceDataItem.index] : faceDataItem.index + 1), 0, 0);
+                ctx.restore();
+            }
+        });
+        if (actor.highlight && actor.revealed && actor.badgeLabel) {
+            ctx.save();
+            ctx.fillStyle = ddHexToRgba(palette.edge, .18);
+            ctx.strokeStyle = palette.edge;
+            ctx.lineWidth = 1;
+            const badgeWidth = Math.max(66, actor.badgeLabel.length * 7.6);
+            const badgeHeight = 20;
+            const badgeY = -actor.radius * 1.62;
+            if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(-badgeWidth / 2, badgeY, badgeWidth, badgeHeight, 9); }
+            else { ctx.beginPath(); ctx.rect(-badgeWidth / 2, badgeY, badgeWidth, badgeHeight); }
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = palette.edge;
+            ctx.font = 'bold 11px Inter, Arial, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(actor.badgeLabel, 0, badgeY + badgeHeight / 2 + .5);
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+const sides=[2,3,4,6,8,10,12,20,100], $=id=>document.getElementById(id);
+const modal=$('ddFreeModal'), grid=$('ddFreeGrid'); let busy=false, finishAnimation=null;
+const history=[];
+const counts=Object.fromEntries(sides.map(n=>[n,n===20?1:0]));
+const shapes={2:'M16 3 A13 13 0 1 0 16 29 A13 13 0 1 0 16 3',3:'M5 5 H27 V27 H5 Z',4:'M16 3 L30 28 H2 Z',6:'M5 5 H27 V27 H5 Z M5 5 L12 11 H27 M12 11 V27',8:'M16 2 L29 16 L16 30 L3 16 Z M3 16 H29 M16 2 L11 16 L16 30',10:'M16 2 L29 12 L24 25 L16 30 L8 25 L3 12 Z M16 2 L10 18 L16 30 L22 18 Z',12:'M10 2 H22 L31 13 L26 27 L16 31 L6 27 L1 13 Z M10 10 H22 L26 20 L16 27 L6 20 Z',20:'M16 2 L29 9 V24 L16 31 L3 24 V9 Z M16 2 L8 23 H24 Z M3 9 L8 23 L3 24 M29 9 L24 23 L29 24',100:'M16 2 L29 12 L24 25 L16 30 L8 25 L3 12 Z M16 2 L10 18 L16 30 L22 18 Z'};
+for(const n of sides){
+ const button=document.createElement('button');button.type='button';button.className='dd-free-die';button.id=`ddFreeAdd${n}`;button.setAttribute('aria-label',`Adicionar d${n}`);
+ button.innerHTML=`<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="${shapes[n]}"/></svg><span>d${n}</span><b></b>`;
+ button.addEventListener('click',()=>{if(busy)return;if(Object.values(counts).reduce((a,b)=>a+b,0)>=30){$('ddFreeStatus').textContent='Limite de 30 dados por rolagem.';return;}counts[n]++;$('ddFreeStatus').textContent='';update();});grid.appendChild(button);
+}
+NON_PROFILE_CONTROL_IDS.add('ddFreeBonus');
+function selection(){return sides.map(n=>({sides:n,count:counts[n]}));}
+function formula(items,bonus){return items.filter(x=>x.count).map(x=>`${x.count}d${x.sides}`).join(' + ')+(bonus?` ${bonus<0?'−':'+'} ${Math.abs(bonus)}`:'');}
+function update(){
+ const items=selection(),total=items.reduce((s,x)=>s+x.count,0),bonus=Number($('ddFreeBonus').value);
+ const valid=items.every(x=>Number.isInteger(x.count)&&x.count>=0&&x.count<=30)&&total>0&&total<=30&&Number.isInteger(bonus)&&Math.abs(bonus)<=9999;
+ $('ddFreeFormula').textContent=total===0?'Escolha um dado acima.':valid?`${total} ${total===1?'dado':'dados'}${bonus?` · modificador ${bonus>0?'+':''}${bonus}`:''} · toque na combinação para remover`:'Use um modificador inteiro entre −9999 e 9999.';
+ $('ddFreeChips').replaceChildren(...items.filter(x=>x.count).map(x=>{const chip=document.createElement('button');chip.type='button';chip.className='dd-free-chip';chip.textContent=`${x.count}d${x.sides} −`;chip.setAttribute('aria-label',`Remover um d${x.sides}`);chip.disabled=busy;chip.addEventListener('click',()=>{if(busy)return;counts[x.sides]--;update();});return chip;}));
+ for(const x of items){const button=$(`ddFreeAdd${x.sides}`);button.classList.toggle('selected',x.count>0);button.querySelector('b').textContent=x.count?`×${x.count}`:'';}
+ $('ddFreeClear').hidden=total===0;
+ $('ddFreeRoll').textContent=busy?'ROLANDO…':valid?`ROLAR ${formula(items,bonus)}`:'ROLAR';
+ $('ddFreeRoll').disabled=busy||!valid; return valid;
+}
+$('ddFreeBonus').addEventListener('input',update);
+$('ddFreeClear').addEventListener('click',()=>{sides.forEach(n=>counts[n]=0);$('ddFreeBonus').value=0;update();});
+$('ddFreeOpen').addEventListener('click',()=>{modal.style.display='flex';$('ddFreeClose').focus();});
+function close(){if(finishAnimation)finishAnimation();modal.style.display='none';$('ddFreeOpen').focus();}
+$('ddFreeClose').addEventListener('click',close);
+modal.addEventListener('click',e=>{if(e.target===modal)close();});
+modal.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();close();}});
+// Convex hull with coplanar vertices merged into polygonal faces.
+const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+function hull(vertices){
+ const faces=[],seen=new Set();
+ for(let a=0;a<vertices.length;a++)for(let b=a+1;b<vertices.length;b++)for(let c=b+1;c<vertices.length;c++){
+  let normal=cross(sub(vertices[b],vertices[a]),sub(vertices[c],vertices[a]));if(Math.hypot(...normal)<1e-6)continue;normal=ddNormalizeVector(normal);
+  let distances=vertices.map(v=>dot(normal,sub(v,vertices[a])));
+  if(distances.some(x=>x>1e-5)&&distances.some(x=>x< -1e-5))continue;
+  if(distances.some(x=>x>1e-5))normal=normal.map(v=>-v);
+  const ids=distances.map((x,i)=>Math.abs(x)<1e-5?i:-1).filter(i=>i>=0),key=ids.join(',');if(seen.has(key))continue;seen.add(key);
+  const center=ids.reduce((s,i)=>s.map((v,k)=>v+vertices[i][k]/ids.length),[0,0,0]);
+  const u=ddNormalizeVector(sub(vertices[ids[0]],center)),v=cross(normal,u);
+  ids.sort((a,b)=>Math.atan2(dot(sub(vertices[a],center),v),dot(sub(vertices[a],center),u))-Math.atan2(dot(sub(vertices[b],center),v),dot(sub(vertices[b],center),u)));
+  faces.push(ids);
+ }return {vertices,faces};
+}
+function dual(g){return hull(g.faces.map(f=>{const a=g.vertices[f[0]],n=ddNormalizeVector(cross(sub(g.vertices[f[1]],a),sub(g.vertices[f[2]],a)));return n.map(x=>x/dot(n,a));}));}
+function normalized(g){const radius=Math.max(...g.vertices.map(v=>Math.hypot(...v)));return {...g,vertices:g.vertices.map(v=>v.map(x=>x/radius))};}
+const cube=hull([-1,1].flatMap(x=>[-1,1].flatMap(y=>[-1,1].map(z=>[x,y,z]))));
+const antiprism=hull(Array.from({length:10},(_,i)=>{const row=i%2,angle=Math.floor(i/2)*Math.PI*2/5+row*Math.PI/5;return [Math.cos(angle),Math.sin(angle),row?0.55:-0.55];}));
+const geometries={2:normalized(cube),3:normalized(cube),6:normalized(cube),4:normalized(hull([[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]])),8:normalized(hull([[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]])),10:normalized(dual(antiprism)),12:normalized(dual(DD_D20_GEOMETRY)),20:DD_D20_GEOMETRY};
+function actorFor(sides,value,label){
+ const geometry=geometries[sides],labels=geometry.faces.map((_,i)=>sides<=3?i%sides+1:i+1);
+ if(label==='dezenas')labels.splice(0,labels.length,...Array.from({length:10},(_,i)=>String(i*10).padStart(2,'0')));
+ if(label==='unidades')labels.splice(0,labels.length,...Array.from({length:10},(_,i)=>i));
+ const targetFace=labels.findIndex(x=>Number(x)===value),f=geometry.faces[targetFace],a=geometry.vertices[f[0]];
+ const n=ddNormalizeVector(cross(sub(geometry.vertices[f[1]],a),sub(geometry.vertices[f[2]],a)));
+ const target=sides===20?ddGetTargetEulerForFace(targetFace):{rx:Math.atan2(n[1],n[2]),ry:-Math.atan2(n[0],Math.hypot(n[1],n[2])),rz:0};
+ return {geometry,labels,targetFace,target,value,label:label?`d100 · ${label}`:`d${sides}`,rx:Math.random()*6,ry:Math.random()*6,rz:Math.random()*6,offsetY:0,scale:1,fade:1,highlight:0,highlightPulse:0};
+}
+function animate(results){return new Promise(resolve=>{
+ if(diceSettings.enabled===false||matchMedia('(prefers-reduced-motion: reduce)').matches){resolve();return;}
+ const actors=results.flatMap(r=>r.sides===100?[actorFor(10,Math.floor(r.value%100/10)*10,'dezenas'),actorFor(10,r.value%10,'unidades')]:[actorFor(r.sides,r.value)]);
+ const columns=Math.min(4,actors.length),rows=Math.ceil(actors.length/columns),width=640,height=rows*175+30;
+ const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;canvas.setAttribute('aria-label','Animação 3D dos dados selecionados');
+ const skip=document.createElement('button');skip.className='sys-btn';skip.type='button';skip.textContent='MOSTRAR RESULTADO';
+ $('ddFreeResult').append(skip,canvas);const ctx=canvas.getContext('2d');if(!ctx){resolve();return;}
+ const profile=ddGetDiceModeProfile(actors.length);let start=null,done=false,raf=0,lastImpact=0;
+ function draw(p){ctx.clearRect(0,0,width,height);ddDrawDiceTray(ctx,width,height);actors.forEach((a,i)=>{
+  a.x=(i%columns+.5)*width/columns;a.y=Math.floor(i/columns)*175+95;a.radius=42;
+  if(p<.65){a.rx+=.19;a.ry+=.23;a.rz+=.12;a.offsetY=-Math.abs(Math.sin(p*28+i))*18*(1-p);}
+  else {a.rx=ddLerpAngle(a.rx,a.target.rx,.3);a.ry=ddLerpAngle(a.ry,a.target.ry,.3);a.rz=ddLerpAngle(a.rz,a.target.rz,.3);a.offsetY*=.7;}
+  if(p===1){Object.assign(a,a.target);a.offsetY=0;}a.revealed=p===1;ddFreeDrawDie(ctx,a);
+  ctx.fillStyle=ddGetDicePalette(false).text;ctx.font='14px Arial';ctx.textAlign='center';ctx.fillText(a.label+(p===1?` = ${a.value}`:''),a.x,a.y+65);
+ });}
+ function finish(){if(done)return;done=true;cancelAnimationFrame(raf);draw(1);skip.remove();finishAnimation=null;resolve();}
+ finishAnimation=finish;skip.addEventListener('click',finish);canvas.addEventListener('click',finish);
+ function frame(t){if(done)return;start??=t;const p=Math.min(1,(t-start)/profile.duration);draw(p);if(p-lastImpact>.24){ddPlayDiceImpact(.65);lastImpact=p;}if(p===1)finish();else raf=requestAnimationFrame(frame);}
+ raf=requestAnimationFrame(frame);
+});}
+$('ddFreeRoll').addEventListener('click',async()=>{
+ if(busy||!update())return;
+ const items=selection(),bonus=Number($('ddFreeBonus').value),expression=formula(items,bonus);
+ const results=items.flatMap(x=>Array.from({length:x.count},()=>({sides:x.sides,value:ddRollSecureDie(x.sides)})));
+ const total=results.reduce((s,x)=>s+x.value,bonus);
+ busy=true;grid.querySelectorAll('button,input').forEach(e=>e.disabled=true);$('ddFreeBonus').disabled=true;$('ddFreeClear').disabled=true;update();
+ $('ddFreeStatus').textContent='Rolando…';$('ddFreeResult').replaceChildren();
+ try{await animate(results);}catch(error){console.error('Animação dos dados livres indisponível',error);}
+ finally{
+  const summary=document.createElement('div');summary.className='dice-result-box';
+  const heading=document.createElement('div');heading.textContent=expression;summary.appendChild(heading);
+  const values=document.createElement('div');values.className='dd-free-values';
+  results.forEach(r=>{const chip=document.createElement('span');chip.textContent=`d${r.sides}: ${r.value}`;values.appendChild(chip);});summary.appendChild(values);
+  const sum=document.createElement('div');sum.className='dice-total';sum.textContent=`TOTAL: ${total}`;summary.appendChild(sum);$('ddFreeResult').appendChild(summary);
+  $('ddFreeStatus').textContent=`${expression}: total ${total}.`;
+  history.unshift(`${expression} → ${results.map(r=>`d${r.sides}: ${r.value}`).join(', ')} → Total: ${total}`);history.splice(10);$('ddFreeHistory').replaceChildren(...history.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+  busy=false;grid.querySelectorAll('button,input').forEach(e=>e.disabled=false);$('ddFreeBonus').disabled=false;$('ddFreeClear').disabled=false;update();
+ }
+});update();
 })();
 </script>
 
