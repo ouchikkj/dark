@@ -9033,6 +9033,13 @@ body.shape-round #brRoom button,body.shape-round .br-lobby-card,body.shape-round
 body.shape-angular #brRoom button,body.shape-angular .br-party-card,body.shape-angular #brReturn {clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);}
 body.theme-combat #brRoom h1 {display:block!important;}
 @media(max-width:650px){#brRoom h1{font-size:32px;letter-spacing:4px}.br-lobby-card{padding:30px 20px 20px}.br-benefits{gap:6px;font-size:10px}}
+#brHudStrip{position:absolute;top:10px;left:10px;right:10px;z-index:3;display:flex;gap:8px;overflow:auto;pointer-events:none}#brHudStrip .br-party-card{background:var(--panel-bg);min-width:170px;max-width:230px;flex:1;margin:0;padding:8px}#brHudStrip .br-party-name{font-size:11px}#brLastRoll{position:absolute;bottom:85px;left:10px;right:10px;z-index:3;padding:10px;background:var(--panel-bg);border:1px solid var(--border-color);font-size:14px;pointer-events:none}#brRoomOverlay{z-index:4}#brDelivery{color:var(--text-main);font-size:11px;line-height:1.5}.br-video-footer{flex-wrap:wrap}#brRoom:fullscreen{width:100vw;height:100dvh}#brHudStrip[hidden],#brLastRoll[hidden]{display:none!important}
+
+#brHudStrip{pointer-events:auto;max-height:110px}#brHudStrip .br-party-card,#brParty .br-party-card{cursor:pointer}#brRoom .br-party-card:focus-visible{outline:2px solid var(--menu-accent)}
+#brCameraSheet{position:absolute;left:12px;bottom:140px;z-index:3;background:var(--panel-bg);border-left:3px solid var(--menu-accent);padding:10px 14px;max-width:calc(100% - 24px);pointer-events:none}
+#brCameraSheet>*{display:block}#brCameraSheet strong{font-size:18px}#brCameraSheet small{color:var(--dim-text);font-size:10px}#brCameraSheet span{font-size:12px}
+#brTurnBanner{position:absolute;top:130px;left:12px;right:12px;z-index:3;background:var(--panel-bg);border:1px solid var(--menu-accent);padding:8px;font-size:12px;pointer-events:none}
+.br-turn{padding:10px 6px;border-bottom:1px solid var(--border-color)}.br-turn small{display:block;color:var(--dim-text)}.br-active{border-left:3px solid var(--menu-accent);background:var(--bg-color)}.br-turn-actions{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}#brRoom .br-turn-actions button{font-size:9px;padding:4px;min-height:30px}#brRoom summary{cursor:pointer;color:var(--text-main);margin:12px 0}#brRoom input[type=number]{width:100%;background:var(--bg-color);color:var(--text-main);border:1px solid var(--border-color);font:inherit;padding:10px}#brActorForm button{margin-top:10px}.br-result-tag{display:inline-block;border:1px solid var(--menu-accent);padding:2px 6px;margin:5px 0}
 </style>
 <section id="brRoom" hidden aria-label="Sala de RPG">
  <header><div class="br-brand">BREU <span>MESA ONLINE</span></div><div class="br-header-actions"><span id="brConnection" class="br-status" role="status">Fora da sala</span><button id="brInvite" type="button" hidden>Convidar</button><button id="brToSheet" type="button" class="br-quiet">Voltar à ficha</button><button id="brLeave" type="button" hidden>Sair da chamada</button></div></header>
@@ -9047,12 +9054,13 @@ body.theme-combat #brRoom h1 {display:block!important;}
   </div>
  </div>
  <div id="brSession" hidden>
-  <div class="br-video-column"><div id="brVideoArea"><div id="brConference"></div><iframe id="brRoomOverlay" title="Rolagens da mesa" src="about:blank" aria-hidden="true" tabindex="-1"></iframe></div><div class="br-video-footer"><span id="brSessionHint">Use os controles da chamada para ligar câmera e microfone.</span><button id="brTestRoll" type="button" class="br-quiet">Testar overlay</button></div></div>
+  <div class="br-video-column"><div id="brVideoArea"><div id="brConference"></div><div id="brHudStrip" aria-label="Recursos dos personagens"></div><div id="brCameraSheet" hidden aria-live="polite"></div><div id="brTurnBanner" hidden role="status"></div><div id="brLastRoll" hidden role="status"></div><iframe id="brRoomOverlay" title="Rolagens da mesa" src="about:blank" aria-hidden="true" tabindex="-1"></iframe></div><div class="br-video-footer"><span id="brSessionHint">Use os controles da chamada para ligar câmera e microfone.</span><button id="brAutoCamera" type="button" class="br-quiet">Câmera automática</button><button id="brReconnect" type="button">Reconectar chamada</button><button id="brFullscreen" type="button">Tela cheia</button><button id="brTestRoll" type="button" class="br-quiet">Testar overlay</button></div></div>
   <aside class="br-sidebar" aria-label="Ferramentas da mesa">
    <div id="brInviteBox" hidden><label for="brInviteLink" style="margin-top:0">Convite para esta mesa</label><input type="text" id="brInviteLink" readonly><button id="brCopy" type="button" style="width:100%;margin-top:8px">Copiar convite</button><small class="br-subtle">Envie este link ao seu grupo.</small></div>
-   <div class="br-section"><h3>Rolagens</h3><button id="brFreeDice" type="button" class="br-primary" style="width:100%">⚄ Abrir dados livres</button><div class="br-quick" id="brAttributes"></div><p class="br-subtle" style="font-size:11px">As rolagens da ficha também aparecem na sala.</p><label class="br-check"><input type="checkbox" id="brShareHud" checked>Compartilhar vida, sanidade e energia</label><label class="br-check"><input type="checkbox" id="brShowOverlay" checked>Mostrar dados sobre a chamada</label></div>
-   <div class="br-section"><h3 id="brPartyTitle">Na mesa</h3><div id="brParty"></div></div>
-   <div><h3>Últimas rolagens</h3><div id="brHistory"><p class="br-subtle">As rolagens da sessão aparecem aqui.</p></div></div>
+   <div class="br-section"><h3>Rolagens</h3><label for="brRollReason" style="margin-top:0">Motivo da rolagem (opcional)</label><input id="brRollReason" type="text" maxlength="100" placeholder="Ex.: investigar a porta"><p id="brDelivery" role="status" class="br-subtle"></p><button id="brFreeDice" type="button" class="br-primary" style="width:100%">⚄ Abrir dados livres</button><div class="br-quick" id="brAttributes"></div><p class="br-subtle" style="font-size:11px">As rolagens da ficha também aparecem na sala.</p><label class="br-check"><input type="checkbox" id="brShareHud" checked>Compartilhar vida, sanidade e energia</label><label class="br-check"><input type="checkbox" id="brShowOverlay" checked>Mostrar dados sobre a chamada</label></div>
+   <label class="br-check"><input type="checkbox" id="brShowHud" checked>Mostrar recursos sobre o vídeo</label><button id="brResync" type="button">Ressincronizar mesa</button><div class="br-section"><h3 id="brPartyTitle">Na mesa</h3><div id="brParty"></div></div>
+   <section class="br-section"><h3 id="brEncounterTitle">Iniciativa</h3><p id="brRound"></p><div id="brTurnList"></div><div id="brMasterControls" hidden><button id="brNextTurn" type="button">Próximo turno</button><button id="brAddParty" type="button">Adicionar grupo</button><details id="brEncounterEditor"><summary>Adicionar / editar personagem ou inimigo</summary><form id="brActorForm"><input id="brActorId" type="hidden"><label for="brActorName">Nome</label><input id="brActorName" type="text" maxlength="60" required><label for="brInitiative">Iniciativa</label><input id="brInitiative" type="number" min="-999" max="999" step="any" value="0" required><label for="brConditions">Condições</label><input id="brConditions" type="text" maxlength="100" placeholder="Ex.: ferido, amedrontado"><button type="submit">Salvar</button><button id="brActorCancel" type="button">Limpar campos</button></form></details></div></section>
+   <details open><summary>Últimas rolagens</summary><div id="brHistory"><p class="br-subtle">As rolagens da sessão aparecem aqui.</p></div></details>
   </aside>
  </div>
 </section>
@@ -9076,7 +9084,7 @@ window.BreuRoomProtocol=(()=>{
    dice3d:d.dice3d!==false,diceSound:d.diceSound!==false,diceFx:d.diceFx!==false,
    diceSpeed:['fast','normal','cinematic'].includes(d.diceSpeed)?d.diceSpeed:'normal',
    diceTheme:['adaptive','onyx','ivory','emerald','crimson','amethyst','gold','frost'].includes(d.diceTheme)?d.diceTheme:'adaptive',
-   character:text(d.character,80),theme:'default',layout:'standard',duration:6000};
+   reason:text(d.reason,100),character:text(d.character,80),theme:'default',layout:'standard',duration:6000};
  }
  function hud(d){
   if(!d||typeof d!=='object')return null;
@@ -9090,8 +9098,8 @@ window.BreuRoomProtocol=(()=>{
  function packet(raw,room,now=Date.now()){
   if(typeof raw!=='string'||raw.length>12000)return null;
   try{
-   const p=JSON.parse(raw);if(p.app!=='breu-room'||p.v!==1||p.room!==room||!['roll','hud','hello'].includes(p.kind)||typeof p.id!=='string'||p.id.length>120||!number(p.time,now-60000,now+10000))return null;
-   const data=p.kind==='roll'?roll(p.data):p.kind==='hud'?hud(p.data):{};if(!data)return null;
+   const p=JSON.parse(raw);if(p.app!=='breu-room'||p.v!==1||p.room!==room||!['roll','hud','hello','encounter','replay'].includes(p.kind)||typeof p.id!=='string'||p.id.length>120||!number(p.time,now-60000,now+10000))return null;
+   const data=p.kind==='roll'?roll(p.data):p.kind==='hud'?hud(p.data):p.kind==='encounter'?encounter(p.data):p.kind==='replay'?replay(p.data):{};if(!data)return null;
    return {kind:p.kind,id:p.id,time:p.time,data};
   }catch{return null;}
  }
@@ -9099,8 +9107,46 @@ window.BreuRoomProtocol=(()=>{
   let raw=String(value||'').trim();if(raw.includes('://')){try{raw=new URLSearchParams(new URL(raw).hash.slice(1)).get('mesa')||'';}catch{return '';}}
   return /^breu-[a-f0-9]{32}$/.test(raw)?raw:'';
  }
- return {roll,hud,packet,room};
+ function encounter(d){
+  if(!d||!Number.isSafeInteger(d.version)||d.version<0||!Number.isInteger(d.round)||d.round<1||d.round>9999||!Array.isArray(d.entries)||d.entries.length>40)return null;
+  const entries=[];const ids=new Set();for(const e of d.entries){if(!e||typeof e.id!=='string'||!e.id||e.id.length>100||ids.has(e.id)||typeof e.name!=='string'||!e.name.trim()||!number(e.initiative,-999,999))return null;ids.add(e.id);entries.push({id:e.id,name:text(e.name,60),initiative:e.initiative,condition:text(e.condition,100)});}
+  if(d.active!==null&&!ids.has(d.active))return null;
+  return {version:d.version,round:d.round,active:d.active,entries};
+ }
+ function replay(d){if(!d||typeof d.id!=='string'||!d.id||d.id.length>120||!number(d.time,Date.now()-86400000,Date.now()+10000))return null;const data=roll(d.data);return data?{id:d.id,time:d.time,data}:null;}
+ return {roll,hud,packet,room,encounter,replay};
 })();
+
+// Application-level acknowledgements: executeCommand alone does not confirm delivery.
+window.BreuRoomLink=class {
+ constructor({room,self,send,onRoll,onHud,onStatus,onMessage=()=>{},now=()=>Date.now()}){Object.assign(this,{room,self,send,onRoll,onHud,onStatus,onMessage,now});this.pending=new Map();this.seen=new Set();this.peers=new Set();this.lastPeer=0;}
+ packet(kind,data,id=crypto.randomUUID()){return {app:'breu-room',v:1,room:this.room,kind,id,time:this.now(),data};}
+ transmit(p,to=''){try{this.send(to,JSON.stringify(p));}catch{} }
+ roll(data,id){const p=this.packet('roll',data,id); if(this.pending.size>=20){this.onStatus('Fila de envio cheia. Aguarde a confirmação das rolagens.');return;}
+  this.pending.set(p.id,{p,waiting:new Set(this.peers),acked:new Set(),created:this.now(),last:this.now()});this.transmit(p);this.report();}
+ hud(data,to=''){this.transmit(this.packet('hud',data),to);}
+ hello(){this.transmit(this.packet('hello',{}));}
+ receive(sender,raw){
+  if(!sender||sender===this.self||typeof raw!=='string'||raw.length>12000)return;
+  let p;try{p=JSON.parse(raw);}catch{return;}
+  if(p.app!=='breu-room'||p.v!==1||p.room!==this.room||typeof p.id!=='string'||p.id.length>120)return;
+  if(p.kind==='ack'){const item=this.pending.get(p.data?.id);if(item){item.acked.add(sender);item.waiting.delete(sender);if(!item.waiting.size){this.pending.delete(p.data.id);this.onStatus('Rolagem recebida por '+item.acked.size+' participante(s).');}}return;}
+  const valid=window.BreuRoomProtocol.packet(raw,this.room,this.now());if(!valid)return;
+  this.peers.add(sender);this.lastPeer=this.now();
+  if(valid.kind==='hello'){this.onHud(sender,null);this.onMessage(sender,valid);return;}
+  if(valid.kind==='hud'){this.onHud(sender,valid.data);return;}
+  if(['encounter','replay'].includes(valid.kind)){if(valid.kind==='replay')this.transmit(this.packet('ack',{id:valid.data.id}),sender);this.onMessage(sender,valid);return;}
+  this.transmit(this.packet('ack',{id:valid.id}),sender);
+  const key=sender+':'+valid.id;if(this.seen.has(key))return;this.seen.add(key);if(this.seen.size>500)this.seen.delete(this.seen.values().next().value);
+  this.onRoll(valid.data,valid.id,sender);
+ }
+ tick(){for(const [id,item] of this.pending){if(this.now()-item.created>25000){this.pending.delete(id);this.onStatus('Entrega não confirmada. Confira se todos abriram o convite do site.');continue;}
+   if(this.now()-item.last>=2000){item.last=this.now();this.transmit(item.p);}}
+ }
+ report(){this.onStatus(this.peers.size?'Enviando rolagem · aguardando confirmação…':'Rolagem local · aguardando outro jogador conectado pelo site.');}
+ removePeer(id){this.peers.delete(id);for(const [key,item] of this.pending){item.waiting.delete(id);if(!item.waiting.size&&item.acked.size){this.pending.delete(key);this.onStatus('Rolagem recebida por '+item.acked.size+' participante(s).');}}}
+ dispose(){this.pending.clear();this.peers.clear();this.seen.clear();}
+};
 
 window.BreuJaas = (() => {
  const config = window.BREU_CALL_CONFIG || {};
@@ -9113,7 +9159,7 @@ window.BreuJaas = (() => {
    return {room, invitation: room === params.get('mesa') ? params.get('convite') || '' : ''};
   } catch { return {room:'', invitation:''}; }
  }
- let participantId;
+ let participantId, cachedAccess=null, cachedUntil=0;
  function userId() {
   if (participantId) return participantId;
   try { participantId = localStorage.getItem('breu-jaas-participant'); } catch {}
@@ -9129,6 +9175,8 @@ window.BreuJaas = (() => {
   catch { throw new Error('A chamada ainda não foi configurada pelo mestre. A prévia dos dados continua disponível.'); }
   const masterPassword = $('brMasterPassword').value;
   const invite = parse($('brRoomCode').value);
+  if(!create&&!masterPassword&&cachedAccess?.room===invite.room&&cachedAccess.invitation===invite.invitation&&Date.now()<cachedUntil)return cachedAccess;
+  if(!create&&!masterPassword&&cachedAccess?.moderator&&cachedAccess.room===invite.room&&Date.now()>=cachedUntil){$('brMasterAccess').open=true;$('brMasterPassword').focus();throw new Error('Sua autorização de mestre expirou. Informe a senha novamente para reconectar como mestre.');}
   if (create && !masterPassword) { $('brMasterAccess').open = true; $('brMasterPassword').focus(); throw new Error('Informe a senha de mestre para criar a sala.'); }
   if (!create && !invite.room) throw new Error('Cole o convite completo da mesa.');
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
@@ -9140,6 +9188,7 @@ window.BreuJaas = (() => {
    const data = await response.json();
    if (!response.ok) throw new Error(data.error || 'Não foi possível entrar na sala.');
    if (data.appId !== config.appId || !window.BreuRoomProtocol.room(data.room) || typeof data.jwt !== 'string' || typeof data.invitation !== 'string') throw new Error('Resposta inválida do serviço de chamada.');
+   try{const claims=JSON.parse(atob(data.jwt.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));cachedUntil=claims.exp*1000-60000;cachedAccess=data;}catch{cachedAccess=null;cachedUntil=0;}
    $('brMasterPassword').value = '';
    return data;
   } catch (error) {
@@ -9159,6 +9208,9 @@ let roomInvitation='';
 let api=null,room='',myId='',joined=false,preview=false,loading=false,session=0,scriptPromise=null;
 let ready=false,overlayQueue=[],hudTimer=null,lastHud='',lastHudAt=0;
 const peers=new Map(),seen=new Set(),rates=new Map(),history=[];
+let link=null,linkTimer=null,overlayTimer=null;
+function delivery(text){$('brDelivery').textContent=text;}
+function startLink(){link?.dispose();clearInterval(linkTimer);link=new window.BreuRoomLink({room,self:myId,send:(to,text)=>api?.executeCommand('sendEndpointTextMessage',to,text),onStatus:delivery,onMessage:handleMessage,onRoll:(data,id,sender)=>showRoll(data,id,peers.get(sender)?.name),onHud:(sender,hud)=>{if(!peers.has(sender))peers.set(sender,{name:'Jogador'});if(hud)peers.get(sender).hud=hud;else link.hud(localHud(),sender);renderParty();}});linkTimer=setInterval(()=>link?.tick(),1000);link.hello();link.hud(localHud());}
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
 function status(text){$('brConnection').textContent=text;root.dataset.connected=String(joined);}
 function hint(text){$('brSessionHint').textContent=text;}
@@ -9178,17 +9230,18 @@ function loadJitsi(){
   script.onload=()=>finish(window.JitsiMeetExternalAPI?null:new Error('A chamada não pôde ser carregada.'));script.onerror=()=>finish(new Error('Não foi possível carregar o Jitsi. Verifique a conexão.'));document.head.appendChild(script);
  });return scriptPromise;
 }
-function setupOverlay(){ready=false;overlayQueue=[];overlay.src='sala-overlay.html';}
+function setupOverlay(){ready=false;overlayQueue=[];clearTimeout(overlayTimer);overlay.src='sala-overlay.html?v=20261024b';overlayTimer=setTimeout(()=>{if(!ready)delivery('Overlay não carregou. Confira se sala-overlay.html foi publicado junto do site.');},8000);}
+overlay.addEventListener('load',()=>overlay.contentWindow?.postMessage({type:'breu-overlay-ping'},location.origin==='null'?'*':location.origin));
 function deliverOverlay(data){
  if(!$('brShowOverlay').checked)return;
  if(!ready){overlayQueue.push(data);overlayQueue=overlayQueue.slice(-8);return;}
  overlay.contentWindow?.postMessage({type:'breu-room-roll',payload:data},location.origin==='null'?'*':location.origin);
 }
-window.addEventListener('message',e=>{if(e.source!==overlay.contentWindow||e.origin!==location.origin||e.data?.type!=='breu-overlay-ready')return;ready=true;for(const roll of overlayQueue)deliverOverlay(roll);overlayQueue=[];});
+window.addEventListener('message',e=>{if(e.source!==overlay.contentWindow||e.origin!==location.origin||e.data?.type!=='breu-overlay-ready')return;ready=true;clearTimeout(overlayTimer);for(const roll of overlayQueue)deliverOverlay(roll);overlayQueue=[];});
 function prepareSession(){
  $('brLobby').hidden=true;$('brSession').hidden=false;$('brLeave').hidden=false;$('brInvite').hidden=preview;
  root.dataset.preview=String(preview);$('brLeave').textContent=preview?'Fechar prévia':'Sair da chamada';
- setupOverlay();$('brShareHud').disabled=preview;renderParty();
+ restoreTable();renderHistory();renderEncounter();setupOverlay();$('brShareHud').disabled=preview;renderParty();
 }
 async function connect(createNew=false){
  if(loading||api)return;
@@ -9198,24 +9251,27 @@ async function connect(createNew=false){
  $('brJoin').disabled=true;$('brCreate').disabled=true;notice('Carregando a chamada…');status('Conectando');
  try{
   const access=await J.authorize(createNew,myName());if(generation!==session)return;
-  roomInvitation=access.invitation;setRoom(access.room);
+  isMaster=access.moderator===true;roomInvitation=access.invitation;setRoom(access.room);
   await loadJitsi();if(generation!==session)return;
   preview=false;prepareSession();
   const instance=new JitsiMeetExternalAPI('8x8.vc',{
    roomName:J.config.appId+'/'+room,jwt:access.jwt,width:'100%',height:'100%',parentNode:$('brConference'),lang:'ptBR',userInfo:{displayName:myName()},
-   configOverwrite:{startWithAudioMuted:true,startWithVideoMuted:true,disableInitialGUM:true,prejoinConfig:{enabled:true},disableDeepLinking:true,toolbarButtons:['microphone','camera','desktop','chat','participants-pane','tileview','settings','hangup','fullscreen','raisehand']}
+   configOverwrite:{startWithAudioMuted:true,startWithVideoMuted:true,disableInitialGUM:true,prejoinConfig:{enabled:true},disableDeepLinking:true,toolbarButtons:['microphone','camera','desktop','chat','participants-pane','tileview','settings','hangup','raisehand']}
   });api=instance;
   const on=(name,fn)=>instance.addListener(name,arg=>{if(api===instance&&generation===session)fn(arg);});
-  on('videoConferenceJoined',e=>{joined=true;myId=e.id;status('Na sala');hint('Chamada conectada. Ligue câmera e microfone nos controles do vídeo.');refreshPeers();syncHud(true);});
+  on('videoConferenceJoined',e=>{joined=true;myId=e.id;focusedId=myId;startLink();renderEncounter();status('Na sala');hint('Chamada conectada. Ligue câmera e microfone nos controles do vídeo.');refreshPeers();syncHud(true);});
   on('dataChannelOpened',()=>{hint('Rolagens e recursos conectados à mesa.');refreshPeers().then(()=>{broadcast('hello',{});syncHud(true);});});
+  on('largeVideoChanged',e=>{focusedId=e.id;renderCamera();});
+  on('tileViewChanged',e=>{tileView=e.enabled;renderCamera();});
+  on('participantRoleChanged',e=>{roles.set(e.id,e.role);if(e.id===myId){isMaster=e.role==='moderator';renderEncounter();}link?.hello();});
   on('participantJoined',e=>{peers.set(e.id,{name:e.displayName||'Jogador'});renderParty();setTimeout(()=>{if(api===instance){syncHud(true);send('hello',{},e.id);}},1200);});
-  on('participantLeft',e=>{peers.delete(e.id);rates.delete(e.id);renderParty();});
+  on('participantLeft',e=>{peers.delete(e.id);roles.delete(e.id);link?.removePeer(e.id);rates.delete(e.id);renderParty();});
   on('displayNameChange',e=>{const peer=peers.get(e.id);if(peer){peer.name=e.displayname||e.displayName||peer.name;renderParty();}});
   on('endpointTextMessageReceived',receive);
   on('videoConferenceLeft',()=>leave(false));on('readyToClose',()=>leave(false));
   on('cameraError',()=>hint('Câmera indisponível. Confira a permissão do navegador e o dispositivo nas configurações da chamada.'));
   on('micError',()=>hint('Microfone indisponível. Confira a permissão do navegador e o dispositivo nas configurações da chamada.'));
-  on('errorOccurred',e=>{if(e.isFatal){joined=false;status('Conexão interrompida');hint('A chamada encontrou um erro. Use Sair da chamada e entre novamente.');}});
+  on('errorOccurred',e=>{if(e.isFatal){joined=false;status('Conexão interrompida');hint('A chamada encontrou um erro. Use Reconectar chamada para recuperar a mesa.');}});
   hudTimer=setInterval(()=>{if(joined){syncHud();refreshPeers();}},4000);
   hint('Conclua a entrada no vídeo. Câmera e microfone começam desligados.');
   $('brInviteLink').value=invite();notice('');
@@ -9226,7 +9282,7 @@ async function refreshPeers(){
  if(!api||!joined)return;const instance=api;
  try{const info=await instance.getRoomsInfo();if(api!==instance)return;
   const rooms=Array.isArray(info)?info:info.rooms||[];const active=rooms.find(r=>r.participants?.some(p=>p.id===myId))||rooms.find(r=>r.isMainRoom);
-  if(!active)return;const current=new Set();for(const p of active.participants||[]){if(p.id===myId||p.isHidden)continue;current.add(p.id);peers.set(p.id,{...peers.get(p.id),name:p.displayName||peers.get(p.id)?.name||'Jogador'});}for(const id of peers.keys())if(!current.has(id))peers.delete(id);renderParty();
+  if(!active)return;const current=new Set();for(const p of active.participants||[]){if(p.id===myId||p.isHidden)continue;current.add(p.id);peers.set(p.id,{...peers.get(p.id),name:p.displayName||peers.get(p.id)?.name||'Jogador'});if(p.role)roles.set(p.id,p.role);}for(const id of peers.keys())if(!current.has(id)){peers.delete(id);roles.delete(id);link?.removePeer(id);}renderParty();if(Date.now()-lastStateAt>10000){lastStateAt=Date.now();sendState();link?.hello();}
  }catch{/* Participant events remain a fallback when room information is unavailable. */}
 }
 function send(kind,data,to){
@@ -9235,17 +9291,11 @@ function send(kind,data,to){
  if(packet.length>12000)return false;
  try{api.executeCommand('sendEndpointTextMessage',to,packet);return true;}catch{hint('Não foi possível compartilhar. Confira a conexão com a sala.');return false;}
 }
-function broadcast(kind,data){for(const id of peers.keys())send(kind,data,id);}
+function broadcast(kind,data,id){if(!link)return;if(kind==='roll')link.roll(data,id);else if(kind==='hud')link.hud(data);else link.hello();}
 function receive(e){
  const sender=e?.senderInfo?.id;if(!sender||sender===myId||!joined)return;
- const parsed=P.packet(e.eventData?.text,room);if(!parsed)return;
- const key=sender+':'+parsed.id;if(seen.has(key))return;
- const now=Date.now(),rate=rates.get(sender)||{start:now,count:0};if(now-rate.start>1000){rate.start=now;rate.count=0;}if(++rate.count>8)return;rates.set(sender,rate);
- seen.add(key);if(seen.size>500)seen.delete(seen.values().next().value);
- if(!peers.has(sender)){peers.set(sender,{name:'Jogador'});refreshPeers();}
- if(parsed.kind==='hello'){send('hud',localHud(),sender);return;}
- if(parsed.kind==='hud'){peers.get(sender).hud=parsed.data;renderParty();return;}
- showRoll(parsed.data,parsed.id,peers.get(sender).name);
+ const now=Date.now(),rate=rates.get(sender)||{start:now,count:0};if(now-rate.start>1000){rate.start=now;rate.count=0;}if(++rate.count>40)return;rates.set(sender,rate);
+ link?.receive(sender,e.eventData?.text);
 }
 function localHud(){
  const h={name:$('charNameInput')?.value?.trim().slice(0,60)||myName(),shared:$('brShareHud').checked};if(!h.shared)return h;
@@ -9259,30 +9309,29 @@ function renderParty(){
  const all=[{id:myId||'local',name:myName(),hud:localHud(),self:true},...Array.from(peers,([id,p])=>({id,...p}))];
  $('brPartyTitle').textContent=preview?'Seu personagem':`Na mesa · ${joined?all.length:1}`;
  $('brParty').replaceChildren(...all.map(p=>{
-  const card=document.createElement('div');card.className='br-party-card';const heading=document.createElement('div');heading.className='br-party-name';const name=document.createElement('span');name.textContent=p.hud?.name||p.name;const tag=document.createElement('small');tag.textContent=p.self?'você':p.name;heading.append(name,tag);card.appendChild(heading);
+  const card=document.createElement('div');card.className='br-party-card';card.dataset.participant=p.id;const heading=document.createElement('div');heading.className='br-party-name';const name=document.createElement('span');name.textContent=p.hud?.name||p.name;const tag=document.createElement('small');tag.textContent=p.self?'você':p.name;heading.append(name,tag);card.appendChild(heading);
   if(p.hud?.shared){const grid=document.createElement('div');grid.className='br-hud-grid';for(const [key,label,color] of [['vd','VD','#cc776e'],['san','SAN','#a9a1c9'],['pe','PE','#86b8b3']]){const values=p.hud[key],cell=document.createElement('div'),title=document.createElement('div');title.className='br-hud-label';const l=document.createElement('span');l.textContent=label;const v=document.createElement('span');v.textContent=`${values.current}/${values.max}`;title.append(l,v);const bar=document.createElement('div');bar.className='br-hud-bar';bar.style.setProperty('--br-bar',color);const fill=document.createElement('i');fill.style.width=`${Math.min(100,values.current/values.max*100)}%`;bar.appendChild(fill);cell.append(title,bar);grid.appendChild(cell);}card.appendChild(grid);}
   else{const note=document.createElement('div');note.className='br-subtle';note.style.fontSize='11px';note.textContent=p.hud?'Recursos ocultos':'Aguardando ficha';card.appendChild(note);}return card;
  }));
+ $('brHudStrip').replaceChildren(...Array.from($('brParty').children,card=>card.cloneNode(true)));
+ for(const card of [...$('brParty').children,...$('brHudStrip').children]){card.setAttribute('role','button');card.tabIndex=0;card.title='Ver câmera deste personagem';card.onclick=()=>focusCamera(card.dataset.participant);card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();focusCamera(card.dataset.participant);}};}renderCamera();
 }
-function showRoll(data,id,sender,localOnly=false){
- const valid=P.roll(data);if(!valid)return;
- const packet={...valid,id:`room-${id}`,protocol:3,source:'dark-dashboard',timestamp:Date.now(),channel:'breu-call-overlay',accessKey:'local-room-overlay',character:valid.character||sender||'Jogador'};
- deliverOverlay(packet);
- history.unshift({packet,time:new Date(),localOnly});history.splice(30);
- $('brHistory').replaceChildren(...history.map(({packet:p,time,localOnly})=>{
-  const row=document.createElement('div');row.className='br-roll-row';const total=document.createElement('strong');total.textContent=p.total;const name=document.createElement('span');name.textContent=p.character;const desc=document.createElement('small');desc.textContent=`${p.title} · ${p.subtitle}`;const values=document.createElement('small');values.textContent=p.rolls.map((v,i)=>`d${p.diceSides[i]}: ${v}`).join(' · ');const timestamp=document.createElement('time');timestamp.textContent=`${time.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${localOnly?' · somente nesta tela':''}`;row.append(total,name,desc,values,timestamp);return row;
- }));
+function showRoll(data,id,sender,localOnly=false,recovered=false,time=Date.now()){
+ const valid=P.roll(data);if(!valid||rollIds.has(id))return;rollIds.add(id);if(rollIds.size>500)rollIds.delete(rollIds.values().next().value);
+ const packet={...valid,id:`room-${id}`,protocol:3,source:'dark-dashboard',timestamp:time,channel:'breu-call-overlay',accessKey:'local-room-overlay',character:valid.character||sender||'Jogador'};
+ if(!recovered){deliverOverlay(packet);const banner=$('brLastRoll');banner.hidden=false;banner.textContent=`${packet.character} · ${packet.reason||packet.subtitle||packet.title} = ${packet.total}${packet.critical?' · CRÍTICO':packet.failure?' · FALHA':''}`;if(root.hidden)$('brReturn').textContent=`${packet.character} rolou ${packet.total} · voltar à mesa`;}
+ history.push({packet,id,time:new Date(time),localOnly,recovered});history.sort((a,b)=>b.time-a.time);history.splice(30);renderHistory();saveTable();
 }
 window.addEventListener('breu:roll',e=>{
  if(!joined&&!preview)return;
- const d=P.roll({...e.detail,character:myName(),dice3d:diceSettings.enabled!==false,diceSound:diceSettings.sound!==false,diceFx:diceSettings.effects!==false,diceSpeed:diceSettings.speed,diceTheme:diceSettings.theme});
+ const d=P.roll({...e.detail,character:localHud().name,reason:$('brRollReason').value.trim(),dice3d:diceSettings.enabled!==false,diceSound:diceSettings.sound!==false,diceFx:diceSettings.effects!==false,diceSpeed:diceSettings.speed,diceTheme:diceSettings.theme});
  if(!d){hint('Esta rolagem não pôde ser compartilhada.');return;}
- const id=uid();showRoll(d,id,myName(),preview);if(joined)broadcast('roll',d);
+ const id=uid();if(!root.hidden){$('ddFreeClose')?.click();document.getElementById('diceModal').style.display='none';}showRoll(d,id,myName(),preview);if(joined)broadcast('roll',d,id);
 });
 function leave(hangup=true){
- session++;loading=false;const previous=api;api=null;joined=false;preview=false;myId='';clearInterval(hudTimer);hudTimer=null;
+ saveTable();session++;link?.dispose();link=null;clearInterval(linkTimer);clearTimeout(overlayTimer);$('brLastRoll').hidden=true;delivery('');loading=false;const previous=api;api=null;joined=false;preview=false;myId='';clearInterval(hudTimer);hudTimer=null;
  if(previous){if(hangup){try{previous.executeCommand('hangup');}catch{}}previous.dispose();}
- $('brConference').replaceChildren();overlay.src='about:blank';ready=false;overlayQueue=[];peers.clear();rates.clear();seen.clear();history.length=0;lastHud='';
+ $('brConference').replaceChildren();overlay.src='about:blank';ready=false;overlayQueue=[];peers.clear();rates.clear();seen.clear();roles.clear();isMaster=false;focusedId='';lastHud='';
  $('brHistory').innerHTML='<p class="br-subtle">As rolagens da sessão aparecem aqui.</p>';
  $('brSession').hidden=true;$('brLobby').hidden=false;$('brInvite').hidden=true;$('brLeave').hidden=true;$('brInviteBox').hidden=true;$('brReturn').hidden=true;$('brShareHud').disabled=false;$('brJoin').disabled=false;$('brCreate').disabled=false;
  status('Fora da sala');root.dataset.preview='false';notice('Você saiu da sala.');show();
@@ -9295,13 +9344,89 @@ function testRoll(){
  const rolls=[ddRollSecureDie(6),ddRollSecureDie(6)];showRoll({event:'roll',rollMode:'sum',rolls,diceSides:[6,6],chosen:rolls[0],bonus:0,total:rolls[0]+rolls[1],title:'PRÉVIA DO OVERLAY',subtitle:'2d6 · teste local',character:myName(),diceTheme:diceSettings.theme,diceSpeed:diceSettings.speed},uid(),myName(),true);
  hint('Teste visual mostrado somente para você. As rolagens normais são compartilhadas na chamada.');
 }
+// Session tools share the room closure; no credentials are persisted.
+let isMaster=false,focusedId='',tileView=false,encounter={version:0,round:1,active:null,entries:[]};
+const roles=new Map(),rollIds=new Set();let loadedRoom='',lastStateAt=0;
+const node=(tag,text,cls)=>{const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el;};
+function saveTable(){if(!room||preview)return;try{localStorage.setItem('breu-table-v2:'+room,JSON.stringify({saved:Date.now(),encounter,history:history.filter(x=>!x.localOnly).map(x=>({id:x.id,time:+x.time,data:x.packet})).slice(0,30)}));}catch{hint('O navegador não conseguiu salvar a mesa. A sincronização online continua ativa.');}}
+function restoreTable(){if(loadedRoom===room)return;loadedRoom=room;history.length=0;rollIds.clear();encounter={version:0,round:1,active:null,entries:[]};
+ try{const data=JSON.parse(localStorage.getItem('breu-table-v2:'+room));if(data&&Date.now()-data.saved<86400000){const state=P.encounter(data.encounter);if(state)encounter=state;for(const entry of (Array.isArray(data.history)?data.history:[]).slice(0,30).reverse()){const valid=P.replay(entry);if(valid)showRoll(valid.data,valid.id,'',false,true,valid.time);}}}catch{}
+ renderEncounter();renderHistory();
+}
+function sendState(to=''){if(joined&&isMaster)link?.transmit(link.packet('encounter',encounter),to);}
+function handleMessage(sender,message){
+ if(message.kind==='hello'){
+  sendState(sender);
+  for(const item of history.filter(x=>!x.localOnly).slice(0,15).reverse())link?.transmit(link.packet('replay',{id:item.id,time:+item.time,data:item.packet}),sender);
+ }else if(message.kind==='encounter'){
+  if(roles.get(sender)!=='moderator'||message.data.version<=encounter.version)return;
+  encounter=message.data;saveTable();renderEncounter();renderCamera();
+ }else if(message.kind==='replay'){
+  const d=message.data;showRoll(d.data,d.id,peers.get(sender)?.name,false,true,d.time);
+ }
+}
+function changeEncounter(){if(!isMaster)return;encounter.version=Math.max(Date.now(),encounter.version+1);saveTable();sendState();renderEncounter();renderCamera();}
+function renderEncounter(){
+ $('brMasterControls').hidden=!isMaster;$('brEncounterTitle').textContent=isMaster?'Painel do mestre':'Iniciativa';
+ $('brRound').textContent=`Rodada ${encounter.round}`;
+ $('brNextTurn').disabled=!encounter.entries.length;
+ $('brTurnList').replaceChildren(...encounter.entries.map(e=>{
+  const row=node('div',undefined,'br-turn'+(e.id===encounter.active?' br-active':''));
+  row.append(node('strong',`${e.initiative} · ${e.name}`));if(e.condition)row.append(node('small',e.condition));
+  if(isMaster){const actions=node('div',undefined,'br-turn-actions');const focus=node('button',e.id===encounter.active?'Turno atual':'Dar turno');focus.type='button';focus.onclick=()=>{encounter.active=e.id;changeEncounter();};
+   const edit=node('button','Editar');edit.type='button';edit.onclick=()=>{$('brActorId').value=e.id;$('brActorName').value=e.name;$('brInitiative').value=e.initiative;$('brConditions').value=e.condition;$('brEncounterEditor').open=true;$('brActorName').focus();};
+   const remove=node('button','Remover');remove.type='button';remove.onclick=()=>{encounter.entries=encounter.entries.filter(x=>x.id!==e.id);if(encounter.active===e.id)encounter.active=encounter.entries[0]?.id||null;changeEncounter();};actions.append(focus,edit,remove);row.append(actions);
+  }return row;
+ }));
+ if(!encounter.entries.length)$('brTurnList').append(node('p','O mestre pode adicionar personagens e inimigos.','br-subtle'));
+ const active=encounter.entries.find(x=>x.id===encounter.active);$('brTurnBanner').hidden=!active;$('brTurnBanner').textContent=active?`Rodada ${encounter.round} · Vez de ${active.name}${active.condition?' · '+active.condition:''}`:'';
+}
+function renderCamera(){
+ const target=focusedId===myId?{name:myName(),hud:localHud()}:peers.get(focusedId);
+ const panel=$('brCameraSheet');panel.hidden=!target||tileView||!$('brShowHud').checked;
+ if(!target)return;panel.replaceChildren();panel.append(node('small','CÂMERA EM DESTAQUE'),node('strong',target.hud?.name||target.name));
+ if(target.hud?.shared)panel.append(node('span',`VD ${target.hud.vd.current}/${target.hud.vd.max} · SAN ${target.hud.san.current}/${target.hud.san.max} · PE ${target.hud.pe.current}/${target.hud.pe.max}`));
+ else panel.append(node('span',target.hud?'Recursos ocultos':'Aguardando ficha'));
+ const actor=encounter.entries.find(x=>x.name===(target.hud?.name||target.name));if(actor?.condition)panel.append(node('small',actor.condition));
+}
+function focusCamera(id){if(!api||!joined)return;api.executeCommand('setTileView',false);api.executeCommand('setLargeVideoParticipant',id,'camera');focusedId=id;tileView=false;renderCamera();}
+function renderHistory(){
+ $('brHistory').replaceChildren(...history.map(({packet:p,time,localOnly,recovered})=>{
+ const row=node('article',undefined,'br-roll-row');row.append(node('strong',p.total),node('span',p.character));
+ row.append(node('small',p.reason||p.title));if(p.subtitle)row.append(node('small',p.subtitle));
+ const formula=p.rollMode==='sum'?p.rolls.map((v,i)=>`d${p.diceSides[i]} [${v}]`).join(' + '):p.rolls.map(v=>`d20 [${v}]`).join(' · ')+` → escolhido ${p.chosen}`;
+ row.append(node('small',`${formula}${p.bonus?` ${p.bonus>0?'+':'−'} ${Math.abs(p.bonus)}`:''} = ${p.total}`));
+ if(p.critical||p.failure)row.append(node('b',p.critical?'CRÍTICO':'FALHA','br-result-tag'));
+ if(p.damage!==null)row.append(node('small',`Dano: ${p.damage}`));
+ row.append(node('time',`${time.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}${localOnly?' · só nesta tela':recovered?' · recuperada':''}`));return row;
+ }));
+ if(!history.length)$('brHistory').append(node('p','As rolagens da sessão aparecem aqui.','br-subtle'));
+}
+$('brActorForm').addEventListener('submit',event=>{event.preventDefault();if(!isMaster)return;const name=$('brActorName').value.trim(),initiative=Number($('brInitiative').value);if(!name||!Number.isFinite(initiative)||Math.abs(initiative)>999)return;
+ const id=$('brActorId').value||uid(),entry={id,name:name.slice(0,60),initiative,condition:$('brConditions').value.trim().slice(0,100)},index=encounter.entries.findIndex(x=>x.id===id);
+ if(index>=0)encounter.entries[index]=entry;else if(encounter.entries.length<40)encounter.entries.push(entry);else return;
+ encounter.entries.sort((a,b)=>b.initiative-a.initiative);if(!encounter.active)encounter.active=encounter.entries[0]?.id||null;
+ $('brActorForm').reset();changeEncounter();
+});
+$('brNextTurn').addEventListener('click',()=>{if(!isMaster||!encounter.entries.length)return;const i=encounter.entries.findIndex(x=>x.id===encounter.active),next=(i+1)%encounter.entries.length;if(next===0)encounter.round=Math.min(9999,encounter.round+1);encounter.active=encounter.entries[next].id;changeEncounter();});
+$('brAddParty').addEventListener('click',()=>{if(!isMaster)return;for(const p of [{name:myName(),hud:localHud()},...peers.values()]){const name=p.hud?.name||p.name;if(encounter.entries.length<40&&!encounter.entries.some(e=>e.name===name))encounter.entries.push({id:uid(),name,initiative:0,condition:''});}if(!encounter.active)encounter.active=encounter.entries[0]?.id||null;changeEncounter();});
+$('brActorCancel').addEventListener('click',()=>{$('brActorForm').reset();});
+$('brAutoCamera').addEventListener('click',()=>{api?.executeCommand('setLargeVideoParticipant');hint('A câmera em destaque acompanha a seleção da chamada.');});
+$('brReconnect').addEventListener('click',()=>{saveTable();leave(false);connect();});
+window.addEventListener('offline',()=>{status('Sem internet');hint('Mesa salva neste navegador. Ao voltar, use Reconectar chamada se necessário.');});
+window.addEventListener('online',()=>{if(joined){link?.hello();syncHud(true);sendState();status('Sincronizando');refreshPeers().then(()=>status('Na sala'));}else hint('Internet disponível. Use Reconectar chamada para voltar.');});
+for(const id of ['brRollReason','brActorId','brActorName','brInitiative','brConditions'])NON_PROFILE_CONTROL_IDS.add(id);
+
+$('brFullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await root.requestFullscreen();}catch{hint('Tela cheia indisponível neste navegador.');}});
+$('brShowHud').addEventListener('change',()=>{$('brHudStrip').hidden=!$('brShowHud').checked;renderCamera();});
+$('brResync').addEventListener('click',()=>{setupOverlay();if(joined){link?.hello();syncHud(true);refreshPeers();delivery('Solicitando sincronização da mesa…');}else delivery('Prévia local: overlay recarregada.');});
 $('brToSheet').addEventListener('click',minimize);$('brReturn').addEventListener('click',show);$('brCreate').addEventListener('click',create);$('brJoin').addEventListener('click',()=>connect(false));$('brPreview').addEventListener('click',startPreview);$('brLeave').addEventListener('click',()=>leave());$('brInvite').addEventListener('click',showInvite);$('brTestRoll').addEventListener('click',testRoll);
 $('brCopy').addEventListener('click',async()=>{const input=$('brInviteLink');input.value=invite();try{await navigator.clipboard.writeText(input.value);hint('Convite copiado. Envie para o grupo.');}catch{input.focus();input.select();hint('Selecione e copie o convite acima.');}});
 $('brShareHud').addEventListener('change',()=>syncHud(true));$('brShowOverlay').addEventListener('change',()=>{overlay.hidden=!$('brShowOverlay').checked;});
 $('brFreeDice').addEventListener('click',()=>{$('ddFreeOpen').click();});
 for(const attr of ['FOR','DES','VIG','INT','SAB','APA']){const button=document.createElement('button');button.type='button';button.textContent=attr;button.title=`Rolar ${attr}`;button.addEventListener('click',()=>abrirRolador(attr));$('brAttributes').appendChild(button);}
 const openButton=$('brOpen');openButton.addEventListener('click',show);
-for(const id of ['brName','brRoomCode','brInviteLink','brShareHud','brShowOverlay','brMasterPassword'])NON_PROFILE_CONTROL_IDS.add(id);
+for(const id of ['brName','brRoomCode','brInviteLink','brShareHud','brShowOverlay','brShowHud','brMasterPassword'])NON_PROFILE_CONTROL_IDS.add(id);
 window.addEventListener('beforeunload',()=>{try{api?.dispose();}catch{}});
 const invitation=P.room(new URLSearchParams(location.hash.slice(1)).get('mesa'));
 if(invitation){$('brRoomCode').value=location.href;setTimeout(show,0);}
