@@ -8968,7 +8968,7 @@ $('ddFreeRoll').addEventListener('click',async()=>{
 #brRoom h2 {font-size:21px;font-weight:500;margin:0 0 7px;letter-spacing:1px;color:var(--text-main);}
 .br-subtle {font-size:13px;color:var(--dim-text);}
 #brRoom label {display:block;font-size:12px;color:var(--dim-text);margin:22px 0 8px;text-transform:none;letter-spacing:1px;}
-#brRoom input[type=text] {width:100%;min-height:46px;border:1px solid var(--border-color);border-radius:2px;padding:11px 12px;background:var(--bg-color);color:var(--text-main);font:inherit;letter-spacing:1px;}
+#brRoom input:is([type=text],[type=password]) {width:100%;min-height:46px;border:1px solid var(--border-color);border-radius:2px;padding:11px 12px;background:var(--bg-color);color:var(--text-main);font:inherit;letter-spacing:1px;}
 .br-form-actions {display:grid;grid-template-columns:1fr;gap:8px;margin-top:24px;}
 .br-service-note {border-top:1px solid var(--border-color);margin-top:22px;padding-top:18px;font-size:12px;color:var(--dim-text);line-height:1.7;}
 #brRoom a {color:var(--menu-accent);}
@@ -9017,8 +9017,8 @@ $('ddFreeRoll').addEventListener('click',async()=>{
 #brRoom h2 {font-size:.8rem;letter-spacing:4px;text-transform:uppercase;font-weight:normal;}
 .br-lobby-card {position:relative;padding:35px 30px 30px;box-shadow:none;background:var(--panel-bg);}
 .br-lobby-card h2 {position:absolute;top:-12px;left:20px;padding:2px 15px;background:var(--bg-color);border:1px solid var(--border-color);}
-#brRoom input[type=text] {background:transparent;border:1px solid transparent;border-bottom:1px solid var(--dim-text);padding:10px 5px;}
-#brRoom input[type=text]:focus {border-bottom-color:var(--glow);}
+#brRoom input:is([type=text],[type=password]) {background:transparent;border:1px solid transparent;border-bottom:1px solid var(--dim-text);padding:10px 5px;}
+#brRoom input:is([type=text],[type=password]):focus {border-bottom-color:var(--glow);}
 #brRoom label {text-transform:uppercase;letter-spacing:1px;}
 .br-mark {display:none;}
 .br-intro {font-size:14px;}
@@ -9040,10 +9040,10 @@ body.theme-combat #brRoom h1 {display:block!important;}
   <div><div class="br-mark" aria-hidden="true">◈</div><div class="br-eyebrow">DARK DASHBOARD // COMUNICAÇÃO</div><h1>SALA RPG</h1><p class="br-intro">Câmera, voz e rolagens na mesma mesa. Conecte o grupo para iniciar a sessão.</p><div class="br-benefits"><span>◉ Câmera e voz</span><span>⚄ Dados 3D</span><span>▥ RECURSOS AO VIVO</span></div></div>
   <div class="br-lobby-card"><h2>Sala de RPG</h2><p class="br-subtle">Crie uma mesa ou entre pelo convite do grupo.</p>
    <label for="brName">Seu nome na mesa</label><input type="text" id="brName" maxlength="60" placeholder="Como o grupo conhece você" autocomplete="off">
-   <label for="brRoomCode">Convite ou código da sala</label><input type="text" id="brRoomCode" placeholder="Cole o convite aqui" autocomplete="off" spellcheck="false">
-   <div class="br-form-actions"><button class="br-primary" id="brJoin" type="button">Entrar na sala</button><button id="brCreate" type="button">Criar nova sala</button><button class="br-quiet" id="brPreview" type="button">Ver prévia sem entrar em chamada</button></div>
-   <p id="brNotice" role="status"></p>
-   <div class="br-service-note">Chamada pelo Jitsi, integrada nesta página. Quem inicia a sala precisa fazer login no Jitsi. Os convidados entram depois. Câmera e microfone começam desligados.<br><a id="brHostLogin" href="https://meet.jit.si/" target="_blank" rel="noopener noreferrer" hidden>Abrir esta sala no Jitsi para fazer login</a></div>
+   <label for="brRoomCode">Convite da sala</label><input type="text" id="brRoomCode" placeholder="Cole o convite aqui" autocomplete="off" spellcheck="false">
+   <div class="br-form-actions"><button class="br-primary" id="brJoin" type="button">Entrar na sala</button><button class="br-quiet" id="brPreview" type="button">Ver prévia sem entrar em chamada</button></div>
+   <details id="brMasterAccess" style="margin-top:18px"><summary style="cursor:pointer">SOU O MESTRE</summary><label for="brMasterPassword">Senha de mestre</label><input id="brMasterPassword" type="password" maxlength="200" autocomplete="off" placeholder="Senha configurada no serviço da mesa"><button id="brCreate" type="button" style="margin-top:14px;width:100%">Criar nova sala</button><p class="br-subtle">Para voltar como mestre, cole o convite, preencha esta senha e clique em Entrar na sala.</p></details><p id="brNotice" role="status"></p>
+   <div class="br-service-note">Chamada integrada pelo JaaS. Jogadores entram pelo convite, sem conta. Câmera e microfone começam desligados.</div>
   </div>
  </div>
  <div id="brSession" hidden>
@@ -9057,6 +9057,7 @@ body.theme-combat #brRoom h1 {display:block!important;}
  </div>
 </section>
 <button id="brReturn" type="button" hidden>Voltar à mesa · chamada em andamento</button>
+<script src="sala-config.js"></script>
 <script>
 window.BreuRoomProtocol=(()=>{
  const dice=[2,3,4,6,8,10,12,20,100];
@@ -9101,10 +9102,60 @@ window.BreuRoomProtocol=(()=>{
  return {roll,hud,packet,room};
 })();
 
+window.BreuJaas = (() => {
+ const config = window.BREU_CALL_CONFIG || {};
+ const $ = id => document.getElementById(id);
+ function parse(value) {
+  try {
+   const raw = String(value || '').trim();
+   const params = new URLSearchParams(raw.includes('://') ? new URL(raw).hash.slice(1) : location.hash.slice(1));
+   const room = window.BreuRoomProtocol.room(raw) || window.BreuRoomProtocol.room(params.get('mesa'));
+   return {room, invitation: room === params.get('mesa') ? params.get('convite') || '' : ''};
+  } catch { return {room:'', invitation:''}; }
+ }
+ let participantId;
+ function userId() {
+  if (participantId) return participantId;
+  try { participantId = localStorage.getItem('breu-jaas-participant'); } catch {}
+  if (!/^[a-f0-9-]{36}$/.test(participantId || '')) {
+   participantId = crypto.randomUUID();
+   try { localStorage.setItem('breu-jaas-participant', participantId); } catch {}
+  }
+  return participantId;
+ }
+ async function authorize(create, name) {
+  let service;
+  try { service = new URL(config.tokenService); if (service.protocol !== 'https:' || service.username || service.password || service.search || service.hash) throw 0; }
+  catch { throw new Error('A chamada ainda não foi configurada pelo mestre. A prévia dos dados continua disponível.'); }
+  const masterPassword = $('brMasterPassword').value;
+  const invite = parse($('brRoomCode').value);
+  if (create && !masterPassword) { $('brMasterAccess').open = true; $('brMasterPassword').focus(); throw new Error('Informe a senha de mestre para criar a sala.'); }
+  if (!create && !invite.room) throw new Error('Cole o convite completo da mesa.');
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
+  try {
+   const response = await fetch(service.href.replace(/\/$/, '') + (create ? '/create' : '/join'), {
+    method:'POST', headers:{'Content-Type':'application/json'}, credentials:'omit', cache:'no-store', referrerPolicy:'no-referrer', signal:controller.signal,
+    body:JSON.stringify({name,userId:userId(),room:invite.room,invitation:invite.invitation,masterPassword})
+   });
+   const data = await response.json();
+   if (!response.ok) throw new Error(data.error || 'Não foi possível entrar na sala.');
+   if (data.appId !== config.appId || !window.BreuRoomProtocol.room(data.room) || typeof data.jwt !== 'string' || typeof data.invitation !== 'string') throw new Error('Resposta inválida do serviço de chamada.');
+   $('brMasterPassword').value = '';
+   return data;
+  } catch (error) {
+   if (error.name === 'AbortError') throw new Error('O serviço de entrada demorou a responder. Tente novamente.');
+   if (error instanceof TypeError || error instanceof SyntaxError) throw new Error('Não foi possível acessar o serviço de entrada. Confira a configuração e a conexão.');
+   throw error;
+  } finally { clearTimeout(timer); }
+ }
+ return {config,parse,authorize};
+})();
+
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id),P=window.BreuRoomProtocol;
-const root=$('brRoom'),overlay=$('brRoomOverlay');
+const root=$('brRoom'),overlay=$('brRoomOverlay'),J=window.BreuJaas;
+let roomInvitation='';
 let api=null,room='',myId='',joined=false,preview=false,loading=false,session=0,scriptPromise=null;
 let ready=false,overlayQueue=[],hudTimer=null,lastHud='',lastHudAt=0;
 const peers=new Map(),seen=new Set(),rates=new Map(),history=[];
@@ -9115,13 +9166,13 @@ function notice(text){$('brNotice').textContent=text;}
 function myName(){return $('brName').value.trim().slice(0,60)||$('charNameInput')?.value?.trim().slice(0,60)||'Jogador';}
 function show(){root.hidden=false;$('brReturn').hidden=true;if(!$('brName').value)$('brName').value=$('charNameInput')?.value?.trim()||'';if(!api&&!preview)$('brName').focus();}
 function minimize(){root.hidden=true;$('brReturn').hidden=!(api||preview);$('brReturn').textContent=preview?'Voltar à prévia da mesa':'Voltar à mesa · chamada em andamento';}
-function invite(){const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room}).toString();return url.href;}
+function invite(){const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room,convite:roomInvitation}).toString();return url.href;}
 function showInvite(){if(!room||preview)return;$('brInviteLink').value=invite();$('brInviteBox').hidden=false;}
-function setRoom(code){room=code;$('brRoomCode').value=room;const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room}).toString();window.history.replaceState(null,'',url);$('brHostLogin').href=`https://meet.jit.si/${encodeURIComponent(room)}`;$('brHostLogin').hidden=false;}
-function create(){if(loading||api)return;const bytes=crypto.getRandomValues(new Uint8Array(16));setRoom('breu-'+Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join(''));notice('Sala criada. Entre na chamada e use Convidar para chamar o grupo.');connect();}
+function setRoom(code){room=code;const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room,convite:roomInvitation}).toString();window.history.replaceState(null,'',url);$('brRoomCode').value=url.href;}
+function create(){connect(true);}
 function loadJitsi(){
  if(window.JitsiMeetExternalAPI)return Promise.resolve();if(scriptPromise)return scriptPromise;
- scriptPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://meet.jit.si/external_api.js';script.async=true;let done=false;
+ scriptPromise=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://8x8.vc/'+J.config.appId+'/external_api.js';script.async=true;let done=false;
   const finish=error=>{if(done)return;done=true;clearTimeout(timeout);if(error){script.remove();scriptPromise=null;reject(error);}else resolve();};
   const timeout=setTimeout(()=>finish(new Error('O serviço de chamada não respondeu. Verifique a conexão e tente novamente.')),18000);
   script.onload=()=>finish(window.JitsiMeetExternalAPI?null:new Error('A chamada não pôde ser carregada.'));script.onerror=()=>finish(new Error('Não foi possível carregar o Jitsi. Verifique a conexão.'));document.head.appendChild(script);
@@ -9139,18 +9190,19 @@ function prepareSession(){
  root.dataset.preview=String(preview);$('brLeave').textContent=preview?'Fechar prévia':'Sair da chamada';
  setupOverlay();$('brShareHud').disabled=preview;renderParty();
 }
-async function connect(){
+async function connect(createNew=false){
  if(loading||api)return;
- const code=P.room($('brRoomCode').value);if(!code){notice('Cole um convite válido ou clique em Criar nova sala.');$('brRoomCode').focus();return;}
  if(!myName()){notice('Informe seu nome na mesa.');return;}
  if(!window.isSecureContext||location.protocol==='file:'){notice('Para entrar em chamadas, abra o site publicado em HTTPS. A prévia local continua disponível.');return;}
- setRoom(code);loading=true;const generation=++session;
+ loading=true;const generation=++session;
  $('brJoin').disabled=true;$('brCreate').disabled=true;notice('Carregando a chamada…');status('Conectando');
  try{
+  const access=await J.authorize(createNew,myName());if(generation!==session)return;
+  roomInvitation=access.invitation;setRoom(access.room);
   await loadJitsi();if(generation!==session)return;
   preview=false;prepareSession();
-  const instance=new JitsiMeetExternalAPI('meet.jit.si',{
-   roomName:room,width:'100%',height:'100%',parentNode:$('brConference'),lang:'ptBR',userInfo:{displayName:myName()},
+  const instance=new JitsiMeetExternalAPI('8x8.vc',{
+   roomName:J.config.appId+'/'+room,jwt:access.jwt,width:'100%',height:'100%',parentNode:$('brConference'),lang:'ptBR',userInfo:{displayName:myName()},
    configOverwrite:{startWithAudioMuted:true,startWithVideoMuted:true,disableInitialGUM:true,prejoinConfig:{enabled:true},disableDeepLinking:true,toolbarButtons:['microphone','camera','desktop','chat','participants-pane','tileview','settings','hangup','fullscreen','raisehand']}
   });api=instance;
   const on=(name,fn)=>instance.addListener(name,arg=>{if(api===instance&&generation===session)fn(arg);});
@@ -9165,8 +9217,7 @@ async function connect(){
   on('micError',()=>hint('Microfone indisponível. Confira a permissão do navegador e o dispositivo nas configurações da chamada.'));
   on('errorOccurred',e=>{if(e.isFatal){joined=false;status('Conexão interrompida');hint('A chamada encontrou um erro. Use Sair da chamada e entre novamente.');}});
   hudTimer=setInterval(()=>{if(joined){syncHud();refreshPeers();}},4000);
-  hint('Conclua a entrada no vídeo. Se for o primeiro, faça login no Jitsi.');
-  const login=document.createElement('a');login.href=$('brHostLogin').href;login.target='_blank';login.rel='noopener noreferrer';login.textContent=' Fazer login na sala';$('brSessionHint').appendChild(login);
+  hint('Conclua a entrada no vídeo. Câmera e microfone começam desligados.');
   $('brInviteLink').value=invite();notice('');
  }catch(error){if(generation!==session)return;api?.dispose();api=null;joined=false;$('brSession').hidden=true;$('brLobby').hidden=false;$('brLeave').hidden=true;$('brInvite').hidden=true;notice(error.message);status('Não conectado');}
  finally{loading=false;$('brJoin').disabled=false;$('brCreate').disabled=false;}
@@ -9244,16 +9295,16 @@ function testRoll(){
  const rolls=[ddRollSecureDie(6),ddRollSecureDie(6)];showRoll({event:'roll',rollMode:'sum',rolls,diceSides:[6,6],chosen:rolls[0],bonus:0,total:rolls[0]+rolls[1],title:'PRÉVIA DO OVERLAY',subtitle:'2d6 · teste local',character:myName(),diceTheme:diceSettings.theme,diceSpeed:diceSettings.speed},uid(),myName(),true);
  hint('Teste visual mostrado somente para você. As rolagens normais são compartilhadas na chamada.');
 }
-$('brToSheet').addEventListener('click',minimize);$('brReturn').addEventListener('click',show);$('brCreate').addEventListener('click',create);$('brJoin').addEventListener('click',connect);$('brPreview').addEventListener('click',startPreview);$('brLeave').addEventListener('click',()=>leave());$('brInvite').addEventListener('click',showInvite);$('brTestRoll').addEventListener('click',testRoll);
+$('brToSheet').addEventListener('click',minimize);$('brReturn').addEventListener('click',show);$('brCreate').addEventListener('click',create);$('brJoin').addEventListener('click',()=>connect(false));$('brPreview').addEventListener('click',startPreview);$('brLeave').addEventListener('click',()=>leave());$('brInvite').addEventListener('click',showInvite);$('brTestRoll').addEventListener('click',testRoll);
 $('brCopy').addEventListener('click',async()=>{const input=$('brInviteLink');input.value=invite();try{await navigator.clipboard.writeText(input.value);hint('Convite copiado. Envie para o grupo.');}catch{input.focus();input.select();hint('Selecione e copie o convite acima.');}});
 $('brShareHud').addEventListener('change',()=>syncHud(true));$('brShowOverlay').addEventListener('change',()=>{overlay.hidden=!$('brShowOverlay').checked;});
 $('brFreeDice').addEventListener('click',()=>{$('ddFreeOpen').click();});
 for(const attr of ['FOR','DES','VIG','INT','SAB','APA']){const button=document.createElement('button');button.type='button';button.textContent=attr;button.title=`Rolar ${attr}`;button.addEventListener('click',()=>abrirRolador(attr));$('brAttributes').appendChild(button);}
 const openButton=$('brOpen');openButton.addEventListener('click',show);
-for(const id of ['brName','brRoomCode','brInviteLink','brShareHud','brShowOverlay'])NON_PROFILE_CONTROL_IDS.add(id);
+for(const id of ['brName','brRoomCode','brInviteLink','brShareHud','brShowOverlay','brMasterPassword'])NON_PROFILE_CONTROL_IDS.add(id);
 window.addEventListener('beforeunload',()=>{try{api?.dispose();}catch{}});
 const invitation=P.room(new URLSearchParams(location.hash.slice(1)).get('mesa'));
-if(invitation){$('brRoomCode').value=invitation;setTimeout(show,0);}
+if(invitation){$('brRoomCode').value=location.href;setTimeout(show,0);}
 })();
 
 </script>
