@@ -9063,11 +9063,36 @@ body.theme-combat #brRoom h1 {display:block!important;}
 @media(max-width:900px){#brSession{grid-template-columns:minmax(0,1fr) 290px}.br-sidebar{padding:14px}#brRoom header{padding:12px 16px}}
 @media(max-width:650px){#brRoom header{position:relative;padding:12px;min-height:76px}.br-brand{font-size:14px;letter-spacing:2px}.br-header-actions{gap:4px}#brRoom .br-header-actions button{font-size:10px;padding:8px;min-height:38px}#brConnection{font-size:10px}#brSession{height:auto;grid-template-columns:1fr}.br-video-column{height:55dvh;min-height:360px;padding:8px}#brVideoArea{min-height:260px}.br-sidebar{padding:16px;overflow:visible}.br-tool-nav{position:sticky;top:0;z-index:6;background:var(--bg-color)}#brHudStrip .br-party-card{min-width:155px;flex-basis:170px}.br-hud-grid{gap:6px}#brCameraSheet{bottom:140px;padding:8px;max-width:85%}#brCameraSheet strong{font-size:14px}#brCameraSheet span{font-size:10px}#brTurnBanner{top:115px;font-size:11px}#brLastRoll{font-size:12px}.br-options{margin-top:4px}}
 @media(prefers-reduced-motion:reduce){#brRoom *{transition:none!important}}
+
+/* Presentation pass: same terminal palette, less competition with the video. */
+#brRoom{--br-surface:var(--panel-bg);line-height:1.65}
+#brLobby{max-width:1120px;gap:64px}#brRoom h1{font-size:clamp(34px,4.5vw,58px);letter-spacing:5px;line-height:1.2;text-shadow:none}.br-intro{max-width:370px;line-height:1.9}
+.br-welcome-steps{list-style:none;padding:0;margin:32px 0;display:grid;gap:18px}.br-welcome-steps li{display:flex;gap:16px;align-items:center;font-size:13px;color:var(--dim-text)}.br-welcome-steps b{font-size:11px;color:var(--menu-accent);border:1px solid var(--border-color);padding:6px 9px;letter-spacing:2px}.br-benefits{font-size:10px;gap:8px}.br-lobby-card{padding:32px;border-top:2px solid var(--menu-accent)}
+#brSession{grid-template-columns:minmax(0,1fr) 340px}.br-video-column{gap:12px;padding:18px;min-height:0}.br-stage-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}.br-stage-heading>span{font-size:10px;letter-spacing:3px;color:var(--dim-text)}#brRoom #brFocusMode{min-height:32px;padding:5px 10px;font-size:10px;background:transparent}
+#brHudStrip{position:static;display:flex;flex-shrink:0;min-height:0;max-height:118px;overflow:auto;gap:10px;padding:1px 0 5px}#brHudStrip:empty{display:none}#brHudStrip .br-party-card{flex:0 0 205px;background:var(--panel-bg);border:1px solid var(--border-color);padding:12px}.br-party-name{align-items:baseline}.br-party-name>span{font-weight:bold}.br-party-name small{font-size:9px;letter-spacing:.5px}.br-hud-grid{margin-top:14px}.br-hud-bar{height:4px}
+#brTurnBanner{top:12px;left:12px;right:auto;max-width:calc(100% - 24px);border:0;border-left:2px solid var(--menu-accent);padding:8px 12px}
+#brLastRoll{bottom:82px;left:12px;right:12px;display:grid;grid-template-columns:1fr auto;gap:4px 18px;align-items:center;padding:12px 16px;border-left:2px solid var(--menu-accent)}#brLastRoll strong{font-size:30px;grid-row:1 / 3;grid-column:2;line-height:1}#brLastRoll span{font-size:12px;font-weight:bold}#brLastRoll small{font-size:11px;color:var(--dim-text);overflow-wrap:anywhere}#brCameraSheet{bottom:170px}
+.br-sidebar{background:var(--panel-bg);padding:20px;gap:20px;border-left:1px solid var(--border-color)}.br-tool-nav{background:var(--bg-color);padding:5px;gap:5px}#brRoom .br-tool-nav button{font-size:11px;letter-spacing:1.5px}.br-roll-actions{border:0;padding-bottom:0}#brRoom .br-quick button{background:var(--bg-color)}
+.br-roll-row{position:relative;padding:14px 12px;margin:10px 0;border:1px solid var(--border-color);background:var(--bg-color);line-height:1.7}.br-roll-row:first-child{border-left:2px solid var(--menu-accent)}.br-roll-row small{font-size:11px}.br-roll-row strong{padding:4px 0 8px 14px}.br-roll-row time{opacity:.8}#brHistory:has(>.br-subtle){border:1px dashed var(--border-color);padding:20px 16px;text-align:center}
+#brRoom .br-tool-panel .br-section{padding:0;border:0;background:none;margin:0}#brRoom .br-tool-panel .br-section h3{position:static;padding:0;background:none;margin:0 0 16px;color:var(--dim-text)}#brRound{font-size:12px;color:var(--menu-accent);letter-spacing:2px}.br-turn{margin-bottom:8px;border:1px solid var(--border-color);padding:12px;background:var(--bg-color)}.br-turn.br-active{border-left:3px solid var(--menu-accent)}
+#brRoom[data-focus=true] #brSession{grid-template-columns:1fr}#brRoom[data-focus=true] .br-sidebar{display:none}#brRoom[data-focus=true] #brFocusMode{background:var(--menu-accent);color:var(--bg-color)}
+@media(max-width:900px){#brSession{grid-template-columns:minmax(0,1fr) 290px}.br-video-column{padding:12px}.br-sidebar{padding:16px}#brLobby{gap:30px}}
+@media(max-width:650px){#brSession{grid-template-columns:1fr}.br-video-column{height:65dvh;min-height:470px;padding:10px;gap:8px}#brVideoArea{min-height:240px}#brHudStrip .br-party-card{flex-basis:165px;padding:8px}.br-hud-grid{margin-top:8px}#brHudStrip{max-height:95px}.br-stage-heading>span{font-size:9px}#brRoom h1{font-size:34px;letter-spacing:3px}.br-welcome-steps{gap:12px;margin:24px 0}.br-lobby-card{padding:26px 20px}.br-sidebar{padding:18px 14px}#brTurnBanner{top:8px;font-size:10px}#brLastRoll{padding:8px 10px}#brLastRoll strong{font-size:24px}#brCameraSheet{bottom:170px}#brRoom[data-focus=true] .br-video-column{height:calc(100dvh - 100px)}}
+
+:root{--br-sheet-width:520px}
+#brSheetDrawer[hidden]{display:none!important}#brSheetDrawer{position:fixed;right:0;top:0;bottom:0;width:min(var(--br-sheet-width),60vw);z-index:10025;background:var(--bg-color);color:var(--text-main);border-left:1px solid var(--menu-accent);display:flex;flex-direction:column;box-shadow:-12px 0 40px #0005;font-family:inherit;box-sizing:border-box}
+#brRoom[data-sheet=true]{right:min(var(--br-sheet-width),60vw)}#brRoom[data-sheet=true] #brSession{grid-template-columns:1fr}#brRoom[data-sheet=true] .br-sidebar{display:none}#brRoom[data-sheet=true] header{flex-wrap:wrap}#brRoom[data-sheet=true] .br-brand span{display:none}
+.br-sheet-toolbar{display:flex;align-items:center;gap:8px;padding:14px;border-bottom:1px solid var(--border-color)}.br-sheet-toolbar>div{flex:1}.br-sheet-toolbar strong{font-size:12px;letter-spacing:2px}.br-sheet-toolbar small{display:block;font-size:10px;color:var(--dim-text);margin-top:5px}
+#brSheetDrawer .br-sheet-toolbar button,#brSheetDrawer .br-sheet-nav button{font:inherit;font-size:11px;color:var(--text-main);background:var(--panel-bg);border:1px solid var(--border-color);padding:9px;cursor:pointer;min-height:38px}
+#brSheetDrawer button:focus-visible,#brSheetDrawer input:focus-visible{outline:2px solid var(--menu-accent);outline-offset:2px}.br-sheet-nav{display:flex;gap:6px;overflow:auto;padding:10px 14px;flex-shrink:0}.br-sheet-width{display:flex;align-items:center;gap:12px;font-size:10px;color:var(--dim-text);padding:0 14px 10px;margin:0}.br-sheet-width input{flex:1;accent-color:var(--menu-accent)}
+#brSheetContent{overflow:auto;flex:1;min-height:0;scrollbar-width:thin;padding:20px 12px 60px}#brSheetDrawer #mainContainer{display:block!important;max-width:none;width:100%;margin:0;padding:0;box-sizing:border-box}#brSheetDrawer .page-header{display:none!important}#brSheetDrawer .pages-wrapper{display:block!important;column-count:1!important}#brSheetDrawer .page{display:block!important;width:100%;min-width:0}#brSheetDrawer .panel{break-inside:avoid;margin-bottom:28px;scroll-margin-top:18px}#brSheetDrawer .grid-3,#brSheetDrawer .grid-2,#brSheetDrawer .info-grid{grid-template-columns:minmax(0,1fr)!important}#brSheetDrawer .info-grid>div{grid-column:auto!important}#brSheetDrawer .panel-content{min-width:0}#brSheetDrawer #panel-attr-specials{display:block!important}#brSheetDrawer #panel-background{display:block!important}
+body.breu-sheet-open .modal-overlay,body.breu-sheet-open #diceModal,body.breu-sheet-open #ddFreeModal{z-index:10060!important}
+@media(max-width:850px){#brSheetDrawer{top:auto;width:100%;height:66dvh;border-left:0;border-top:1px solid var(--menu-accent)}#brRoom[data-sheet=true]{right:0}.br-sheet-width{display:none}#brRoom[data-sheet=true] .br-video-column{height:34dvh;min-height:200px}#brRoom[data-sheet=true] #brVideoArea{min-height:140px}#brRoom[data-sheet=true] #brHudStrip,#brRoom[data-sheet=true] .br-video-footer,#brRoom[data-sheet=true] .br-stage-heading{display:none}.br-sheet-toolbar{padding:10px}.br-sheet-nav{padding:8px 10px}.br-sheet-toolbar small{font-size:9px}}
 </style>
 <section id="brRoom" hidden aria-label="Sala de RPG">
  <header><div class="br-brand">BREU <span>MESA ONLINE</span></div><div class="br-header-actions"><span id="brConnection" class="br-status" role="status">Fora da sala</span><button id="brInvite" type="button" hidden>Convidar</button><button id="brToSheet" type="button" class="br-quiet">Minha ficha</button><button id="brLeave" type="button" hidden>Sair da chamada</button></div></header>
  <div id="brLobby">
-  <div><div class="br-mark" aria-hidden="true">◈</div><div class="br-eyebrow">DARK DASHBOARD // COMUNICAÇÃO</div><h1>SALA RPG</h1><p class="br-intro">Câmera, voz e rolagens na mesma mesa. Conecte o grupo para iniciar a sessão.</p><div class="br-benefits"><span>◉ Câmera e voz</span><span>⚄ Dados 3D</span><span>▥ RECURSOS AO VIVO</span></div></div>
+  <div><div class="br-mark" aria-hidden="true">◈</div><div class="br-eyebrow">DARK DASHBOARD // COMUNICAÇÃO</div><h1>SUA MESA.<br>SEU BREU.</h1><p class="br-intro">Reúna o grupo. Abra sua ficha. Deixe a história acontecer.</p><ol class="br-welcome-steps"><li><b>01</b><span>Entre pelo convite do mestre</span></li><li><b>02</b><span>Ligue sua câmera e seu microfone</span></li><li><b>03</b><span>Jogue com a ficha sempre à mão</span></li></ol><div class="br-benefits"><span>◉ Câmera e voz</span><span>⚄ Dados 3D</span><span>▥ RECURSOS AO VIVO</span></div></div>
   <div class="br-lobby-card"><h2>Sala de RPG</h2><p class="br-subtle">Crie uma mesa ou entre pelo convite do grupo.</p>
    <label for="brName">Seu nome na mesa</label><input type="text" id="brName" maxlength="60" placeholder="Como o grupo conhece você" autocomplete="off">
    <label for="brRoomCode">Convite da sala</label><input type="text" id="brRoomCode" placeholder="Cole o convite aqui" autocomplete="off" spellcheck="false">
@@ -9077,9 +9102,9 @@ body.theme-combat #brRoom h1 {display:block!important;}
   </div>
  </div>
  <div id="brSession" hidden>
-  <div class="br-video-column"><div id="brVideoArea"><div id="brConference"></div><div id="brHudStrip" aria-label="Recursos dos personagens"></div><div id="brCameraSheet" hidden aria-live="polite"></div><div id="brTurnBanner" hidden role="status"></div><div id="brLastRoll" hidden role="status"></div><iframe id="brRoomOverlay" title="Rolagens da mesa" src="about:blank" aria-hidden="true" tabindex="-1"></iframe></div><div class="br-video-footer"><span id="brSessionHint">Use os controles da chamada para ligar câmera e microfone.</span><button id="brFullscreen" type="button">Tela cheia</button></div></div>
+  <div class="br-video-column"><div class="br-stage-heading"><span>MESA DE JOGO</span><button id="brFocusMode" type="button" aria-pressed="false">Modo foco</button></div><div id="brVideoArea"><div id="brConference"></div><div id="brCameraSheet" hidden aria-live="polite"></div><div id="brTurnBanner" hidden role="status"></div><div id="brLastRoll" hidden role="status"></div><iframe id="brRoomOverlay" title="Rolagens da mesa" src="about:blank" aria-hidden="true" tabindex="-1"></iframe></div><div id="brHudStrip" aria-label="Recursos dos personagens"></div><div class="br-video-footer"><span id="brSessionHint">Use os controles da chamada para ligar câmera e microfone.</span><button id="brFullscreen" type="button">Tela cheia</button></div></div>
   <aside class="br-sidebar" aria-label="Ferramentas da mesa">
-   <div id="brInviteBox" hidden><label for="brInviteLink" style="margin-top:0">Convite para esta mesa</label><input type="text" id="brInviteLink" readonly><button id="brCopy" type="button" style="width:100%;margin-top:8px">Copiar convite</button><small class="br-subtle">Envie este link ao seu grupo.</small></div>
+   <div id="brInviteBox" hidden><label for="brInviteLink" style="margin-top:0">Convite para esta mesa</label><input type="text" id="brInviteLink" readonly><button id="brCopy" type="button" style="width:100%;margin-top:8px">Copiar convite</button><small class="br-subtle">Quem receber entra por este site, com ficha e dados integrados.</small><button id="brCloseInvite" type="button" class="br-quiet">Fechar convite</button></div>
    <div class="br-tool-nav" role="group" aria-label="Ferramentas da mesa"><button type="button" data-br-panel="dice" aria-pressed="true">Dados</button><button type="button" data-br-panel="party" aria-pressed="false">Grupo</button><button type="button" data-br-panel="turns" aria-pressed="false">Turnos</button></div>
    <div id="brPanel-dice" class="br-tool-panel"><div class="br-roll-actions"><button id="brFreeDice" type="button" class="br-primary">⚄ Rolar dados</button><span class="br-caption">OU ROLE UM ATRIBUTO</span><div class="br-quick" id="brAttributes"></div><details class="br-reason"><summary>Adicionar motivo à rolagem</summary><label for="brRollReason">O que você está tentando fazer?</label><input id="brRollReason" type="text" maxlength="100" placeholder="Ex.: investigar a porta"></details><p id="brDelivery" role="status" class="br-subtle"></p></div>   <details open><summary>Últimas rolagens</summary><div id="brHistory"><p class="br-subtle">As rolagens da sessão aparecem aqui.</p></div></details>
 </div>
@@ -9087,11 +9112,17 @@ body.theme-combat #brRoom h1 {display:block!important;}
 </div>
    <div id="brPanel-turns" class="br-tool-panel" hidden>   <section class="br-section"><h3 id="brEncounterTitle">Iniciativa</h3><p id="brRound"></p><div id="brTurnList"></div><div id="brMasterControls" hidden><button id="brNextTurn" type="button">Próximo turno</button><button id="brAddParty" type="button">Adicionar grupo</button><details id="brEncounterEditor"><summary>Adicionar ou editar participante</summary><form id="brActorForm"><input id="brActorId" type="hidden"><label for="brActorName">Nome</label><input id="brActorName" type="text" maxlength="60" required><label for="brInitiative">Iniciativa</label><input id="brInitiative" type="number" min="-999" max="999" step="any" value="0" required><label for="brConditions">Condições</label><input id="brConditions" type="text" maxlength="100" placeholder="Ex.: ferido, amedrontado"><button type="submit">Salvar</button><button id="brActorCancel" type="button">Limpar campos</button></form></details></div></section>
 </div>
-   <details id="brOptions" class="br-options"><summary>Ajustes da mesa</summary><label class="br-check"><input type="checkbox" id="brShareHud" checked>Compartilhar meus recursos</label><label class="br-check"><input type="checkbox" id="brShowOverlay" checked>Mostrar dados 3D na chamada</label><label class="br-check"><input type="checkbox" id="brShowHud" checked>Mostrar recursos na chamada</label><div id="brUtilityActions"><button id="brResync" type="button">Atualizar dados da mesa</button><button id="brTestRoll" type="button" class="br-quiet">Testar overlay</button><button id="brReconnect" type="button">Reconectar chamada</button><button id="brAutoCamera" type="button" class="br-quiet">Câmera automática</button></div></details>
+   <details id="brOptions" class="br-options"><summary>Ajustes da mesa</summary><label class="br-check"><input type="checkbox" id="brShareHud" checked>Compartilhar meus recursos</label><label class="br-check"><input type="checkbox" id="brShowOverlay" checked>Mostrar dados 3D na chamada</label><label class="br-check"><input type="checkbox" id="brShowHud" checked>Mostrar recursos na chamada</label><div id="brUtilityActions"><button id="brResync" type="button">Atualizar dados da mesa</button><button id="brTestRoll" type="button" class="br-quiet">Testar dados na tela</button><button id="brReconnect" type="button">Reconectar chamada</button><button id="brAutoCamera" type="button" class="br-quiet">Câmera automática</button></div></details>
   </aside>
  </div>
 </section>
 <button id="brReturn" type="button" hidden>Voltar à mesa · chamada em andamento</button>
+<aside id="brSheetDrawer" hidden aria-label="Minha ficha durante a chamada">
+ <div class="br-sheet-toolbar"><div><strong>MINHA FICHA</strong><small>A chamada continua conectada</small></div><button id="brSheetFull" type="button">Ficha completa</button><button id="brSheetClose" type="button" aria-label="Fechar painel da ficha">Fechar</button></div>
+ <nav class="br-sheet-nav" aria-label="Seções da ficha"><button type="button" data-sheet-target="panel-id">Personagem</button><button type="button" data-sheet-target="panel-vitals">Recursos</button><button type="button" data-sheet-target="panel-skills">Perícias</button><button type="button" data-sheet-target="panel-inventory">Inventário</button><button type="button" data-sheet-target="panel-abilities">Habilidades</button></nav>
+ <label class="br-sheet-width">Largura <input id="brSheetWidth" type="range" min="380" max="800" step="20" value="520"></label>
+ <div id="brSheetContent"></div>
+</aside>
 <script src="sala-config.js"></script>
 <script>
 window.BreuRoomProtocol=(()=>{
@@ -9246,7 +9277,7 @@ function myName(){return $('brName').value.trim().slice(0,60)||$('charNameInput'
 function show(){root.hidden=false;$('brReturn').hidden=true;if(!$('brName').value)$('brName').value=$('charNameInput')?.value?.trim()||'';if(!api&&!preview)$('brName').focus();}
 function minimize(){root.hidden=true;$('brReturn').hidden=!(api||preview);$('brReturn').textContent=preview?'Voltar à prévia da mesa':'Voltar à mesa · chamada em andamento';}
 function invite(){const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room,convite:roomInvitation}).toString();return url.href;}
-function showInvite(){if(!room||preview)return;$('brInviteLink').value=invite();$('brInviteBox').hidden=false;}
+function showInvite(){if(!room||preview)return;$('brInviteLink').value=invite();$('brInviteBox').hidden=false;root.dataset.focus='false';$('brFocusMode').setAttribute('aria-pressed','false');$('brFocusMode').textContent='Modo foco';$('brInviteLink').focus();}
 function setRoom(code){room=code;const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room,convite:roomInvitation}).toString();window.history.replaceState(null,'',url);$('brRoomCode').value=url.href;}
 function create(){connect(true);}
 function loadJitsi(){
@@ -9346,7 +9377,7 @@ function renderParty(){
 function showRoll(data,id,sender,localOnly=false,recovered=false,time=Date.now()){
  const valid=P.roll(data);if(!valid||rollIds.has(id))return;rollIds.add(id);if(rollIds.size>500)rollIds.delete(rollIds.values().next().value);
  const packet={...valid,id:`room-${id}`,protocol:3,source:'dark-dashboard',timestamp:time,channel:'breu-call-overlay',accessKey:'local-room-overlay',character:valid.character||sender||'Jogador'};
- if(!recovered){deliverOverlay(packet);const banner=$('brLastRoll');banner.hidden=false;banner.textContent=`${packet.character} · ${packet.reason||packet.subtitle||packet.title} = ${packet.total}${packet.critical?' · CRÍTICO':packet.failure?' · FALHA':''}`;if(root.hidden)$('brReturn').textContent=`${packet.character} rolou ${packet.total} · voltar à mesa`;}
+ if(!recovered){deliverOverlay(packet);const banner=$('brLastRoll');banner.hidden=false;banner.replaceChildren(node('span',packet.character),node('small',`${packet.reason||packet.subtitle||packet.title}${packet.critical?' · CRÍTICO':packet.failure?' · FALHA':''}`),node('strong',packet.total));if(root.hidden)$('brReturn').textContent=`${packet.character} rolou ${packet.total} · voltar à mesa`;}
  history.push({packet,id,time:new Date(time),localOnly,recovered});history.sort((a,b)=>b.time-a.time);history.splice(30);renderHistory();saveTable();
 }
 window.addEventListener('breu:roll',e=>{
@@ -9356,6 +9387,7 @@ window.addEventListener('breu:roll',e=>{
  const id=uid();if(!root.hidden){$('ddFreeClose')?.click();document.getElementById('diceModal').style.display='none';}showRoll(d,id,myName(),preview);if(joined)broadcast('roll',d,id);
 });
 function leave(hangup=true){
+ closeSheet(false);
  saveTable();session++;link?.dispose();link=null;clearInterval(linkTimer);clearTimeout(overlayTimer);$('brLastRoll').hidden=true;delivery('');loading=false;const previous=api;api=null;joined=false;preview=false;myId='';clearInterval(hudTimer);hudTimer=null;
  if(previous){if(hangup){try{previous.executeCommand('hangup');}catch{}}previous.dispose();}
  $('brConference').replaceChildren();overlay.src='about:blank';ready=false;overlayQueue=[];peers.clear();rates.clear();seen.clear();roles.clear();isMaster=false;focusedId='';lastHud='';
@@ -9449,10 +9481,32 @@ for(const button of root.querySelectorAll('[data-br-panel]'))button.addEventList
  for(const tab of root.querySelectorAll('[data-br-panel]')){const selected=tab===button;tab.setAttribute('aria-pressed',String(selected));$('brPanel-'+tab.dataset.brPanel).hidden=!selected;}
 });
 
-$('brFullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await root.requestFullscreen();}catch{hint('Tela cheia indisponível neste navegador.');}});
+$('brFocusMode').addEventListener('click',()=>{const enabled=root.dataset.focus!=='true';root.dataset.focus=String(enabled);$('brFocusMode').setAttribute('aria-pressed',String(enabled));$('brFocusMode').textContent=enabled?'Mostrar ferramentas':'Modo foco';});
+$('brCloseInvite').addEventListener('click',()=>{$('brInviteBox').hidden=true;$('brInvite').focus();});
+
+const sheetDrawer=$('brSheetDrawer'),sheetContent=$('brSheetContent');let sheetHome=null;
+function openSheet(){
+ if(!joined&&!preview){minimize();return;}
+ if(!sheetHome){const sheet=$('mainContainer');sheetHome=document.createComment('breu-sheet-home');sheet.before(sheetHome);sheetContent.appendChild(sheet);}
+ sheetDrawer.hidden=false;root.dataset.sheet='true';document.body.classList.add('breu-sheet-open');$('brToSheet').setAttribute('aria-expanded','true');$('brSheetClose').focus();
+}
+function closeSheet(focus=true){
+ const sheet=$('mainContainer');if(sheetHome){sheetHome.replaceWith(sheet);sheetHome=null;}
+ sheetDrawer.hidden=true;root.dataset.sheet='false';document.body.classList.remove('breu-sheet-open');$('brToSheet').setAttribute('aria-expanded','false');if(focus&&!root.hidden)$('brToSheet').focus();syncHud(true);
+}
+$('brToSheet').setAttribute('aria-controls','brSheetDrawer');$('brToSheet').setAttribute('aria-expanded','false');
+$('brSheetClose').addEventListener('click',()=>closeSheet());
+$('brSheetFull').addEventListener('click',()=>{closeSheet(false);minimize();});
+$('brSheetWidth').addEventListener('input',()=>{document.documentElement.style.setProperty('--br-sheet-width',$('brSheetWidth').value+'px');});
+for(const button of sheetDrawer.querySelectorAll('[data-sheet-target]'))button.addEventListener('click',()=>{$(button.dataset.sheetTarget)?.scrollIntoView({block:'start',behavior:'auto'});});
+sheetContent.addEventListener('input',()=>{if(joined||preview)syncHud();});
+sheetContent.addEventListener('change',()=>{if(joined||preview)syncHud(true);});
+NON_PROFILE_CONTROL_IDS.add('brSheetWidth');
+
+$('brFullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{hint('Tela cheia indisponível neste navegador.');}});
 $('brShowHud').addEventListener('change',()=>{$('brHudStrip').hidden=!$('brShowHud').checked;renderCamera();});
 $('brResync').addEventListener('click',()=>{setupOverlay();if(joined){link?.hello();syncHud(true);refreshPeers();delivery('Solicitando sincronização da mesa…');}else delivery('Prévia local: overlay recarregada.');});
-$('brToSheet').addEventListener('click',minimize);$('brReturn').addEventListener('click',show);$('brCreate').addEventListener('click',create);$('brJoin').addEventListener('click',()=>connect(false));$('brPreview').addEventListener('click',startPreview);$('brLeave').addEventListener('click',()=>leave());$('brInvite').addEventListener('click',showInvite);$('brTestRoll').addEventListener('click',testRoll);
+$('brToSheet').addEventListener('click',()=>sheetDrawer.hidden?openSheet():closeSheet());$('brReturn').addEventListener('click',show);$('brCreate').addEventListener('click',create);$('brJoin').addEventListener('click',()=>connect(false));$('brPreview').addEventListener('click',startPreview);$('brLeave').addEventListener('click',()=>leave());$('brInvite').addEventListener('click',showInvite);$('brTestRoll').addEventListener('click',testRoll);
 $('brCopy').addEventListener('click',async()=>{const input=$('brInviteLink');input.value=invite();try{await navigator.clipboard.writeText(input.value);hint('Convite copiado. Envie para o grupo.');}catch{input.focus();input.select();hint('Selecione e copie o convite acima.');}});
 $('brShareHud').addEventListener('change',()=>syncHud(true));$('brShowOverlay').addEventListener('change',()=>{overlay.hidden=!$('brShowOverlay').checked;});
 $('brFreeDice').addEventListener('click',()=>{$('ddFreeOpen').click();});
