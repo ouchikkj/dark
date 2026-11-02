@@ -4177,10 +4177,12 @@
     document.addEventListener('keydown', function(e) {
         if (e.key !== 'Escape') return;
 
-        const menu = document.getElementById('gameMenuOverlay');
-        if (menu?.classList.contains('active')) toggleMenu();
-        if (isOverlayActive('investigationBoard')) closeOverlay('investigationBoard');
-        if (isOverlayActive('initiativeBoard')) closeOverlay('initiativeBoard');
+        if (e.defaultPrevented || e.repeat) return;
+        if ([...document.querySelectorAll('.modal-overlay')].some(m => getComputedStyle(m).display !== 'none')) return;
+        e.preventDefault();
+        if (isOverlayActive('investigationBoard')) { closeOverlay('investigationBoard'); return; }
+        if (isOverlayActive('initiativeBoard')) { closeOverlay('initiativeBoard'); return; }
+        toggleMenu();
     });
 
     document.addEventListener('input', function(e) {
@@ -5154,7 +5156,7 @@
         document.addEventListener('keydown', event => {
             const menu = document.getElementById('gameMenuOverlay');
             if (!menu || !menu.classList.contains('active')) return;
-            if (event.key === 'Escape') { toggleMenu(); return; }
+            // Escape is handled once by the global menu shortcut.
             if (event.key === 'PageDown') { event.preventDefault(); scrollActiveMenu(); }
         });
     }
@@ -5203,9 +5205,7 @@
         const content = panel?.querySelector('.panel-content');
         if (!panel || !content) return;
         playSfx('click');
-        panel.classList.toggle('collapsed');
-        content.style.display = panel.classList.contains('collapsed') ? 'none' : 'block';
-        btn.innerText = panel.classList.contains('collapsed') ? '+' : '_';
+        setPanelCollapsed(panel, !panel.classList.contains('collapsed'));
         salvarLocalData();
     }
     
@@ -8315,6 +8315,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
         }
         if (!activeModal) return;
         if (event.key === 'Escape') {
+            event.preventDefault(); event.stopImmediatePropagation();
             const cancel = activeModal.querySelector('[data-dd-cancel]') || activeModal.querySelector('#modalCancelBtn') || Array.from(activeModal.querySelectorAll('button')).at(-1);
             cancel?.click();
             return;
@@ -8729,7 +8730,7 @@ Confirmar este modificador?`, false, true, function(confirm) { if (confirm) appl
 </style>
 <div id="ddFreeModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="ddFreeTitle">
  <div class="modal-content">
-  <div class="dd-free-head"><h2 id="ddFreeTitle">DADOS LIVRES</h2><button type="button" class="sys-btn" id="ddFreeClose" aria-label="Fechar rolador">✕</button></div>
+  <div class="dd-free-head"><h2 id="ddFreeTitle">DADOS LIVRES</h2><button type="button" class="sys-btn" id="ddFreeClose" data-dd-cancel aria-label="Fechar rolador">✕</button></div>
   <p style="color:var(--dim-text);font-size:.85rem">Clique nos dados para adicionar à rolagem.</p>
   <div class="dd-free-grid" id="ddFreeGrid"></div>
   <div class="dd-free-selection"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div id="ddFreeChips"></div><button type="button" id="ddFreeClear">Limpar</button></div><p id="ddFreeFormula" style="font-size:.8rem;margin:10px 0 0;color:var(--dim-text)"></p></div>
@@ -9221,6 +9222,7 @@ window.BreuJaas = (() => {
   return participantId;
  }
  async function authorize(create, name) {
+  if(window.DarkStation?.active()) return window.DarkStation.callAccess(name,userId());
   let service;
   try { service = new URL(config.tokenService); if (service.protocol !== 'https:' || service.username || service.password || service.search || service.hash) throw 0; }
   catch { throw new Error('A chamada ainda não foi configurada pelo mestre. A prévia dos dados continua disponível.'); }
@@ -9270,7 +9272,7 @@ function myName(){return $('brName').value.trim().slice(0,60)||$('charNameInput'
 function show(){root.hidden=false;$('brReturn').hidden=true;if(!$('brName').value)$('brName').value=$('charNameInput')?.value?.trim()||'';if(!api&&!preview)$('brName').focus();}
 function minimize(){root.hidden=true;$('brReturn').hidden=!(api||preview);$('brReturn').textContent=preview?'Voltar à prévia da mesa':'Voltar à mesa · chamada em andamento';}
 function invite(){const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room,convite:roomInvitation}).toString();return url.href;}
-function showInvite(){if(!room||preview)return;$('brInviteLink').value=invite();$('brInviteBox').hidden=false;root.dataset.focus='false';$('brFocusMode').setAttribute('aria-pressed','false');$('brFocusMode').textContent='Modo foco';$('brInviteLink').focus();}
+function showInvite(){if(window.DarkStation?.active()){window.DarkStation.invite();return;}if(!room||preview)return;$('brInviteLink').value=invite();$('brInviteBox').hidden=false;root.dataset.focus='false';$('brFocusMode').setAttribute('aria-pressed','false');$('brFocusMode').textContent='Modo foco';$('brInviteLink').focus();}
 function setRoom(code){room=code;const url=new URL(location.href);url.hash=new URLSearchParams({mesa:room,convite:roomInvitation}).toString();window.history.replaceState(null,'',url);$('brRoomCode').value=url.href;}
 function create(){connect(true);}
 function loadJitsi(){
@@ -9505,6 +9507,7 @@ $('brShareHud').addEventListener('change',()=>syncHud(true));$('brShowOverlay').
 $('brFreeDice').addEventListener('click',()=>{$('ddFreeOpen').click();});
 for(const attr of ['FOR','DES','VIG','INT','SAB','APA']){const button=document.createElement('button');button.type='button';button.textContent=attr;button.title=`Rolar ${attr}`;button.addEventListener('click',()=>abrirRolador(attr));$('brAttributes').appendChild(button);}
 const openButton=$('brOpen');openButton.addEventListener('click',show);
+window.BreuStationRoom={show,closeSheet:()=>closeSheet(false),hasCall:()=>Boolean(api)};
 for(const id of ['brName','brRoomCode','brInviteLink','brShareHud','brShowOverlay','brShowHud','brMasterPassword'])NON_PROFILE_CONTROL_IDS.add(id);
 window.addEventListener('beforeunload',()=>{try{api?.dispose();}catch{}});
 const invitation=P.room(new URLSearchParams(location.hash.slice(1)).get('mesa'));
@@ -9513,5 +9516,66 @@ if(invitation){$('brRoomCode').value=location.href;setTimeout(show,0);}
 
 </script>
 
+<link rel="stylesheet" href="station.css?v=2">
+<link rel="stylesheet" href="notebook.css?v=1">
+<section id="dsStation" hidden aria-label="Central de campanha">
+ <header class="ds-head"><div><small>DARK / ESTAÇÃO DE RPG</small><strong id="dsHeading">Suas campanhas</strong></div><button type="button" id="dsClose">VOLTAR À FICHA</button></header>
+ <p id="dsStatus" role="status" aria-live="polite"></p>
+ <div id="dsLobby" class="ds-lobby">
+  <p class="ds-intro">O próximo encontro começa aqui.</p><p class="ds-muted">Reúna o grupo, prepare a cena e guarde as descobertas da campanha.</p>
+  <div id="dsSaved"></div>
+  <details id="dsJoinDetails"><summary>Entrar com um convite</summary><form id="dsJoinForm"><label>Convite da campanha<input id="dsInviteInput" required maxlength="2500" autocomplete="off" placeholder="Cole o link enviado pelo mestre"></label><label>Seu nome na mesa<input id="dsPlayerName" required maxlength="60" autocomplete="nickname"></label><button type="submit">ENTRAR NA CAMPANHA</button></form></details>
+  <details id="dsCreateDetails"><summary>Criar uma campanha · mestre</summary><form id="dsCreateForm"><label>Nome da campanha<input id="dsCampaignName" required maxlength="80" placeholder="Ex.: Ecos do Breu"></label><label>Senha de mestre<input id="dsCreatePassword" type="password" required maxlength="200" autocomplete="current-password"></label><p class="ds-muted">Use a mesma senha de mestre configurada para as chamadas.</p><button type="submit">CRIAR CAMPANHA</button></form></details>
+  <details><summary>Recuperar meu acesso de mestre</summary><form id="dsRecoverForm"><label>Convite ou identificador da campanha<input id="dsRecoverInvite" required maxlength="2500"></label><label>Senha de mestre<input id="dsRecoverPassword" type="password" required maxlength="200" autocomplete="current-password"></label><button type="submit">RECUPERAR ACESSO</button></form></details>
+ </div>
+ <div id="dsWorkspace" hidden>
+  <nav class="ds-nav" aria-label="Campanha"><button type="button" data-ds-tab="notebook" data-ds-gm hidden>CADERNO DO MESTRE</button><button data-ds-tab="home" aria-pressed="true">VISÃO GERAL</button><button data-ds-tab="scene" aria-pressed="false">SESSÃO</button><button data-ds-tab="clues" aria-pressed="false">PISTAS <span id="dsClueCount"></span></button><button data-ds-tab="archive" aria-pressed="false">ARQUIVO</button><button id="dsSwitch">TROCAR CAMPANHA</button></nav>
+  <main class="ds-content">
+   <section data-ds-page="home"><div class="ds-section-title"><small id="dsSessionLabel"></small><h2 id="dsCampaignTitle"></h2></div><p id="dsLastSummary" class="ds-prose"></p><div class="ds-actions"><button id="dsGoSession">IR PARA A SESSÃO</button><button id="dsInviteButton" data-ds-gm>CONVIDAR GRUPO</button></div>
+    <div id="dsInviteBox" hidden><label>Convite para jogadores<input id="dsInviteOutput" readonly></label><div class="ds-actions"><button id="dsCopyInvite">COPIAR CONVITE</button><button id="dsHideInvite">FECHAR</button></div><p class="ds-muted">O convite dá acesso à campanha e às pistas reveladas. Guarde seu acesso de mestre neste navegador.</p><button id="dsRotateInvite" class="ds-quiet">INVALIDAR CONVITE E GERAR OUTRO</button></div>
+    <h3>NA CAMPANHA</h3><div id="dsMembers"></div><div class="ds-link-sheet"><p>Associe a ficha aberta à campanha para compartilhar nome, VD, SAN e PE. Anotações e arquivos continuam privados.</p><button id="dsBind">ASSOCIAR FICHA ATUAL</button><button id="dsUnbind" hidden>PARAR DE COMPARTILHAR</button><p id="dsBindingHint" class="ds-muted"></p></div>
+   </section>
+   <section data-ds-page="scene" hidden><div class="ds-section-title"><small id="dsSceneStatus"></small><h2 id="dsSceneTitle"></h2><p id="dsSceneLocation" class="ds-muted"></p></div><img id="dsSceneImage" hidden alt="Imagem da cena atual" referrerpolicy="no-referrer"><p id="dsSceneObjective" class="ds-prose"></p><div class="ds-actions"><button id="dsOpenCall">ENTRAR NA CHAMADA</button><button id="dsStartSession" data-ds-gm>INICIAR SESSÃO</button></div><p class="ds-muted">A ficha, as câmeras e o rolador continuam disponíveis na sala RPG.</p>
+    <details data-ds-gm id="dsSceneEditor"><summary>Preparar / editar a cena</summary><form id="dsSceneForm"><label>Cena<input id="dsSceneTitleInput" required maxlength="100" placeholder="Ex.: O sinal da estação abandonada"></label><label>Local<input id="dsSceneLocationInput" maxlength="140"></label><label>Objetivo / o que está acontecendo<textarea id="dsSceneObjectiveInput" maxlength="2000" rows="4"></textarea></label><label>Imagem da cena · endereço HTTPS opcional<input id="dsSceneImageInput" type="url" maxlength="1000" placeholder="https://..."></label><p class="ds-muted">Ao salvar, esta cena ficará visível para todo o grupo.</p><div class="ds-actions"><button type="submit">SALVAR CENA</button><button type="button" id="dsCancelScene">CANCELAR EDIÇÃO</button></div></form></details>
+    <details id="dsFinishDetails" data-ds-gm><summary>Encerrar sessão e registrar onde paramos</summary><form id="dsFinishForm"><label>Resumo para o grupo<textarea id="dsSessionSummary" required maxlength="5000" rows="5" placeholder="O que descobriram? O que ficou pendente?"></textarea></label><p class="ds-muted">O registro é compartilhado. Encerre a chamada pelo botão Sair da chamada quando todos terminarem.</p><button type="submit">ENCERRAR E GUARDAR RESUMO</button></form></details>
+   </section>
+   <section data-ds-page="clues" hidden><div class="ds-section-title"><small>ARQUIVO DE DESCOBERTAS</small><h2>Pistas da campanha</h2></div><p id="dsClueHelp" class="ds-muted"></p><details id="dsClueEditor" data-ds-gm><summary>Preparar uma pista</summary><form id="dsClueForm"><input id="dsClueId" type="hidden"><label>Título<input id="dsClueTitle" required maxlength="100"></label><label>Conteúdo<textarea id="dsClueText" maxlength="5000" rows="5"></textarea></label><label>Imagem · endereço HTTPS opcional<input id="dsClueImage" type="url" maxlength="1000" placeholder="https://..."></label><p id="dsClueSaveHint" class="ds-muted">Novas pistas são salvas em segredo. Revele quando chegar a hora.</p><div class="ds-actions"><button type="submit">SALVAR PISTA</button><button type="button" id="dsCancelClue">CANCELAR EDIÇÃO</button></div></form></details><div id="dsClues"></div></section>
+   <section data-ds-page="archive" hidden><div class="ds-section-title"><small>MEMÓRIA DA MESA</small><h2>Sessões anteriores</h2></div><div id="dsArchive"></div><button id="dsExport">EXPORTAR MEU ARQUIVO</button><p class="ds-muted">Baixa cenas, resumos e pistas que você pode ver. Não inclui senhas nem acessos.</p></section>
+  <section data-ds-page="notebook" id="nbWorkspace" hidden aria-label="Caderno privado do mestre">
+ <div class="nb-top"><div><small>PREPARAÇÃO PRIVADA</small><h2>Caderno do mestre</h2></div><div class="nb-view-switch"><button type="button" id="nbViewPages" aria-pressed="true">Páginas</button><button type="button" id="nbViewPlan" aria-pressed="false">Planejamento</button></div></div>
+ <div class="nb-layout">
+  <aside class="nb-browser" aria-label="Biblioteca da campanha">
+   <label class="nb-search-label" for="nbSearch">Buscar na campanha<input id="nbSearch" type="search" maxlength="120" placeholder="Título, texto ou etiqueta…" autocomplete="off"></label>
+   <select id="nbFilter" aria-label="Filtrar páginas"><option value="">Todas as páginas</option><option value="favorite">Favoritas</option><option value="arc">Arcos</option><option value="session">Sessões</option><option value="scene">Cenas</option><option value="npc">Personagens / NPCs</option><option value="place">Locais</option><option value="faction">Facções</option><option value="item">Itens</option><option value="note">Notas</option><option value="trash">Arquivadas</option></select>
+   <div class="nb-new-row"><select id="nbNewType" aria-label="Tipo da nova página"><option value="note">Nota livre</option><option value="arc">Arco</option><option value="session">Sessão</option><option value="scene">Cena</option><option value="npc">Personagem / NPC</option><option value="place">Local</option><option value="faction">Facção</option><option value="item">Item</option></select><button type="button" id="nbNew">+ Nova</button></div>
+   <div id="nbTree"></div><p id="nbCount" class="ds-muted"></p>
+   <details class="nb-export"><summary>Guardar uma cópia</summary><button type="button" id="nbExportJSON">Exportar caderno (.json)</button><button type="button" id="nbExportMD">Exportar texto (.md)</button><p class="ds-muted">A cópia inclui seus segredos de mestre.</p></details>
+  </aside>
+  <div class="nb-main">
+   <div id="nbEmpty"><small>UM LUGAR PARA TODA A HISTÓRIA</small><h2>Da primeira ideia à última sessão.</h2><p>Crie páginas para o mundo, organize cenas dentro de sessões e conecte as descobertas aos personagens.</p><button type="button" id="nbSeed">Montar estrutura inicial</button><p class="ds-muted">Cria uma estrutura editável, sem inventar a história por você.</p></div>
+   <div id="nbBoard" hidden></div>
+   <article id="nbDocument" hidden>
+    <nav id="nbBreadcrumb" aria-label="Caminho da página"></nav>
+    <div class="nb-doc-tools"><span id="nbSaveStatus" role="status" aria-live="polite"></span><button type="button" id="nbSave">Salvar agora</button><button type="button" id="nbRead">Leitura</button><button type="button" id="nbFavorite" aria-label="Marcar como favorita" aria-pressed="false">☆</button></div>
+    <div id="nbConflict" hidden><p>Existe outra versão desta página. Seu rascunho está preservado.</p><button type="button" id="nbConflictReload">Carregar versão da campanha</button><button type="button" id="nbConflictCopy">Salvar rascunho como outra página</button></div>
+    <label class="nb-title-label" for="nbTitle">Título<input id="nbTitle" maxlength="120" placeholder="Título da página" autocomplete="off"></label>
+    <div class="nb-properties"><label>Tipo<select id="nbType"><option value="arc">Arco</option><option value="session">Sessão</option><option value="scene">Cena</option><option value="npc">Personagem / NPC</option><option value="place">Local</option><option value="faction">Facção</option><option value="item">Item</option><option value="note">Nota</option></select></label><label>Estado<select id="nbState"><option value="planned">Em preparação</option><option value="ready">Pronto para jogar</option><option value="done">Concluído</option></select></label><label>Data prevista<input id="nbDate" type="date"></label></div>
+    <details class="nb-properties-more"><summary>Organização e etiquetas</summary><label>Página superior<select id="nbParent"></select></label><label>Etiquetas · separadas por vírgula<input id="nbTags" maxlength="309" placeholder="investigação, estação, ameaça"></label><div class="nb-inline-actions"><button type="button" id="nbChild">+ Criar subpágina</button><button type="button" id="nbUp">Mover acima</button><button type="button" id="nbDown">Mover abaixo</button></div></details>
+    <div id="nbEditor"><div class="nb-format"><button type="button" data-nb-insert="heading">Título</button><button type="button" data-nb-insert="check">Checklist</button><button type="button" data-nb-insert="quote">Citação</button><select id="nbLinkTarget" aria-label="Página para conectar"><option value="">Conectar a uma página…</option></select><button type="button" id="nbInsertLink">Inserir ligação</button></div><label class="nb-body-label" for="nbBody">Anotações privadas<textarea id="nbBody" rows="17" maxlength="16000" spellcheck="true" placeholder="Escreva aqui. Use # para títulos, - [ ] para tarefas e [[Nome da página]] para conectar ideias."></textarea></label><p class="ds-muted nb-editor-help">Salva automaticamente. Ligações inseridas pelo seletor continuam funcionando se a página mudar de nome.</p></div>
+    <div id="nbPreview" hidden></div>
+    <div id="nbConnections"><h3>Conexões desta página</h3><div id="nbOutgoing"></div><h3>Páginas que mencionam esta</h3><div id="nbBacklinks"></div></div>
+    <details id="nbShare"><summary>Usar na mesa</summary><p class="ds-muted">Somente o trecho abaixo será enviado aos jogadores. As anotações acima continuam privadas.</p><label>Título público<input id="nbPublicTitle" maxlength="100"></label><label>Trecho para os jogadores<textarea id="nbPublicText" rows="4" maxlength="5000" placeholder="Escreva ou cole apenas o que o grupo deve ver."></textarea></label><label>Imagem pública · HTTPS opcional<input id="nbPublicImage" type="url" maxlength="1000"></label><label>Local da cena · opcional<input id="nbPublicLocation" maxlength="140"></label><div class="nb-inline-actions"><button type="button" id="nbToScene">Colocar como cena atual</button><button type="button" id="nbToClue">Preparar como pista</button></div><p class="ds-muted">A cena é compartilhada ao confirmar. A pista é criada em segredo; revele pela aba Pistas.</p></details>
+    <div class="nb-bottom"><button type="button" id="nbArchive">Arquivar página</button><span class="ds-muted">Páginas arquivadas podem ser restauradas.</span></div>
+   </article>
+  </div>
+ </div>
+</section>
+
+</main>
+ </div>
+</section>
+
+<script src="notebook.js?v=1"></script>
+<script src="station.js?v=3"></script>
 </body>
 </html>
