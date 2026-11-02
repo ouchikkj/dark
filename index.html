@@ -1387,6 +1387,15 @@
 #ddRelationList {margin:20px 0;font-family:'Segoe UI',sans-serif;line-height:1.5;}
 #ddRelationError {color:var(--gold-color);}
 @media(max-width:600px){.board-controls {flex-wrap:nowrap;overflow-x:auto;}.board-controls>* {flex-shrink:0;}.dd-relation-fields {grid-template-columns:1fr;}.dd-relations-content {padding:18px!important;}.dd-evidence {min-height:44px;}}
+</style><style id="dark-menu-refinement">
+/* DARK: entrada discreta do menu, sem deslocamento de tela ou rebote. */
+.game-menu-overlay{transform:none;visibility:hidden;opacity:0;transition:opacity .22s ease,visibility 0s linear .22s}
+.game-menu-overlay.active{transform:none;visibility:visible;opacity:1;transition:opacity .22s ease,visibility 0s}
+.game-menu-overlay .menu-right-nav{transform:translateX(-18px);opacity:0;transition:transform .26s cubic-bezier(.2,.7,.2,1),opacity .2s ease}
+.game-menu-overlay.active .menu-right-nav{transform:translateX(0);opacity:1}
+.game-menu-overlay .menu-left-art{opacity:0;transition:opacity .24s ease}
+.game-menu-overlay.active .menu-left-art{opacity:1}
+@media(prefers-reduced-motion:reduce){.game-menu-overlay,.game-menu-overlay .menu-right-nav,.game-menu-overlay .menu-left-art{transition:none!important;transform:none!important}}
 </style></head>
 <body>
 
@@ -1396,12 +1405,12 @@
 <div id="customBgContainer" class="custom-bg"></div>
 
 <div class="top-fixed-controls">
-<button id="brOpen" class="fixed-menu-btn" type="button">◉ SALA RPG</button>
-<button class="fixed-menu-btn" id="ddFreeOpen" type="button" aria-haspopup="dialog">⚄ DADOS</button>
-    <button class="fixed-menu-btn" data-dd-bind="ddbind_1">
+<button class="fixed-menu-btn" data-dd-bind="ddbind_1">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         MENU
     </button>
+<button id="brOpen" class="fixed-menu-btn" type="button">◉ SALA RPG</button>
+<button class="fixed-menu-btn" id="ddFreeOpen" type="button" aria-haspopup="dialog">⚄ DADOS</button>
     <button id="btn-combat-mode" class="fixed-combat-btn" data-dd-bind="ddbind_2">[ COMBAT MODE ]</button>
 </div>
 
@@ -4217,51 +4226,35 @@
 
     function playSfx(type) {
         if (isMuted) return;
+        const stamp = performance.now();
+        if (stamp - (playSfx.lastAt || -1000) < 85) return;
         const context = getAudioContext();
         if (!context) return;
+        playSfx.lastAt = stamp;
         if (context.state === 'suspended') context.resume().catch(() => {});
-        const now = context.currentTime;
-        const output = context.createGain();
-        output.gain.setValueAtTime(0.0001, now);
-        output.gain.linearRampToValueAtTime(0.85, now + 0.01);
-        output.connect(context.destination);
-
-        const createVoice = (wave, startFreq, endFreq, duration, peak, options = {}) => {
-            const osc = context.createOscillator();
-            const gainNode = context.createGain();
-            const filter = context.createBiquadFilter();
-            osc.type = wave;
-            osc.frequency.setValueAtTime(startFreq, now);
-            if (options.curve === 'linear') osc.frequency.linearRampToValueAtTime(endFreq, now + duration);
-            else osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), now + duration);
-            filter.type = options.filterType || 'lowpass';
-            filter.frequency.setValueAtTime(options.filterFreq || 1800, now);
-            filter.Q.value = options.q || 0.7;
-            gainNode.gain.setValueAtTime(0.0001, now);
-            gainNode.gain.linearRampToValueAtTime(peak, now + Math.min(0.018, duration * 0.25));
-            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-            osc.connect(filter); filter.connect(gainNode); gainNode.connect(output);
-            osc.start(now); osc.stop(now + duration + 0.03);
+        // Curtos contatos filtrados, sem notas agudas ou varreduras de pitch.
+        const presets = {
+            click: [.028, .035, 1800], box: [.045, .045, 1250],
+            alert: [.085, .065, 1000], roll: [.075, .045, 900],
+            lock: [.055, .055, 800], glitch: [.075, .045, 750],
+            menu: [.09, .045, 850]
         };
-
-        if (type === 'click') {
-            createVoice('triangle', 720, 420, 0.08, 0.015, { filterFreq: 1800, q: 0.9 });
-        } else if (type === 'box') {
-            createVoice('triangle', 260, 145, 0.12, 0.022, { filterFreq: 1200, q: 0.8 });
-            createVoice('sine', 180, 110, 0.14, 0.012, { filterFreq: 900, q: 0.6 });
-        } else if (type === 'alert') {
-            createVoice('triangle', 380, 300, 0.14, 0.017, { filterFreq: 1400, q: 0.8, curve: 'linear' });
-            createVoice('sine', 620, 520, 0.18, 0.011, { filterFreq: 1800, q: 0.7 });
-        } else if (type === 'roll') {
-            createVoice('sine', 120, 190, 0.24, 0.014, { filterFreq: 950, q: 0.7, curve: 'linear' });
-            createVoice('triangle', 78, 120, 0.28, 0.01, { filterFreq: 720, q: 0.6, curve: 'linear' });
-        } else if (type === 'lock') {
-            createVoice('triangle', 210, 120, 0.18, 0.02, { filterFreq: 900, q: 1.1 });
-            createVoice('sine', 105, 70, 0.2, 0.012, { filterFreq: 700, q: 0.8 });
-        } else if (type === 'glitch') {
-            createVoice('sawtooth', 160, 70, 0.18, 0.012, { filterFreq: 900, q: 1.4, curve: 'linear' });
-            createVoice('triangle', 90, 140, 0.16, 0.008, { filterFreq: 1100, q: 1.2, curve: 'linear' });
-        }
+        const [duration, volume, cutoff] = presets[type] || presets.click;
+        const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+        const samples = buffer.getChannelData(0);
+        for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+        const source = context.createBufferSource();
+        const filter = context.createBiquadFilter();
+        const gain = context.createGain();
+        source.buffer = buffer;
+        filter.type = 'lowpass'; filter.frequency.value = cutoff; filter.Q.value = .5;
+        const now = context.currentTime;
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(volume, now + .004);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+        source.connect(filter); filter.connect(gain); gain.connect(context.destination);
+        source.onended = () => { source.disconnect(); filter.disconnect(); gain.disconnect(); };
+        source.start(now); source.stop(now + duration);
     }
 
     function toggleMute() { isMuted = !isMuted; document.getElementById('muteBtn').innerHTML = isMuted ? svgMute : svgVol; if (!isMuted) { initAudio(); playSfx('click'); } salvarLocalData(); }
@@ -4323,7 +4316,7 @@
         const isOpen = menu.classList.contains('active');
         document.body.classList.toggle('menu-open', isOpen);
         if(isOpen) {
-            updateMenuHUD(); playSfx('glitch');
+            updateMenuHUD(); playSfx('menu');
             openMenuSection('main', false);
         } else {
             playSfx('click');
