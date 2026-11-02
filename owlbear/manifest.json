@@ -1,0 +1,23 @@
+{
+  "name": "DARK — Ficha e Personagem",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "description": "Vincule a ficha DARK ao token, compartilhe recursos e rolagens e permita consulta protegida ao mestre.",
+  "author": "ouchikkj",
+  "homepage_url": "https://ouchikkj.github.io/dark/",
+  "icon": "/dark/owlbear/icon.svg",
+  "background_url": "/dark/owlbear/background.html",
+  "action": {
+    "title": "Ficha DARK",
+    "icon": "/dark/owlbear/icon.svg",
+    "popover": "/dark/owlbear/index.html",
+    "width": 880,
+    "height": 880
+  },
+  "permissions": [
+    {
+      "name": "clipboard-write",
+      "reason": "Copiar resultados e exportações da ficha quando solicitado."
+    }
+  ]
+}

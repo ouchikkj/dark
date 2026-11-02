@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DARK · Owlbear</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div><strong>DARK</strong><span>FICHA · OWLBEAR RODEO</span></div>
+      <small id="role">Conectando…</small>
+    </header>
+    <p id="status" role="status">Aguardando o Owlbear Rodeo.</p>
+    <div id="outside" hidden>
+      <h1>Leve sua ficha para o mapa.</h1>
+      <p>
+        Instale o manifesto desta extensão no Owlbear Rodeo e ative-a em sua
+        sala.
+      </p>
+      <a href="manifest.json">Manifesto da extensão</a
+      ><a href="?demo=1">Experimentar prévia local</a>
+    </div>
+    <section id="workspace" hidden>
+      <div class="token-picker">
+        <label for="tokens">PERSONAGEM NO MAPA</label
+        ><select id="tokens">
+          <option value="">Selecione um token de personagem</option></select
+        ><span id="bindingStatus">Abra uma cena para começar.</span>
+      </div>
+      <nav aria-label="Áreas da extensão">
+        <button data-panel="sheet" aria-pressed="true">Minha ficha</button
+        ><button data-panel="token" aria-pressed="false">Token</button
+        ><button data-panel="rolls" aria-pressed="false">
+          Rolagens <span id="count"></span></button
+        ><button id="gmTab" data-panel="gm" aria-pressed="false" hidden>
+          Mestre
+        </button>
+      </nav>
+      <section id="panel-sheet">
+        <div class="sheet-actions">
+          <label for="profiles" class="sr-only">Ficha ativa</label
+          ><select id="profiles" aria-label="Ficha ativa"></select
+          ><button id="newProfile">Nova</button
+          ><label class="button" for="importFile"
+            >Importar JSON<input
+              id="importFile"
+              type="file"
+              accept="application/json,.json"
+              hidden
+          /></label>
+        </div>
+        <p id="sheetLock" class="warning" hidden>
+          Esta ficha está sendo editada em outra aba. Feche a outra aba para
+          sincronizar por aqui.
+        </p>
+        <iframe
+          id="sheet"
+          title="Ficha DARK editável"
+          src="about:blank"
+          allow="clipboard-write"
+        ></iframe>
+      </section>
+      <section id="panel-token" hidden>
+        <div id="stats" class="stats"></div>
+        <p id="ownerInfo"></p>
+        <p class="muted">
+          Vincule a ficha ativa ao token selecionado. Nome, vida, sanidade e
+          energia ficam visíveis para o grupo.
+        </p>
+        <label class="check"
+          ><input id="shareGM" type="checkbox" checked />Permitir ao mestre
+          consultar a ficha completa</label
+        ><button id="bind" class="primary">
+          Vincular minha ficha a este token</button
+        ><button id="sync">Sincronizar agora</button
+        ><button id="unlink">Desvincular</button>
+        <p id="syncTime" class="muted"></p>
+        <details>
+          <summary>Como funciona</summary>
+          <p>
+            A ficha é salva neste navegador. Os recursos ficam no token e
+            acompanham a ficha enquanto a extensão está aberta. A consulta do
+            mestre usa uma cópia enviada com criptografia, sem permitir edição.
+          </p>
+          <p>
+            Se a sua ficha do site não aparecer aqui, exporte o JSON no site e
+            importe acima. Feche a ficha no site antes de editar o mesmo
+            personagem aqui.
+          </p>
+          <p>
+            Imagens e PDFs anexados não são transmitidos na consulta do mestre.
+          </p>
+        </details>
+      </section>
+      <section id="panel-rolls" hidden>
+        <p class="muted">
+          Rolagens públicas dos personagens vinculados. O histórico deste
+          navegador mantém até 30 resultados recentes.
+        </p>
+        <div id="history"></div>
+      </section>
+      <section id="panel-gm" hidden>
+        <h2>Consulta do mestre</h2>
+        <p class="muted">
+          Selecione um token vinculado e solicite a ficha. O dono precisa estar
+          conectado com a extensão ativa e ter permitido o compartilhamento.
+        </p>
+        <button id="requestSheet" class="primary">
+          Consultar ficha do token
+        </button>
+        <p id="privateStatus" role="status"></p>
+        <div id="privateReport"></div>
+      </section>
+    </section>
+    <iframe
+      id="overlay"
+      title="Animação dos dados"
+      src="sala-overlay.html"
+      aria-hidden="true"
+      tabindex="-1"
+    ></iframe>
+    <script type="module" src="assets/app.js"></script>
+  </body>
+</html>
