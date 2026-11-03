@@ -1,16 +1,18 @@
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id),root=$('dsStation'),KEY='dark-campaign-access-v1';
-let records=[],access=null,state=null,tab='home',pollTimer=null,polling=false,writing=false,generation=0,sceneDirty=false,sceneRevision=null,clueRevision=null,lastCharacter='',sheetTimer=null,notebook=null;
+let records=[],access=null,state=null,tab='home',pollTimer=null,polling=false,writing=false,generation=0,sceneDirty=false,sceneRevision=null,clueRevision=null,lastCharacter='',sheetTimer=null,notebook=null,account=null,accountRecords=[];
 try{records=JSON.parse(localStorage.getItem(KEY)||'[]');if(!Array.isArray(records))records=[];}catch{}
 records=records.filter(r=>r&&/^[a-f0-9]{32}$/.test(r.id)&&/^[a-f0-9]{64}$/.test(r.token)).slice(0,30);
 const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 const status=text=>{$('dsStatus').textContent=text;};
-function remember(){try{localStorage.setItem(KEY,JSON.stringify(records));}catch{status('Acesso ativo, mas não foi possível guardá-lo neste navegador. Libere espaço antes de fechar.');}}
+function remember(){try{localStorage.setItem(KEY,JSON.stringify(records.filter(r=>!r.account)));}catch{status('Acesso ativo, mas não foi possível guardá-lo neste navegador. Libere espaço antes de fechar.');}}
 function service(){const u=new URL(window.BREU_CALL_CONFIG?.campaignService||window.BREU_CALL_CONFIG?.tokenService||'');if(u.protocol!=='https:'&&!(u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname)))throw Error('Configure o endereço do serviço em sala-config.js.');if(u.username||u.password||u.search||u.hash)throw Error('Endereço do serviço inválido.');return u.href.replace(/\/$/,'');}
 async function api(path,body={},credential=access){
  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
- try{const response=await fetch(service()+'/campaign/'+path,{method:'POST',headers:{'Content-Type':'application/json',...(credential?.token?{Authorization:'Bearer '+credential.token}:{})},body:JSON.stringify(body),signal:ctrl.signal,cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});
+ const auth=credential?.account?account?.token():credential?.token;
+ if(credential?.account&&!auth)throw Error('Entre na sua conta para continuar.');
+ try{const response=await fetch(service()+'/campaign/'+path,{method:'POST',headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},body:JSON.stringify(body),signal:ctrl.signal,cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});
   let data;try{data=await response.json();}catch{throw Error('O serviço ainda não está pronto para campanhas. Publique o Worker deste pacote.');}
   if(!response.ok){const error=Error(data.error||'Não foi possível concluir.');error.status=response.status;throw error;}return data;
  }catch(e){if(e.name==='AbortError')throw Error('A resposta demorou. Seu texto continua aqui; confira a conexão e tente novamente.');if(e instanceof TypeError)throw Error('Sem conexão com a campanha. Confira a internet; suas edições ainda estão na tela.');throw e;}finally{clearTimeout(timer);}
@@ -31,13 +33,15 @@ function show(){
 function close(){root.hidden=true;$('brRoom')?.setAttribute('data-station','false');$('dsOpen')?.focus();}
 function setTab(value){tab=value==='notebook'&&state?.role!=='gm'?'home':value;root.dataset.notebook=String(tab==='notebook');for(const el of root.querySelectorAll('[data-ds-page]'))el.hidden=el.dataset.dsPage!==tab;for(const btn of root.querySelectorAll('[data-ds-tab]')){btn.classList.toggle('active',btn.dataset.dsTab===tab);btn.setAttribute('aria-pressed',String(btn.dataset.dsTab===tab));}}
 function saved(){
+ $('dsLegacySaved').hidden=!records.length;$('dsLegacySaved').open=Boolean(records.length);
+ $('dsAccountSaved').replaceChildren(...accountRecords.map(r=>{const row=node('div',undefined,'ds-saved'),label=node('div');label.append(node('strong',r.name),node('small',r.owner?'CRIADOR · MESTRE':r.role==='gm'?'COMESTRE':'JOGADOR'));const open=node('button','ABRIR MESA');open.onclick=()=>run(()=>resume(r));row.append(label,open);return row;}));
  $('dsSaved').replaceChildren(...records.map(r=>{const row=node('div',undefined,'ds-saved'),label=node('div');label.append(node('strong',r.name),node('small',r.role==='gm'?'MESTRE':'JOGADOR'));const open=node('button','CONTINUAR');open.onclick=()=>run(()=>resume(r));row.append(label,open);return row;}));
 }
 function adopt(data,previous){
  const s=data.state;if(!s?.id)throw Error('Resposta inválida da campanha.');
- access={...previous,id:s.id,name:s.name,role:s.role,token:data.token||previous?.token};
- if(!access.token)throw Error('Não foi possível guardar seu acesso.');
- records=[access,...records.filter(r=>r.id!==s.id)].slice(0,30);remember();state=null;generation++;sceneDirty=false;sceneRevision=null;clueRevision=null;lastCharacter='';
+ access={...previous,id:s.id,name:s.name,role:s.role,account:Boolean(s.accountBound),token:s.accountBound?undefined:data.token||previous?.token};
+ if(!access.account&&!access.token)throw Error('Não foi possível guardar seu acesso.');
+ if(access.account){accountRecords=[access,...accountRecords.filter(r=>r.id!==s.id)];records=records.filter(r=>r.id!==s.id);}else records=[access,...records.filter(r=>r.id!==s.id)].slice(0,30);remember();state=null;generation++;sceneDirty=false;sceneRevision=null;clueRevision=null;lastCharacter='';
  $('dsClueForm').reset();$('dsSceneEditor').open=false;$('dsClueEditor').open=false;
  apply(s);$('dsLobby').hidden=true;$('dsWorkspace').hidden=false;setTab(s.role==='gm'?'notebook':'home');
  // Consume the campaign invitation without placing the member credential in the URL.
@@ -49,6 +53,8 @@ function apply(next){
  if(state?.id===next.id&&state.revision>next.revision)return;
  const previous=state;state=next;const gm=state.role==='gm';
  notebook?.update(state);
+ if(!gm&&tab==='notebook')setTab('home');
+ $('dsAttachAccount').hidden=!account?.user()||state.accountBound;$('dsAttachHint').hidden=$('dsAttachAccount').hidden;
  for(const el of root.querySelectorAll('[data-ds-gm]'))el.hidden=!gm;
  $('dsHeading').textContent=state.name;$('dsCampaignTitle').textContent=state.name;
  $('dsSessionLabel').textContent=state.session.active?`SESSÃO ${state.session.number} · EM ANDAMENTO`:'ENTRE SESSÕES';
@@ -67,7 +73,9 @@ function apply(next){
  $('dsMembers').replaceChildren(...state.members.map(m=>{
   const row=node('div',undefined,'ds-member'),info=node('div');info.append(node('strong',m.character?.name||m.name));info.append(node('small',`${m.name}${m.id===state.memberId?' · você':''} · ${m.role==='gm'?'mestre':'jogador'}`));
   if(m.character)info.append(node('small',['vd','san','pe'].map(k=>`${k.toUpperCase()} ${m.character[k].current}/${m.character[k].max}`).join(' · ')));
-  row.append(info);if(gm&&m.role!=='gm'){const remove=node('button','REMOVER ACESSO');remove.className='ds-quiet';remove.onclick=()=>confirmInline(remove,'CONFIRMAR REMOÇÃO',()=>command({action:'remove',id:m.id}));row.append(remove);}return row;
+  row.append(info);if(gm&&m.role!=='gm'){const remove=node('button','REMOVER ACESSO');remove.className='ds-quiet';remove.onclick=()=>confirmInline(remove,'CONFIRMAR REMOÇÃO',()=>command({action:'remove',id:m.id}));row.append(remove);}
+  if(state.owner&&m.id!==state.memberId){const role=node('button',m.role==='gm'?'TORNAR JOGADOR':'CONVIDAR COMO COMESTRE');role.className='ds-quiet';role.onclick=()=>confirmInline(role,m.role==='gm'?'CONFIRMAR ALTERAÇÃO':'LIBERAR CADERNO PRIVADO?',()=>command({action:'role',id:m.id,role:m.role==='gm'?'player':'gm'}));row.append(role);if(m.role==='gm'){const remove=node('button','REMOVER COMESTRE');remove.onclick=()=>confirmInline(remove,'CONFIRMAR REMOÇÃO',()=>command({action:'remove',id:m.id}));row.append(remove);}}
+  return row;
  }));
  const revealed=state.clues.filter(c=>c.revealed).length;$('dsClueCount').textContent=String(gm?state.clues.length:revealed);
  $('dsClueHelp').textContent=gm?'Prepare em segredo. O conteúdo só chega aos jogadores depois de revelar. Pistas reveladas permanecem no arquivo.':'As pistas reveladas pelo mestre ficam guardadas aqui, mesmo depois da chamada.';
@@ -140,10 +148,10 @@ $('dsGoSession').onclick=()=>setTab('scene');
 $('dsSwitch').onclick=()=>{
  if(window.BreuStationRoom?.hasCall()){status('Saia da chamada antes de trocar de campanha.');return;}
  if(sceneDirty||$('dsClueTitle').value||notebook?.hasDraft()){status('Salve ou cancele suas edições antes de trocar de campanha.');return;}
- generation++;access=null;state=null;clearTimeout(pollTimer);$('dsWorkspace').hidden=true;$('dsLobby').hidden=false;$('dsHeading').textContent='Suas campanhas';$('dsSceneStrip').hidden=true;$('dsInviteBox').hidden=true;saved();status('Escolha uma campanha para continuar.');
+ generation++;access=null;state=null;notebook?.update(null);clearTimeout(pollTimer);$('dsWorkspace').hidden=true;$('dsLobby').hidden=false;$('dsHeading').textContent='Suas campanhas';$('dsSceneStrip').hidden=true;$('dsInviteBox').hidden=true;$('dsClues').replaceChildren();$('dsInviteOutput').value='';saved();account?.refresh().catch(e=>status(e.message));status('Escolha uma campanha para continuar.');
 };
-$('dsCreateForm').onsubmit=e=>{e.preventDefault();run(async()=>{const body={name:$('dsCampaignName').value,masterPassword:$('dsCreatePassword').value};const data=await api('create',body,null);$('dsCreatePassword').value='';adopt(data);status('Campanha criada. Convide o grupo e prepare sua primeira cena.');});};
-$('dsJoinForm').onsubmit=e=>{e.preventDefault();run(async()=>{const invite=parseInvite($('dsInviteInput').value);const previous=records.find(r=>r.id===invite.id);const data=await api(invite.id+'/join',{invitation:invite.invitation,playerName:$('dsPlayerName').value},previous);adopt(data,previous);$('dsInviteInput').value='';status('Você entrou na campanha. Associe sua ficha para o grupo reconhecer seu personagem.');});};
+$('dsCreateForm').onsubmit=e=>{e.preventDefault();run(async()=>{const body={name:$('dsCampaignName').value,masterPassword:$('dsCreatePassword').value};const data=await api('create',body,account?.user()?{account:true}:null);$('dsCreatePassword').value='';adopt(data);status('Campanha criada. Convide o grupo e prepare sua primeira cena.');});};
+$('dsJoinForm').onsubmit=e=>{e.preventDefault();run(async()=>{const invite=parseInvite($('dsInviteInput').value);const previous=account?.user()?{account:true}:records.find(r=>r.id===invite.id);const data=await api(invite.id+'/join',{invitation:invite.invitation,playerName:$('dsPlayerName').value},previous);adopt(data,previous);$('dsInviteInput').value='';status('Você entrou na campanha. Associe sua ficha para o grupo reconhecer seu personagem.');});};
 $('dsRecoverForm').onsubmit=e=>{e.preventDefault();run(async()=>{const {id}=parseInvite($('dsRecoverInvite').value);const data=await api(id+'/recover',{masterPassword:$('dsRecoverPassword').value},null);$('dsRecoverPassword').value='';adopt(data,records.find(r=>r.id===id));status('Acesso de mestre recuperado neste navegador. O acesso anterior foi substituído.');});};
 function invite(){if(!state||state.role!=='gm'){show();status('Peça o convite da campanha ao mestre.');return;}show();setTab('home');$('dsInviteBox').hidden=false;$('dsInviteOutput').value=inviteURL();$('dsInviteOutput').focus();}
 $('dsInviteButton').onclick=invite;$('dsHideInvite').onclick=()=>{$('dsInviteBox').hidden=true;};
@@ -167,6 +175,12 @@ $('dsExport').onclick=()=>{
 window.DarkStation={active:()=>Boolean(access&&state),invite,close,
  async callAccess(name,userId){if(!access||!state)return null;const result=await api(access.id+'/call',{name,userId});await refresh().catch(()=>{});return result;}
 };
+$('dsAttachAccount').onclick=()=>confirmInline($('dsAttachAccount'),'CONFIRMAR VÍNCULO À MINHA CONTA',async()=>{
+ if(!account?.user()||!access?.token)throw Error('Entre na conta e abra o acesso antigo primeiro.');
+ if(notebook?.hasDraft()||sceneDirty)throw Error('Salve suas alterações antes de vincular.');
+ const data=await api(access.id+'/attach',{memberToken:access.token},{account:true});adopt(data,{account:true});await account.refresh();status('Campanha vinculada. Agora ela acompanha sua conta.');
+});
+account=window.createDarkAccount({service,status,onChange:list=>{accountRecords=list;saved();if(state)apply(state);}});
 notebook=window.createDarkNotebook({command,status,read:body=>api(access.id+'/notebook',body)});
 document.addEventListener('input',e=>{if(!e.target.closest('#mainContainer'))return;clearTimeout(sheetTimer);sheetTimer=setTimeout(()=>{if(!writing)shareCharacter().catch(e=>status(e.message));},1500);});
 setInterval(()=>{if(access&&!document.hidden&&!writing)shareCharacter().catch(e=>status(e.message));},12000);

@@ -9516,24 +9516,25 @@ if(invitation){$('brRoomCode').value=location.href;setTimeout(show,0);}
 
 </script>
 
-<link rel="stylesheet" href="station.css?v=2">
+<link rel="stylesheet" href="station.css?v=3">
 <link rel="stylesheet" href="notebook.css?v=1">
 <section id="dsStation" hidden aria-label="Central de campanha">
  <header class="ds-head"><div><small>DARK / ESTAÇÃO DE RPG</small><strong id="dsHeading">Suas campanhas</strong></div><button type="button" id="dsClose">VOLTAR À FICHA</button></header>
  <p id="dsStatus" role="status" aria-live="polite"></p>
  <div id="dsLobby" class="ds-lobby">
-  <p class="ds-intro">O próximo encontro começa aqui.</p><p class="ds-muted">Reúna o grupo, prepare a cena e guarde as descobertas da campanha.</p>
-  <div id="dsSaved"></div>
+  <section class="ds-account" aria-label="Sua conta"><h2 id="dsAccountName">Sua mesa começa com você</h2><p id="dsAccountHelp" class="ds-muted">Conectando ao serviço de contas…</p><div id="dsGoogleButton"></div><div class="ds-actions"><button id="dsAccountRefresh" hidden>ATUALIZAR MINHAS CAMPANHAS</button><button id="dsLogout" hidden>SAIR DA CONTA</button></div></section>
+  <h3>MINHAS CAMPANHAS</h3><div id="dsAccountSaved"></div>
+  <details id="dsLegacySaved"><summary>Acessos antigos deste navegador</summary><p class="ds-muted">Abra uma campanha antiga e use “Vincular à minha conta” na visão geral. Depois, você poderá abri-la em outro dispositivo.</p><div id="dsSaved"></div></details>
   <details id="dsJoinDetails"><summary>Entrar com um convite</summary><form id="dsJoinForm"><label>Convite da campanha<input id="dsInviteInput" required maxlength="2500" autocomplete="off" placeholder="Cole o link enviado pelo mestre"></label><label>Seu nome na mesa<input id="dsPlayerName" required maxlength="60" autocomplete="nickname"></label><button type="submit">ENTRAR NA CAMPANHA</button></form></details>
-  <details id="dsCreateDetails"><summary>Criar uma campanha · mestre</summary><form id="dsCreateForm"><label>Nome da campanha<input id="dsCampaignName" required maxlength="80" placeholder="Ex.: Ecos do Breu"></label><label>Senha de mestre<input id="dsCreatePassword" type="password" required maxlength="200" autocomplete="current-password"></label><p class="ds-muted">Use a mesma senha de mestre configurada para as chamadas.</p><button type="submit">CRIAR CAMPANHA</button></form></details>
-  <details><summary>Recuperar meu acesso de mestre</summary><form id="dsRecoverForm"><label>Convite ou identificador da campanha<input id="dsRecoverInvite" required maxlength="2500"></label><label>Senha de mestre<input id="dsRecoverPassword" type="password" required maxlength="200" autocomplete="current-password"></label><button type="submit">RECUPERAR ACESSO</button></form></details>
+  <details id="dsCreateDetails"><summary>Criar uma campanha · mestre</summary><form id="dsCreateForm"><label>Nome da campanha<input id="dsCampaignName" required maxlength="80" placeholder="Ex.: Ecos do Breu"></label><label id="dsCreatePasswordRow">Senha de mestre antiga<input id="dsCreatePassword" type="password" required maxlength="200" autocomplete="current-password"></label><p id="dsCreateHint" class="ds-muted"></p><button id="dsCreateSubmit" type="submit" disabled>CRIAR CAMPANHA</button></form></details>
+  <details><summary>Recuperar campanha antiga · antes das contas</summary><form id="dsRecoverForm"><label>Convite ou identificador da campanha<input id="dsRecoverInvite" required maxlength="2500"></label><label>Senha de mestre<input id="dsRecoverPassword" type="password" required maxlength="200" autocomplete="current-password"></label><button type="submit">RECUPERAR ACESSO</button></form></details>
  </div>
  <div id="dsWorkspace" hidden>
   <nav class="ds-nav" aria-label="Campanha"><button type="button" data-ds-tab="notebook" data-ds-gm hidden>CADERNO DO MESTRE</button><button data-ds-tab="home" aria-pressed="true">VISÃO GERAL</button><button data-ds-tab="scene" aria-pressed="false">SESSÃO</button><button data-ds-tab="clues" aria-pressed="false">PISTAS <span id="dsClueCount"></span></button><button data-ds-tab="archive" aria-pressed="false">ARQUIVO</button><button id="dsSwitch">TROCAR CAMPANHA</button></nav>
   <main class="ds-content">
    <section data-ds-page="home"><div class="ds-section-title"><small id="dsSessionLabel"></small><h2 id="dsCampaignTitle"></h2></div><p id="dsLastSummary" class="ds-prose"></p><div class="ds-actions"><button id="dsGoSession">IR PARA A SESSÃO</button><button id="dsInviteButton" data-ds-gm>CONVIDAR GRUPO</button></div>
-    <div id="dsInviteBox" hidden><label>Convite para jogadores<input id="dsInviteOutput" readonly></label><div class="ds-actions"><button id="dsCopyInvite">COPIAR CONVITE</button><button id="dsHideInvite">FECHAR</button></div><p class="ds-muted">O convite dá acesso à campanha e às pistas reveladas. Guarde seu acesso de mestre neste navegador.</p><button id="dsRotateInvite" class="ds-quiet">INVALIDAR CONVITE E GERAR OUTRO</button></div>
-    <h3>NA CAMPANHA</h3><div id="dsMembers"></div><div class="ds-link-sheet"><p>Associe a ficha aberta à campanha para compartilhar nome, VD, SAN e PE. Anotações e arquivos continuam privados.</p><button id="dsBind">ASSOCIAR FICHA ATUAL</button><button id="dsUnbind" hidden>PARAR DE COMPARTILHAR</button><p id="dsBindingHint" class="ds-muted"></p></div>
+    <div id="dsInviteBox" hidden><label>Convite para jogadores<input id="dsInviteOutput" readonly></label><div class="ds-actions"><button id="dsCopyInvite">COPIAR CONVITE</button><button id="dsHideInvite">FECHAR</button></div><p class="ds-muted">O convite dá acesso à campanha e às pistas reveladas. Apenas os mestres desta campanha podem acessar o caderno privado.</p><button id="dsRotateInvite" class="ds-quiet">INVALIDAR CONVITE E GERAR OUTRO</button></div>
+    <button id="dsAttachAccount" hidden>VINCULAR ESTA CAMPANHA À MINHA CONTA</button><p id="dsAttachHint" class="ds-muted" hidden>O acesso antigo será substituído pela sua conta, mantendo as páginas, participantes e sessões.</p><h3>NA CAMPANHA</h3><div id="dsMembers"></div><div class="ds-link-sheet"><p>Associe a ficha aberta à campanha para compartilhar nome, VD, SAN e PE. Anotações e arquivos continuam privados.</p><button id="dsBind">ASSOCIAR FICHA ATUAL</button><button id="dsUnbind" hidden>PARAR DE COMPARTILHAR</button><p id="dsBindingHint" class="ds-muted"></p></div>
    </section>
    <section data-ds-page="scene" hidden><div class="ds-section-title"><small id="dsSceneStatus"></small><h2 id="dsSceneTitle"></h2><p id="dsSceneLocation" class="ds-muted"></p></div><img id="dsSceneImage" hidden alt="Imagem da cena atual" referrerpolicy="no-referrer"><p id="dsSceneObjective" class="ds-prose"></p><div class="ds-actions"><button id="dsOpenCall">ENTRAR NA CHAMADA</button><button id="dsStartSession" data-ds-gm>INICIAR SESSÃO</button></div><p class="ds-muted">A ficha, as câmeras e o rolador continuam disponíveis na sala RPG.</p>
     <details data-ds-gm id="dsSceneEditor"><summary>Preparar / editar a cena</summary><form id="dsSceneForm"><label>Cena<input id="dsSceneTitleInput" required maxlength="100" placeholder="Ex.: O sinal da estação abandonada"></label><label>Local<input id="dsSceneLocationInput" maxlength="140"></label><label>Objetivo / o que está acontecendo<textarea id="dsSceneObjectiveInput" maxlength="2000" rows="4"></textarea></label><label>Imagem da cena · endereço HTTPS opcional<input id="dsSceneImageInput" type="url" maxlength="1000" placeholder="https://..."></label><p class="ds-muted">Ao salvar, esta cena ficará visível para todo o grupo.</p><div class="ds-actions"><button type="submit">SALVAR CENA</button><button type="button" id="dsCancelScene">CANCELAR EDIÇÃO</button></div></form></details>
@@ -9575,7 +9576,8 @@ if(invitation){$('brRoomCode').value=location.href;setTimeout(show,0);}
  </div>
 </section>
 
-<script src="notebook.js?v=1"></script>
-<script src="station.js?v=3"></script>
+<script src="notebook.js?v=2"></script>
+<script src="account.js?v=1"></script>
+<script src="station.js?v=4"></script>
 </body>
 </html>

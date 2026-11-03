@@ -19,7 +19,14 @@ window.createDarkNotebook=function(host){
  const saveDraft=()=>{if(!page)return;try{localStorage.setItem(key(page.id),JSON.stringify({page,at:Date.now()}));}catch{feedback('Sem espaço para o rascunho local. Salve na campanha antes de fechar.');}};
  function clearDraft(id){try{localStorage.removeItem(key(id));}catch{}}
  function update(next){
-  if(!next||next.role!=='gm'){state=null;page=null;epoch++;root.hidden=true;return;}
+  if(!next||next.role!=='gm'){
+   if(dirty&&state)saveDraft();
+   state=null;page=null;dirty=false;conflict=false;loading=false;epoch++;searchEpoch++;hits=null;
+   clearTimeout(timer);clearTimeout(searchTimer);root.hidden=true;
+   root.querySelectorAll('input,textarea').forEach(e=>e.value='');
+   for(const id of ['nbTree','nbBoard','nbPreview','nbBreadcrumb','nbOutgoing','nbBacklinks','nbParent','nbLinkTarget'])$(id).replaceChildren();
+   $('nbDocument').hidden=true;return;
+  }
   if(state?.id!==next.id||state?.memberId!==next.memberId){if(dirty)saveDraft();state=next;page=null;dirty=false;conflict=false;epoch++;searchEpoch++;hits=null;$('nbSearch').value='';$('nbFilter').value='';clearTimeout(timer);renderEmpty();}
   else state=next;
   renderTree();if(view==='plan')renderBoard();
